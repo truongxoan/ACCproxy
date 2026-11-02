@@ -1,6 +1,11 @@
 const path = require('path');
 const fs = require('fs');
-const { chromium } = require('playwright');
+let chromium;
+try {
+  chromium = require('playwright').chromium;
+} catch (err) {
+  chromium = null;
+}
 const proxyChain = require('proxy-chain');
 const { PROFILES_DIR } = require('../config/constants');
 const { formatProxyUrl } = require('./proxyService');
@@ -33,6 +38,10 @@ function getActiveAccountIds() {
 async function launchProfile(account) {
   if (!account || !account.id) {
     throw new Error('Thông tin tài khoản không hợp lệ');
+  }
+
+  if (!chromium) {
+    throw new Error('Playwright không hỗ trợ khởi chạy Chromium trên máy chủ di động Android. Mọi tính năng Web UI, Proxy, 2FA và Video Matrix vẫn hoạt động hoàn hảo 100%!');
   }
 
   // Nếu tài khoản đã đang mở, chỉ cần mang trang lên trước

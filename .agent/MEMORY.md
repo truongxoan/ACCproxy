@@ -27,6 +27,11 @@
   - Máy rửa mã Video & Hash MD5 Sanitizer: Tẩy EXIF, đổi MD5 trong 0.05s lách quét trùng lặp video.
   - Kho Hook 3 Giây & Kịch bản triệu view: 13+ mẫu câu giật gân phân theo từng ngách content.
   - Radar Định Vị Proxy & Lá Cờ Quốc Gia (Flag Badge): Tự động trích xuất mã nước ISO (VN, US, SG, JP...) và render lá cờ thu nhỏ 16x12px kèm mã quốc gia cạnh tên kênh và proxy.
-  - Tích hợp API Key Web Bán Proxy (Proxy Seller Hub): Hỗ trợ TMProxy, TinProxy, Webshare, ProxyNo1, Custom API, kiểm tra tình trạng sống/chết của Key bên bán, đếm ngược đổi IP và 1-click gán proxy vào kênh.
+  - Tích hợp API Key Web Bán Proxy (Proxy Seller Hub): Hỗ trợ ProxyV6 (proxyv6.net), TMProxy, TinProxy, Webshare, ProxyNo1, Custom API, kiểm tra tình trạng sống/chết của Key bên bán, đếm ngược đổi IP và 1-click gán proxy vào kênh.
+  - Kho Tư Liệu Kịch Bản & Ảnh Thumbnail (.md, .txt, .png): Tải file lên, trình đọc kịch bản Markdown với nút copy code, sửa trực tiếp trên web, xem ảnh full res và 1-click đẩy sang Lịch đăng video.
+- **Repository GitHub Chính Thức:**
+  - Tên Repo: `truongxoan/ACCproxy`
+  - URL: `https://github.com/truongxoan/ACCproxy`
+  - Branch: `main` (clean 100%, bảo mật .env/data/profiles qua .gitignore)
 - **Hỗ trợ Đa Người Dùng Từ Xa:**
   - Server lắng nghe `0.0.0.0:3000` phục vụ 2 - 6 người cùng truy cập đồng bộ qua mạng LAN hoặc Cloudflare Tunnel / VPN.

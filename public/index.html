@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AccProxy Sovereign — Hệ Thống Quản Lý Tài Khoản, Proxy, 2FA & Xây Kênh Triệu View</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cyber: {
+              dark: '#070b14',
+              card: '#0d1424',
+              border: '#1e293b',
+              cyan: '#06b6d4',
+              emerald: '#10b981',
+              rose: '#f43f5e',
+              amber: '#f59e0b',
+              fuchsia: '#d946ef'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/css/custom.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="bg-[#070b14] text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-black">
+
+  <!-- ==================== HEADER BAR ==================== -->
+  <header class="glass-header sticky top-0 z-40 px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-teal-500 to-emerald-400 flex items-center justify-center font-black text-slate-950 text-2xl shadow-lg shadow-cyan-500/20">
+          ⚡
+        </div>
+        <div>
+          <h1 class="text-base font-extrabold tracking-tight text-white flex items-center gap-2">
+            <span>AccProxy Sovereign</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 font-mono font-semibold">v16.2 APEX</span>
+          </h1>
+          <p class="text-[11px] text-slate-400">Account & Proxy Manager • Content Matrix • Piik Live Stream</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tab Pills -->
+    <nav class="hidden lg:flex items-center gap-1.5 p-1 rounded-xl bg-slate-900/80 border border-slate-800">
+      <button class="nav-tab-btn active px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5" data-tab="tab-accounts">
+        <span>🛡️</span>
+        <span>Tài Khoản & Proxy</span>
+      </button>
+      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5" data-tab="tab-schedules">
+        <span>🎬</span>
+        <span>Lịch Up Video</span>
+        <span id="header-sched-badge" class="px-1.5 py-0.2 rounded-full bg-pink-500 text-white text-[10px] font-mono">0</span>
+      </button>
+      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5" data-tab="tab-assets">
+        <span>📁</span>
+        <span>Kho Kịch Bản & Ảnh</span>
+        <span id="header-assets-badge" class="px-1.5 py-0.2 rounded-full bg-cyan-600 text-white text-[10px] font-mono">0</span>
+      </button>
+      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5" data-tab="tab-piik">
+        <span>📺</span>
+        <span>Piik Live Stream</span>
+        <span id="header-stream-badge" class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+      </button>
+      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5" data-tab="tab-tools">
+        <span>🛠️</span>
+        <span>Vũ Khí Xây Kênh</span>
+      </button>
+      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 admin-only" data-tab="tab-admin">
+        <span>👥</span>
+        <span>Quản Trị & Logs</span>
+      </button>
+    </nav>
+
+    <!-- Right Controls: Profile & Tools -->
+    <div class="flex items-center gap-3">
+      <button id="btn-refresh" class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 transition-colors" title="Đồng bộ toàn hệ thống">
+        🔄
+      </button>
+      <div id="user-profile-badge" class="pl-2 border-l border-slate-800 flex items-center gap-2"></div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT CONTAINER ==================== -->
+  <main id="main-app" class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col gap-5 transition-all">
+
+    <!-- SUGGESTIONS & RADAR CẢNH BÁO AN NINH -->
+    <section id="suggestions-banner"></section>
+
+    <!-- ==================== TAB 1: QUẢN LÝ TÀI KHOẢN & PROXY ==================== -->
+    <div id="tab-accounts" class="tab-pane flex flex-col gap-4">
+      <!-- Toolbar & Platform Filter -->
+      <section class="glass-panel p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button class="filter-btn active-filter px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 text-white transition-all" data-platform="all">
+            Tất Cả
+          </button>
+          <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" data-platform="facebook">
+            Facebook
+          </button>
+          <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" data-platform="google">
+            Google / YouTube
+          </button>
+          <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" data-platform="tiktok">
+            TikTok
+          </button>
+          <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" data-platform="x">
+            X (Twitter)
+          </button>
+          <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" data-platform="custom">
+            Khác
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2.5">
+          <div class="relative flex-1 md:w-60">
+            <input type="text" id="search-input" placeholder="Tìm theo tên, proxy, email..." class="w-full bg-slate-900/90 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors">
+            <span class="absolute left-2.5 top-2 text-xs text-slate-500">🔍</span>
+          </div>
+
+          <button id="btn-import-accounts" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+            <span>📥</span>
+            <span>Import</span>
+          </button>
+
+          <button id="btn-add-account" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-cyan-500/20 transition-all">
+            <span>+</span>
+            <span>Thêm Kênh / Acc</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Accounts Table -->
+      <section class="glass-panel rounded-xl overflow-hidden shadow-2xl flex-1 flex flex-col">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-900/80 border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                <th class="py-3.5 px-4">Kênh & Nền Tảng</th>
+                <th class="py-3.5 px-4">Đăng Nhập & Mật Khẩu</th>
+                <th class="py-3.5 px-4">Mã 2FA Real-Time</th>
+                <th class="py-3.5 px-4">Proxy & Địa Chỉ IP</th>
+                <th class="py-3.5 px-4 text-right">Điều Khiển Trình Duyệt</th>
+              </tr>
+            </thead>
+            <tbody id="accounts-tbody" class="divide-y divide-slate-800/40 text-sm">
+              <tr>
+                <td colspan="5" class="py-12 text-center text-slate-500">
+                  <div class="animate-pulse">Đang nạp dữ liệu từ kho quân lương...</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== TAB 2: LỊCH LÊN BÀI & BÁO ĐỘNG NHẮC UP VIDEO ==================== -->
+    <div id="tab-schedules" class="tab-pane hidden flex flex-col gap-4">
+      <div class="glass-panel p-5 rounded-xl flex flex-col gap-4">
+        <!-- Header & Add Button -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>Ma Trận Nội Dung & Lịch Up Video Hàng Ngày</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-300 font-mono">CONTENT MATRIX</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Tự động đếm ngược giờ vàng, nhắc nhở qua Telegram & 1-click mở Studio Upload với đúng Proxy</p>
+          </div>
+          <button onclick="App.openAddScheduleModal()" class="px-4 py-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 text-white text-xs font-bold shadow-lg shadow-fuchsia-500/20 flex items-center gap-1.5">
+            <span>+</span>
+            <span>Thêm Lịch Up Video Mới</span>
+          </button>
+        </div>
+
+        <!-- Daily Goal Tracker Banner -->
+        <div class="p-4 rounded-xl bg-gradient-to-r from-fuchsia-950/40 via-purple-950/30 to-slate-900 border border-fuchsia-500/30 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <div class="font-bold text-fuchsia-200 text-sm flex items-center gap-2">
+              <span>🎯 Tiến độ hoàn thành chỉ tiêu video hôm nay:</span>
+              <span id="sched-progress-text" class="text-white font-mono bg-fuchsia-900/60 px-2 py-0.5 rounded">0 / 0 video (0%)</span>
+            </div>
+            <div class="w-full md:w-80 h-2.5 bg-slate-800 rounded-full overflow-hidden mt-2">
+              <div id="sched-progress-bar" class="h-full bg-gradient-to-r from-fuchsia-500 to-pink-500 transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-slate-400">🔥 Khung Giờ Vàng Đăng Bài (Tối Ưu Thuật Toán):</div>
+            <div class="font-mono text-cyan-400 font-bold text-sm mt-0.5">11:30 - 13:00 (Trưa) • 19:00 - 21:30 (Tối)</div>
+          </div>
+        </div>
+
+        <!-- Schedules Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="bg-slate-900/60 text-[11px] font-semibold text-slate-400 uppercase">
+                <th class="py-3 px-3">Kênh & Nền Tảng</th>
+                <th class="py-3 px-3">Tiêu Đề Video</th>
+                <th class="py-3 px-3">Khung Giờ Đăng</th>
+                <th class="py-3 px-3">Trạng Thái</th>
+                <th class="py-3 px-3 text-right">Tác Chiến Trực Tiếp</th>
+              </tr>
+            </thead>
+            <tbody id="schedules-tbody" class="text-xs divide-y divide-slate-800/40"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 3: PIIK LIVE STREAM (XEM TRÌNH DUYỆT TRỰC TIẾP) ==================== -->
+    <div id="tab-piik" class="tab-pane hidden flex flex-col gap-4">
+      <div class="glass-panel p-5 rounded-xl flex flex-col gap-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>Piik Live Screen Stream & Co-Browsing</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono">REMOTE WATCH</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Quan sát trực tiếp màn hình trình duyệt của các kênh đang chạy trên máy chủ qua web</p>
+          </div>
+          <button onclick="App.refreshPiikStreams()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-semibold flex items-center gap-1.5">
+            <span>🔄 Làm mới khung hình</span>
+          </button>
+        </div>
+
+        <div id="piik-streams-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="col-span-full py-12 text-center text-slate-500 italic">
+            Chưa có trình duyệt nào đang mở. Hãy vào tab "Tài Khoản & Proxy" và bấm [Mở Trình Duyệt]!
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 4: TRẠM VŨ KHÍ XÂY KÊNH (CONTENT SUITE) ==================== -->
+    <div id="tab-tools" class="tab-pane hidden flex flex-col gap-5">
+
+      <!-- VŨ KHÍ MỚI: TRẠM KẾT NỐI API WEB BÁN PROXY (PROXY SELLER HUB) -->
+      <div class="glass-panel p-5 rounded-xl flex flex-col gap-4 border-amber-500/20">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-2.5">
+            <span class="text-2xl">🔌</span>
+            <div>
+              <h3 class="text-base font-bold text-amber-300 flex items-center gap-2">
+                <span>Tích Hợp API Key Của Web Bán Proxy (Proxy Seller Hub)</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">SELLER API</span>
+              </h3>
+              <p class="text-xs text-slate-400 mt-0.5">Check trực tiếp trạng thái Key còn hạn hay chết, IP hiện tại, cờ quốc gia và tự động gán vào kênh</p>
+            </div>
+          </div>
+          <button onclick="App.openAddProviderForm()" class="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-slate-950 text-xs font-bold shadow-md shadow-amber-500/20 flex items-center gap-1.5">
+            <span>+</span>
+            <span>Thêm API Key Mới</span>
+          </button>
+        </div>
+
+        <!-- Form Nhập & Kiểm Tra API Key Bên Bán -->
+        <div id="provider-input-panel" class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col gap-3 text-xs">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Chọn Nhà Cung Cấp / Web Bán Proxy *</label>
+              <select id="prov-type" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200" onchange="App.handleProviderTypeChange()">
+                <option value="proxyv6">ProxyV6 (proxyv6.net - Key Xoay IPv6/IPv4)</option>
+                <option value="tmproxy">TMProxy (tmproxy.com - IP Việt Nam)</option>
+                <option value="tinproxy">TinProxy (tinproxy.com - Proxy Xoay)</option>
+                <option value="webshare">Webshare.io (Quốc Tế / Mỹ / Châu Âu)</option>
+                <option value="proxyno1">ProxyNo1 (proxyno1.com)</option>
+                <option value="custom">Web Bán Proxy Khác (Custom API Endpoint)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Tên Gợi Nhớ Gói Proxy *</label>
+              <input type="text" id="prov-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200" placeholder="VD: TMProxy Xoay 20 Kênh">
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">API Key Của Bên Bán *</label>
+              <input type="text" id="prov-key" required class="w-full bg-slate-900 border border-amber-500/40 rounded-lg px-3 py-2 font-mono text-amber-300 placeholder-slate-600" placeholder="Dán API Key vào đây...">
+            </div>
+          </div>
+
+          <!-- URL Endpoint cho Custom -->
+          <div id="prov-custom-url-container" class="hidden">
+            <label class="block font-semibold text-slate-300 mb-1">API Endpoint URL của bên bán (Dùng {API_KEY} để thay thế key)</label>
+            <input type="url" id="prov-url" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono" placeholder="https://api.myproxy.com/get-proxy?key={API_KEY}">
+          </div>
+
+          <!-- Buttons -->
+          <div class="flex items-center justify-end gap-2.5 pt-1">
+            <button type="button" onclick="App.testLiveProviderKey()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 font-semibold flex items-center gap-1.5 transition-colors">
+              <span>⚡</span>
+              <span>Test Trực Tiếp Key</span>
+            </button>
+            <button type="button" onclick="App.saveProviderKey()" class="px-5 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-slate-950 font-bold shadow-lg shadow-amber-500/20">
+              Lưu Vào Hệ Thống
+            </button>
+          </div>
+
+          <!-- Card Kết Quả Kiểm Tra Trực Tiếp (Live Result Card) -->
+          <div id="provider-test-result" class="hidden p-4 rounded-xl bg-slate-900 border border-amber-500/40 flex flex-col gap-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2" id="prov-status-badge">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="font-bold text-emerald-400 text-sm">TRẠNG THÁI: ACTIVE (HỢP LỆ)</span>
+              </div>
+              <div id="prov-flag-container"></div>
+            </div>
+
+            <div class="p-3 rounded-lg bg-slate-950 font-mono text-xs flex flex-col md:flex-row md:items-center justify-between gap-2 border border-slate-800">
+              <div>
+                <span class="text-slate-500">Proxy Nhận Được:</span>
+                <span id="prov-proxy-val" class="font-bold text-cyan-300 ml-1">--</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-slate-400 text-[11px]" id="prov-time-val"></span>
+                <button id="btn-prov-assign" class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs" onclick="App.openAssignProxyModal()">
+                  📥 Gán Vào Kênh
+                </button>
+              </div>
+            </div>
+
+            <div class="text-[11px] text-slate-400" id="prov-msg-val"></div>
+          </div>
+        </div>
+
+        <!-- Bảng Danh Sách Provider Keys Đã Lưu -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-900/60 text-[10px] font-semibold text-slate-400 uppercase">
+                <th class="py-2.5 px-3">Tên Gói & Bên Bán</th>
+                <th class="py-2.5 px-3">Loại Provider</th>
+                <th class="py-2.5 px-3">API Key</th>
+                <th class="py-2.5 px-3">Proxy Gần Nhất</th>
+                <th class="py-2.5 px-3">Trạng Thái</th>
+                <th class="py-2.5 px-3 text-right">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="providers-tbody" class="divide-y divide-slate-800/40"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 2 Columns: Video Sanitizer & Telegram Bot -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+        <!-- VŨ KHÍ 1: RỬA MÃ VIDEO & ĐỔI MD5 LÁCH BẢN QUYỀN -->
+        <div class="glass-panel p-5 rounded-xl flex flex-col gap-3.5 border-emerald-500/20">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">🧼</span>
+              <div>
+                <h3 class="text-sm font-bold text-emerald-300">Máy Rửa Mã Video & Đổi Hash MD5 Lách Thuật Toán</h3>
+                <p class="text-[11px] text-slate-400">Tẩy sạch EXIF metadata, chèn entropy box đổi mã Hash 100% trong 0.1s</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-3 text-xs">
+            <div class="border-2 border-dashed border-slate-700 hover:border-emerald-500/60 rounded-xl p-5 text-center transition-colors cursor-pointer" id="drop-video-zone" onclick="document.getElementById('video-file-input').click()">
+              <input type="file" id="video-file-input" accept="video/mp4,video/quicktime,video/mkv" class="hidden" onchange="App.handleVideoFileSelect(event)">
+              <div class="text-3xl mb-2">📹</div>
+              <div class="font-semibold text-slate-200">Nhấp vào đây hoặc kéo thả file Video (MP4 / MOV)</div>
+              <div class="text-[11px] text-slate-500 mt-1">Xử lý ngay tại chỗ, không suy hao chất lượng, đổi hash tức thì</div>
+            </div>
+
+            <div id="sanitizer-result" class="hidden p-3.5 rounded-lg bg-slate-950/80 border border-emerald-500/30 flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-emerald-400 text-xs">✓ ĐÃ TẨY RỬA VÀ ĐỔI MÃ HASH THÀNH CÔNG!</span>
+                <a id="btn-download-sanitized" class="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md">
+                  Tải Về File Mới
+                </a>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-[10px] font-mono mt-1">
+                <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                  <div class="text-slate-500">Mã MD5 Gốc:</div>
+                  <div id="old-md5" class="text-slate-300 truncate">--</div>
+                </div>
+                <div class="p-2 rounded bg-slate-900 border border-emerald-500/40">
+                  <div class="text-emerald-400">Mã MD5 Mới (Unique):</div>
+                  <div id="new-md5" class="text-emerald-300 truncate font-bold">--</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VŨ KHÍ 2: CẤU HÌNH BÁO ĐỘNG TELEGRAM -->
+        <div class="glass-panel p-5 rounded-xl flex flex-col gap-3.5 border-cyan-500/20">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">📢</span>
+              <div>
+                <h3 class="text-sm font-bold text-cyan-300">Báo Động Đỏ Telegram (Bắn Chuông Điện Thoại)</h3>
+                <p class="text-[11px] text-slate-400">Tự động bắn tin nhắn vào nhóm Telegram khi tới khung giờ vàng</p>
+              </div>
+            </div>
+          </div>
+
+          <form id="telegram-form" class="flex flex-col gap-3 text-xs">
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Telegram Bot Token</label>
+              <input type="text" id="tg-token" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Telegram Chat ID (hoặc Group ID)</label>
+              <input type="text" id="tg-chat-id" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono" placeholder="-100123456789 hoặc @username">
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-1">
+              <button type="button" onclick="App.testTelegramAlert()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 font-semibold">
+                🔔 Test Chuông Báo
+              </button>
+              <button type="submit" class="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold shadow-md shadow-cyan-500/20">
+                Lưu Cấu Hình
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- VŨ KHÍ 3: KHO HOOK 3 GIÂY & KỊCH BẢN TRIỆU VIEW -->
+      <div class="glass-panel p-5 rounded-xl flex flex-col gap-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <span>🧲 Kho Lưu Trữ Hook 3 Giây Đầu Tiên & Mẫu Caption Chuẩn SEO</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">VIRAL VAULT</span>
+            </h3>
+            <p class="text-xs text-slate-400">Các câu mở đầu giật gân giúp giữ chân người xem 3s đầu kịch nóc thuật toán</p>
+          </div>
+
+          <div class="flex items-center gap-1.5" id="hook-categories-container"></div>
+        </div>
+
+        <div id="hooks-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB: KHO TƯ LIỆU KỊCH BẢN & ẢNH (.md / .txt / .png) ==================== -->
+    <div id="tab-assets" class="tab-pane hidden flex flex-col gap-5">
+      <!-- Header Banner & Controls -->
+      <div class="glass-panel p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-cyan-500/20">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <span>📁 Kho Tư Liệu Kịch Bản & Ảnh Thumbnail</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-mono">MD • TXT • PNG</span>
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">
+            Tải lên kịch bản Markdown (.md), ghi chú prompt (.txt), và ảnh thumbnail bìa (.png) để đọc lại, chỉnh sửa trực tiếp và đăng bài đa nền tảng
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="App.openUploadAssetModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs shadow-lg shadow-cyan-500/20 flex items-center gap-1.5 transition-all">
+            <span>+</span>
+            <span>Tải File Lên Kho</span>
+          </button>
+          <button onclick="App.loadAssets()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400" title="Làm mới kho tư liệu">
+            🔄
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats Bar 4 Ô Thống Kê -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+        <div class="glass-panel p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div>
+            <div class="text-[11px] text-slate-400">Tổng File Trong Kho</div>
+            <div class="text-xl font-bold text-white mt-0.5" id="stat-total-assets">0</div>
+          </div>
+          <span class="text-2xl p-2 rounded-lg bg-slate-900 border border-slate-800">📂</span>
+        </div>
+        <div class="glass-panel p-3.5 rounded-xl border border-purple-500/20 flex items-center justify-between">
+          <div>
+            <div class="text-[11px] text-purple-300">Kịch Bản Markdown (.md)</div>
+            <div class="text-xl font-bold text-purple-400 mt-0.5" id="stat-md-assets">0</div>
+          </div>
+          <span class="text-2xl p-2 rounded-lg bg-purple-950/40 border border-purple-500/30">📄</span>
+        </div>
+        <div class="glass-panel p-3.5 rounded-xl border border-emerald-500/20 flex items-center justify-between">
+          <div>
+            <div class="text-[11px] text-emerald-300">Prompt & Ghi Chú (.txt)</div>
+            <div class="text-xl font-bold text-emerald-400 mt-0.5" id="stat-txt-assets">0</div>
+          </div>
+          <span class="text-2xl p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30">📝</span>
+        </div>
+        <div class="glass-panel p-3.5 rounded-xl border border-pink-500/20 flex items-center justify-between">
+          <div>
+            <div class="text-[11px] text-pink-300">Ảnh Thumbnail (.png / jpg)</div>
+            <div class="text-xl font-bold text-pink-400 mt-0.5" id="stat-png-assets">0</div>
+          </div>
+          <span class="text-2xl p-2 rounded-lg bg-pink-950/40 border border-pink-500/30">🖼️</span>
+        </div>
+      </div>
+
+      <!-- Khu Vực Kéo Thả Nhanh (Drag & Drop Zone) -->
+      <div id="asset-dropzone" class="glass-panel p-6 rounded-2xl border-2 border-dashed border-cyan-500/30 hover:border-cyan-400 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group" onclick="document.getElementById('quick-asset-file-input').click()">
+        <input type="file" id="quick-asset-file-input" accept=".md,.txt,.png,.jpg,.jpeg,.webp" class="hidden" onchange="App.handleQuickFileSelect(event)">
+        <div class="w-12 h-12 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform border border-cyan-500/30">
+          📥
+        </div>
+        <div class="font-semibold text-slate-200 text-sm">
+          Kéo thả file <span class="text-purple-400 font-mono">.md</span>, <span class="text-emerald-400 font-mono">.txt</span>, <span class="text-pink-400 font-mono">.png</span> vào đây hoặc nhấp để tải lên
+        </div>
+        <div class="text-[11px] text-slate-400">
+          Hỗ trợ đọc lại kịch bản Markdown, sửa prompt text thời gian thực và lấy ảnh bìa để up TikTok / YouTube / Reels
+        </div>
+      </div>
+
+      <!-- Thanh Bộ Lọc & Tìm Kiếm -->
+      <div class="glass-panel p-3.5 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+        <!-- Filter Tabs -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0" id="asset-filter-pills">
+          <button class="asset-filter-btn active-asset-filter px-3 py-1.5 rounded-lg bg-cyan-600 text-white font-semibold transition-colors" data-filter="all" onclick="App.setAssetFilter('all')">
+            Tất Cả (<span id="count-filter-all">0</span>)
+          </button>
+          <button class="asset-filter-btn px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 font-semibold transition-colors" data-filter="md" onclick="App.setAssetFilter('md')">
+            📄 Markdown (.md) (<span id="count-filter-md">0</span>)
+          </button>
+          <button class="asset-filter-btn px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 font-semibold transition-colors" data-filter="txt" onclick="App.setAssetFilter('txt')">
+            📝 Ghi Chú (.txt) (<span id="count-filter-txt">0</span>)
+          </button>
+          <button class="asset-filter-btn px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 font-semibold transition-colors" data-filter="images" onclick="App.setAssetFilter('images')">
+            🖼️ Ảnh Thumbnail (<span id="count-filter-images">0</span>)
+          </button>
+        </div>
+
+        <!-- Search & Channel Dropdown -->
+        <div class="flex items-center gap-2">
+          <select id="asset-account-filter-select" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 text-xs" onchange="App.handleAssetAccountFilter(this.value)">
+            <option value="">Tất cả các Kênh</option>
+          </select>
+          <div class="relative w-full md:w-56">
+            <input type="text" id="asset-search-input" class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 text-xs" placeholder="Tìm kiếm kịch bản, ảnh..." oninput="App.handleAssetSearch(this.value)">
+            <span class="absolute left-2.5 top-2 text-slate-500">🔍</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lưới Danh Sách Tư Liệu (Asset Grid) -->
+      <div id="assets-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Rendered by JavaScript -->
+      </div>
+    </div>
+
+    <!-- ==================== TAB 5: QUẢN TRỊ NHÂN SỰ & AUDIT LOGS ==================== -->
+    <div id="tab-admin" class="tab-pane hidden flex flex-col gap-5 admin-only">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <!-- Quản Lý Người Dùng -->
+        <div class="glass-panel p-5 rounded-xl flex flex-col gap-3">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>👥 Danh Sách Thành Viên (2 - 6 Người)</span>
+            </h3>
+            <button onclick="App.createUserPrompt()" class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold">
+              + Thêm User
+            </button>
+          </div>
+          <div class="overflow-y-auto max-h-96">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="bg-slate-900/60 text-[10px] font-semibold text-slate-400 uppercase">
+                  <th class="py-2 px-2">User</th>
+                  <th class="py-2 px-2">Vai Trò</th>
+                  <th class="py-2 px-2">Trạng Thái</th>
+                  <th class="py-2 px-2">Số Acc Gán</th>
+                  <th class="py-2 px-2 text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody" class="divide-y divide-slate-800/40"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Audit Logs Gần Nhất -->
+        <div class="glass-panel p-5 rounded-xl flex flex-col gap-3">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>📜 Nhật Ký Kiểm Toán (Audit Logs)</span>
+            </h3>
+            <button onclick="App.loadAuditLogs()" class="text-xs text-cyan-400 hover:underline">Làm mới</button>
+          </div>
+          <div class="overflow-y-auto max-h-96">
+            <table class="w-full text-left text-[11px]">
+              <thead>
+                <tr class="bg-slate-900/60 text-[10px] font-semibold text-slate-400 uppercase">
+                  <th class="py-2 px-2">Thời Gian</th>
+                  <th class="py-2 px-2">Người Dùng</th>
+                  <th class="py-2 px-2">Hành Động</th>
+                  <th class="py-2 px-2">Chi Tiết</th>
+                </tr>
+              </thead>
+              <tbody id="audit-tbody" class="divide-y divide-slate-800/40"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- 1. LOGIN MODAL -->
+  <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+    <div class="glass-modal max-w-sm w-full p-6 rounded-2xl shadow-2xl border border-cyan-500/30">
+      <div class="text-center mb-5">
+        <div class="w-12 h-12 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-2xl mx-auto mb-2 border border-cyan-500/40">
+          🔐
+        </div>
+        <h2 class="text-lg font-bold text-white">Xác Thực Danh Tính</h2>
+        <p class="text-xs text-slate-400 mt-1">Đăng nhập vào hệ thống AccProxy Sovereign</p>
+      </div>
+
+      <form id="login-form" class="flex flex-col gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Tên đăng nhập</label>
+          <input type="text" id="login-username" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyan-500" placeholder="admin hoặc tên nhân viên">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Mật khẩu</label>
+          <input type="password" id="login-password" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyan-500" placeholder="••••••••">
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-sm shadow-lg shadow-cyan-500/20 transition-all">
+          Đăng Nhập Ngay
+        </button>
+      </form>
+      <div class="mt-4 text-center text-[11px] text-slate-500">
+        Tài khoản mặc định: <span class="font-mono text-cyan-400">admin</span> / <span class="font-mono text-cyan-400">Admin@123456</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. LOCK SCREEN OVERLAY (INACTIVITY AUTO-LOCK) -->
+  <div id="lock-screen-modal" class="fixed inset-0 lock-screen-overlay flex items-center justify-center p-4 hidden">
+    <div class="glass-modal max-w-sm w-full p-6 rounded-2xl shadow-2xl border border-amber-500/30 text-center">
+      <div class="w-14 h-14 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-3xl mx-auto mb-3 border border-amber-500/40">
+        🔒
+      </div>
+      <h2 class="text-lg font-bold text-white">Màn Hình Đang Bị Khóa</h2>
+      <p class="text-xs text-slate-400 mt-1 mb-4">Hệ thống tự động khóa bảo vệ vì không có thao tác</p>
+      <div class="text-sm font-semibold text-cyan-300 font-mono mb-4" id="lock-username">admin</div>
+
+      <form id="lock-form" class="flex flex-col gap-3">
+        <input type="password" id="lock-password" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-center text-slate-100 focus:outline-none focus:border-amber-500" placeholder="Nhập mật khẩu để mở khóa">
+        <button type="submit" class="w-full py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 transition-all">
+          Mở Khóa Tác Chiến
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. ADD / EDIT ACCOUNT MODAL -->
+  <div id="account-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+    <div class="glass-modal max-w-2xl w-full p-6 rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+        <h3 class="text-base font-bold text-white" id="account-modal-title">Thêm Kênh / Tài Khoản Mới</h3>
+        <button onclick="App.closeAccountModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <form id="account-form" class="flex flex-col gap-4 text-xs">
+        <input type="hidden" id="acc-id">
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Nền tảng</label>
+            <select id="acc-platform" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200">
+              <option value="tiktok">TikTok</option>
+              <option value="google">Google / YouTube</option>
+              <option value="facebook">Facebook</option>
+              <option value="x">X (Twitter)</option>
+              <option value="github">GitHub</option>
+              <option value="amazon">Amazon</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Tên gợi nhớ / Tên Kênh</label>
+            <input type="text" id="acc-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200" placeholder="VD: Kênh Review Phim 01">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">URL Trang Đăng Nhập</label>
+            <input type="url" id="acc-login-url" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200" placeholder="https://tiktok.com">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Username / Email / SĐT *</label>
+            <input type="text" id="acc-username" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200" placeholder="channel@gmail.com">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Mật khẩu</label>
+            <input type="password" id="acc-password" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200" placeholder="••••••••">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Khóa 2FA (Secret Base32)</label>
+            <input type="text" id="acc-totp" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-slate-200" placeholder="JBSWY3DPEHPK3PXP">
+          </div>
+        </div>
+
+        <!-- Khung Cấu hình Proxy -->
+        <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-cyan-400">Cấu Hình Proxy Riêng Biệt Cho Kênh</span>
+            <span class="text-[10px] text-slate-400">Dán nhanh: <code class="text-amber-300 font-mono">host:port:user:pass</code></span>
+          </div>
+
+          <div>
+            <input type="text" id="acc-raw-proxy" class="w-full bg-slate-900 border border-cyan-500/40 rounded-lg px-3 py-1.5 text-xs font-mono text-cyan-300 placeholder-slate-600 focus:outline-none" placeholder="Dán chuỗi Proxy vào đây để tự động điền các ô bên dưới...">
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-0.5">Giao thức</label>
+              <select id="acc-proxy-proto" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-slate-200">
+                <option value="http">HTTP</option>
+                <option value="https">HTTPS</option>
+                <option value="socks4">SOCKS4</option>
+                <option value="socks5">SOCKS5</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-0.5">Host / IP</label>
+              <input type="text" id="acc-proxy-host" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 font-mono text-slate-200" placeholder="103.14.22.1">
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-0.5">Cổng (Port)</label>
+              <input type="number" id="acc-proxy-port" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 font-mono text-slate-200" placeholder="8080">
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-0.5">Proxy User</label>
+              <input type="text" id="acc-proxy-user" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-slate-200" placeholder="(Tùy chọn)">
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-0.5">Proxy Pass</label>
+              <input type="password" id="acc-proxy-pass" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-slate-200" placeholder="(Tùy chọn)">
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Custom User-Agent</label>
+            <input type="text" id="acc-ua" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200" placeholder="Mozilla/5.0 (Windows NT 10.0; Win64; x64)...">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Ghi chú (Notes / Niche kênh)</label>
+            <input type="text" id="acc-notes" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200" placeholder="Ngách: Phim, Tài chính, Bán hàng...">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+          <button type="button" onclick="App.closeAccountModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">
+            Hủy Bỏ
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold shadow-lg shadow-cyan-500/20">
+            Lưu Dữ Liệu
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. ADD / EDIT SCHEDULE MODAL -->
+  <div id="schedule-form-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+    <div class="glass-modal max-w-lg w-full p-6 rounded-2xl shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+        <h3 class="text-base font-bold text-white">Lên Lịch Nhắc Nhở Up Video</h3>
+        <button onclick="App.closeAddScheduleModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+
+      <form id="schedule-form" class="flex flex-col gap-3.5 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Chọn Kênh / Tài Khoản Đăng Bài *</label>
+          <select id="sched-account-id" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-fuchsia-500"></select>
+        </div>
+
+        <!-- Nhập Nhanh Từ Kho Tư Liệu Kịch Bản / Prompt -->
+        <div class="p-2.5 rounded-lg bg-slate-950/80 border border-cyan-500/30 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-1.5 text-cyan-400 font-semibold text-[11px] truncate">
+            <span>📁</span>
+            <span>Chọn Kịch Bản Từ Kho:</span>
+          </div>
+          <select id="sched-asset-picker" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 text-[11px] max-w-[220px] truncate" onchange="App.handlePickAssetForSchedule(this.value)">
+            <option value="">-- Chọn file kịch bản có sẵn --</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Tiêu Đề Video / Chủ Đề *</label>
+          <input type="text" id="sched-title" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200" placeholder="VD: 5 Mẹo Tối Ưu Lập Trình Với AI Agent">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Giờ Đăng (Khung Giờ Vàng) *</label>
+            <input type="time" id="sched-time" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Tần Suất Nhắc</label>
+            <select id="sched-frequency" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200">
+              <option value="daily">Lặp lại Hàng Ngày (Daily)</option>
+              <option value="once">Một lần duy nhất</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Caption / Mô Tả Video Sẵn</label>
+          <textarea id="sched-caption" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-200" placeholder="Soạn sẵn caption để nhân viên chỉ cần bấm copy..."></textarea>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Bộ Hashtag Chuẩn SEO</label>
+          <input type="text" id="sched-hashtags" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono" placeholder="#xaykenh #reels #tiktok #shorts #viral">
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
+          <button type="button" onclick="App.closeAddScheduleModal()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300">Hủy</button>
+          <button type="submit" class="px-5 py-1.5 rounded-lg bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 text-white font-semibold">Lưu Lịch Đăng</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. BULK IMPORT MODAL -->
+  <div id="import-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+    <div class="glass-modal max-w-xl w-full p-6 rounded-2xl shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+        <h3 class="text-base font-bold text-white">Import Hàng Loạt Kênh & Tài Khoản</h3>
+        <button onclick="App.closeImportModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <p class="text-xs text-slate-400 mb-2">
+        Định dạng mỗi dòng: <br>
+        <code class="text-cyan-400 font-mono">platform|username|password|2fa_secret|proxy_host:port:user:pass|account_name|login_url</code>
+      </p>
+      <form id="import-form" class="flex flex-col gap-3">
+        <textarea id="import-raw-data" rows="8" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500"></textarea>
+        <div class="flex items-center justify-end gap-3">
+          <button type="button" onclick="App.closeImportModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs">Hủy</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold">Bắt Đầu Nhập</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. PERMISSIONS ASSIGNMENT MODAL (ADMIN ONLY) -->
+  <div id="permissions-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+    <div class="glass-modal max-w-xl w-full p-6 rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+        <div>
+          <h3 class="text-base font-bold text-white">Phân Quyền Cho: <span id="perm-modal-username" class="text-cyan-400"></span></h3>
+          <p class="text-[11px] text-slate-400">Chọn các tài khoản mà người dùng này được phép tương tác</p>
+        </div>
+        <button onclick="App.closePermissionsModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+
+      <input type="hidden" id="perm-modal-user-id">
+      <div id="permissions-list" class="flex flex-col gap-2 overflow-y-auto flex-1 my-2 pr-1"></div>
+
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+        <button type="button" onclick="App.closePermissionsModal()" class="px-3 py-1.5 rounded bg-slate-800 text-slate-300 text-xs">Hủy</button>
+        <button type="button" onclick="App.savePermissions()" class="px-4 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold">Lưu Phân Quyền</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. ASSIGN PROVIDER PROXY MODAL -->
+  <div id="assign-proxy-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+    <div class="glass-modal max-w-md w-full p-6 rounded-2xl shadow-2xl flex flex-col gap-4 text-xs">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <span>📥 Gán Proxy Từ Bên Bán Vào Kênh</span>
+        </h3>
+        <button onclick="App.closeAssignProxyModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+
+      <div>
+        <label class="block font-semibold text-slate-300 mb-1">Proxy Sẽ Gán:</label>
+        <div id="assign-proxy-preview" class="p-2.5 rounded bg-slate-950 font-mono text-cyan-300 font-bold border border-slate-800 truncate">
+          --
+        </div>
+      </div>
+
+      <div>
+        <label class="block font-semibold text-slate-300 mb-1">Chọn Kênh / Tài Khoản Muốn Gán *</label>
+        <select id="assign-target-account" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-200"></select>
+      </div>
+
+      <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+        <button type="button" onclick="App.closeAssignProxyModal()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300">Hủy</button>
+        <button type="button" onclick="App.submitAssignProxy()" class="px-5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold shadow-md shadow-cyan-500/20">
+          Xác Nhận Gán
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. ASSET VIEWER & READER MODAL (.md / .txt / .png) -->
+  <div id="asset-viewer-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/85 backdrop-blur-md hidden">
+    <div class="glass-modal max-w-4xl w-full p-5 md:p-6 rounded-2xl shadow-2xl flex flex-col max-h-[92vh]">
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-3.5 border-b border-slate-800">
+        <div class="flex items-center gap-2.5 overflow-hidden">
+          <span id="viewer-type-icon" class="text-2xl">📄</span>
+          <div class="truncate">
+            <h3 class="text-base font-bold text-white truncate" id="viewer-title">Tên Kịch Bản / Tư Liệu</h3>
+            <div class="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+              <span id="viewer-filename" class="font-mono text-cyan-300">filename.md</span>
+              <span>•</span>
+              <span id="viewer-size">12.5 KB</span>
+              <span>•</span>
+              <span id="viewer-meta-extra" class="text-purple-300">450 từ</span>
+            </div>
+          </div>
+        </div>
+        <button onclick="App.closeAssetViewer()" class="text-slate-400 hover:text-white text-xl p-1">✕</button>
+      </div>
+
+      <!-- Mode Switcher Tabs (For .md & .txt) -->
+      <div id="viewer-text-tabs" class="flex items-center justify-between pt-3 pb-2">
+        <div class="flex items-center gap-1.5 p-1 rounded-lg bg-slate-900 border border-slate-800 text-xs">
+          <button id="btn-view-rendered" class="px-3 py-1 rounded bg-cyan-600 text-white font-semibold flex items-center gap-1" onclick="App.switchViewerMode('rendered')">
+            <span>📖</span>
+            <span id="lbl-rendered-mode">Đọc Kịch Bản (Rendered)</span>
+          </button>
+          <button id="btn-view-edit" class="px-3 py-1 rounded text-slate-400 hover:text-white font-semibold flex items-center gap-1" onclick="App.switchViewerMode('edit')">
+            <span>✏️</span>
+            <span>Chỉnh Sửa Trực Tiếp</span>
+          </button>
+        </div>
+
+        <div class="text-[11px] text-slate-500 font-mono" id="viewer-word-counter">
+          0 từ | 0 ký tự
+        </div>
+      </div>
+
+      <!-- Viewer Content Area -->
+      <div class="flex-1 overflow-y-auto my-2 rounded-xl bg-slate-950/70 border border-slate-800 p-4 relative" id="viewer-content-container">
+        <!-- 1. Rendered Markdown / Text View -->
+        <div id="viewer-rendered-body" class="markdown-body text-xs md:text-sm"></div>
+
+        <!-- 2. Text Editor View (For .md & .txt live editing) -->
+        <div id="viewer-editor-container" class="hidden flex flex-col h-full">
+          <textarea id="viewer-editor-textarea" class="w-full h-96 bg-slate-900 border border-slate-700 rounded-lg p-3.5 text-xs font-mono text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 resize-none leading-relaxed" placeholder="Soạn thảo nội dung kịch bản tại đây..."></textarea>
+        </div>
+
+        <!-- 3. Image Full View (For .png / .jpg) -->
+        <div id="viewer-image-container" class="hidden flex flex-col items-center justify-center p-2 min-h-[300px]">
+          <img id="viewer-image-preview" src="" alt="Thumbnail Preview" class="max-h-[65vh] max-w-full rounded-xl object-contain shadow-2xl border border-slate-800">
+        </div>
+      </div>
+
+      <!-- Footer Toolbar Actions -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800 text-xs">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="App.copyCurrentViewerContent()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 font-semibold flex items-center gap-1.5 border border-slate-700">
+            <span>📋</span>
+            <span>Sao Chép Nội Dung</span>
+          </button>
+          <button type="button" id="btn-save-edited-content" onclick="App.saveCurrentViewerEdits()" class="hidden px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 shadow-md shadow-emerald-500/20">
+            <span>💾</span>
+            <span>Lưu Thay Đổi Vào File</span>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="App.pushCurrentViewerToSchedule()" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 text-white font-semibold flex items-center gap-1.5 shadow-md shadow-pink-500/20">
+            <span>🎬</span>
+            <span>Đẩy Sang Lịch Đăng Video</span>
+          </button>
+          <button type="button" onclick="App.downloadCurrentViewerFile()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold flex items-center gap-1.5 border border-slate-700">
+            <span>📥</span>
+            <span>Tải File Gốc Về</span>
+          </button>
+          <button type="button" onclick="App.closeAssetViewer()" class="px-4 py-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white">
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. UPLOAD ASSET MODAL (.md / .txt / .png) -->
+  <div id="upload-asset-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+    <div class="glass-modal max-w-lg w-full p-6 rounded-2xl shadow-2xl flex flex-col gap-4 text-xs">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span>📁 Tải File Lên Kho Tư Liệu</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-mono">.MD .TXT .PNG</span>
+        </h3>
+        <button onclick="App.closeUploadAssetModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+
+      <form id="upload-asset-form" class="flex flex-col gap-3.5">
+        <!-- File Picker -->
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Chọn file từ máy tính * (.md, .txt, .png, .jpg)</label>
+          <div class="p-4 rounded-xl bg-slate-950 border border-dashed border-slate-700 hover:border-cyan-500/60 cursor-pointer flex flex-col items-center justify-center gap-1.5 text-center" onclick="document.getElementById('modal-asset-file-input').click()">
+            <input type="file" id="modal-asset-file-input" required accept=".md,.txt,.png,.jpg,.jpeg,.webp" class="hidden" onchange="App.handleModalFileSelect(event)">
+            <span class="text-2xl" id="modal-upload-icon">📄</span>
+            <span class="font-semibold text-slate-200 text-xs" id="modal-upload-filename">Nhấp vào đây để chọn file</span>
+            <span class="text-[10px] text-slate-500" id="modal-upload-filesize">Dung lượng tối đa 50MB</span>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Tên Gợi Nhớ / Tiêu Đề Tư Liệu *</label>
+          <input type="text" id="modal-asset-title" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200" placeholder="VD: Kịch bản video review phim #12">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Gán Vào Kênh (Tùy chọn)</label>
+            <select id="modal-asset-account" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200">
+              <option value="">-- Không gán --</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Nhãn / Tags (Phân loại)</label>
+            <input type="text" id="modal-asset-tags" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200" placeholder="kịch bản, thumbnail, seo">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+          <button type="button" onclick="App.closeUploadAssetModal()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300">Hủy</button>
+          <button type="submit" class="px-5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold shadow-md shadow-cyan-500/20">
+            Bắt Đầu Tải Lên
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/security.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

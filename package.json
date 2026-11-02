@@ -1,0 +1,39 @@
+{
+  "name": "accproxy",
+  "version": "1.0.0",
+  "description": "ACCproxy Sovereign — Multi-Platform Account, Proxy, 2FA & Video Asset Manager with RBAC",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node test/verify_core.js && node test/verify_assets.js"
+  },
+  "keywords": [
+    "proxy",
+    "2fa",
+    "totp",
+    "playwright",
+    "rbac",
+    "security"
+  ],
+  "author": "Antigravity & Dai Ca Tu",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "https-proxy-agent": "^7.0.6",
+    "jsonwebtoken": "^9.0.2",
+    "otpauth": "^9.3.6",
+    "playwright": "^1.50.1",
+    "proxy-chain": "^2.5.6",
+    "socks-proxy-agent": "^8.0.5",
+    "undici": "^6.21.1",
+    "uuid": "^11.1.0"
+  }
+}

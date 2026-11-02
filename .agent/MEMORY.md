@@ -1,0 +1,32 @@
+# BỘ NHỚ VĨNH CỬU CỦA ĐỆ GÁC CỔNG (.agent/MEMORY.md)
+
+## 1. Thông Tin Chỉ Huy Tối Thượng
+- **Chỉ huy & Đại Ca:** Đại Ca Tú (KazeLAB Directive).
+- **Danh xưng:** Gọi người dùng là "Đại Ca" (hoặc "Đại Ca Tú"), tự xưng là "đệ" (hoặc "tay súng gác cổng", "sát thủ cận vệ của Đại Ca").
+- **Quy tắc ngôn từ:** Chú thích tên gốc tiếng Anh sau từ lóng giang hồ `(Technical Term)`. Tếu táo, hài hước, bựa thô tục, nghĩa khí giang hồ thế giới ngầm, trung thành tuyệt đối 100%.
+
+## 2. Dự Án AccProxy Sovereign (Multi-Platform Account, Proxy & 2FA Manager)
+- **Công nghệ lõi:**
+  - Backend: Node.js, Express, better-sqlite3 (WAL mode, Foreign Keys ON), Playwright Chromium v1248, proxy-chain, otpauth, crypto AES-256-GCM, jsonwebtoken, bcryptjs, helmet, express-rate-limit.
+  - Frontend: Single Page Web App (Tailwind CSS, Alpine/Vanilla JS, Custom Cyber-Glass Theme).
+- **Hệ Thống Phân Quyền RBAC (Role-Based Access Control):**
+  - Super Admin: Toàn quyền quản trị tài khoản, tạo/khóa User, phân quyền chi tiết (`can_view`, `can_launch`, `can_reveal_password`), xem Audit Logs.
+  - User: Chỉ truy cập tài khoản được gán, lấy mã 2FA, mở browser profile độc lập.
+- **Tính Năng Bảo Mật & Động Cơ Gợi Ý:**
+  - Auto-Lock Session: Tự động khóa màn hình kính mờ sau 5 phút không hoạt động.
+  - Clipboard Wiper: Tự động xóa clipboard sau 15 giây khi copy password hoặc 2FA.
+  - Proxy IP Collision Alert: Phát hiện trùng lặp proxy giữa các tài khoản cùng platform chống checkpoint hàng loạt.
+  - Password & 2FA Health Audit: Đánh giá độ mạnh mật khẩu và cảnh báo thiếu 2FA.
+- **Vũ Khí Xây Kênh Mạng Xã Hội (Content Matrix & Daily Video Reminder):**
+  - Quản lý chỉ tiêu đăng bài hàng ngày (TikTok, YouTube Shorts, Reels, X).
+  - Tự động đếm ngược giờ đăng vàng (Golden Hours) và báo động quá giờ (Overdue alert).
+  - 1-Click mở thẳng trang Studio Upload Video của nền tảng với đúng Profile & Proxy.
+  - Soạn sẵn Caption & Hashtag chuẩn SEO với 1 nút bấm sao chép an toàn.
+  - Báo động đỏ Telegram Bot API: Gửi thông báo nhắc up bài tự động mỗi 60s hoặc khi bấm chuông báo.
+  - Piik Live Screen Stream: Quan sát trực tiếp màn hình trình duyệt của các kênh đang chạy trên máy chủ qua web.
+  - Máy rửa mã Video & Hash MD5 Sanitizer: Tẩy EXIF, đổi MD5 trong 0.05s lách quét trùng lặp video.
+  - Kho Hook 3 Giây & Kịch bản triệu view: 13+ mẫu câu giật gân phân theo từng ngách content.
+  - Radar Định Vị Proxy & Lá Cờ Quốc Gia (Flag Badge): Tự động trích xuất mã nước ISO (VN, US, SG, JP...) và render lá cờ thu nhỏ 16x12px kèm mã quốc gia cạnh tên kênh và proxy.
+  - Tích hợp API Key Web Bán Proxy (Proxy Seller Hub): Hỗ trợ TMProxy, TinProxy, Webshare, ProxyNo1, Custom API, kiểm tra tình trạng sống/chết của Key bên bán, đếm ngược đổi IP và 1-click gán proxy vào kênh.
+- **Hỗ trợ Đa Người Dùng Từ Xa:**
+  - Server lắng nghe `0.0.0.0:3000` phục vụ 2 - 6 người cùng truy cập đồng bộ qua mạng LAN hoặc Cloudflare Tunnel / VPN.

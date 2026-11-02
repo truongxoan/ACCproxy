@@ -41,6 +41,8 @@
   - Process Manager: PM2 v7.1.1 Daemon quản lý tiến trình `accproxy` (PID 29730), tự hồi sinh khi crash.
   - Tunnel Ready: Cài sẵn `cloudflared` v2026.10.7 arm64 tại `$PREFIX/bin/cloudflared`.
   - Địa chỉ truy cập:
+    + Tên Miền Công Khai Toàn Cầu (Cloudflare Tunnel SSL): `https://acc.txlab.io.vn` & `https://txlab.io.vn`
     + Mạng Wi-Fi: `http://192.168.0.102:3000`
     + Máy tính nối USB: `http://localhost:3000` (ADB Port Forward tcp:3000)
     + Tài khoản mặc định: `admin` / `Admin@123456`
+    + Tunnel ID: `f6a0c9a1-9be0-4835-b6a3-d2fe92979b23` (txlab-server chạy ngầm PM2 id 1)

@@ -35,3 +35,12 @@
   - Branch: `main` (clean 100%, bảo mật .env/data/profiles qua .gitignore)
 - **Hỗ trợ Đa Người Dùng Từ Xa:**
   - Server lắng nghe `0.0.0.0:3000` phục vụ 2 - 6 người cùng truy cập đồng bộ qua mạng LAN hoặc Cloudflare Tunnel / VPN.
+- **Triển Khai Thành Công Pocket Home Server (Redmi K50G - ingres - Android 14 ARM64):**
+  - Môi trường: Termux ARM64, Node.js v24.22.2 LTS, NPM v12.2.1, Python 3.14, Clang/Make C++23 Native Builder.
+  - Native Addon: `better-sqlite3.node` (2.05MB) được biên dịch trực tiếp trên chip Snapdragon 8 Gen 1.
+  - Process Manager: PM2 v7.1.1 Daemon quản lý tiến trình `accproxy` (PID 29730), tự hồi sinh khi crash.
+  - Tunnel Ready: Cài sẵn `cloudflared` v2026.10.7 arm64 tại `$PREFIX/bin/cloudflared`.
+  - Địa chỉ truy cập:
+    + Mạng Wi-Fi: `http://192.168.0.102:3000`
+    + Máy tính nối USB: `http://localhost:3000` (ADB Port Forward tcp:3000)
+    + Tài khoản mặc định: `admin` / `Admin@123456`

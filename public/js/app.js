@@ -33,6 +33,36 @@ const App = {
     }
   },
 
+  switchTabProgrammatically(tabId, toolCategory = null) {
+    const targetBtn = document.querySelector(`.nav-tab-btn[data-tab="${tabId}"]`);
+    if (targetBtn) {
+      targetBtn.click();
+    }
+    if (toolCategory && tabId === 'tab-tools') {
+      setTimeout(() => this.filterToolCategory(toolCategory), 50);
+    }
+  },
+
+  filterToolCategory(category) {
+    document.querySelectorAll('.tool-cat-btn').forEach((btn) => {
+      if (btn.dataset.tcat === category) {
+        btn.classList.add('active', 'bg-cyan-600', 'text-white', 'shadow-md', 'shadow-cyan-500/20');
+        btn.classList.remove('bg-slate-800/90', 'text-slate-300');
+      } else {
+        btn.classList.remove('active', 'bg-cyan-600', 'text-white', 'shadow-md', 'shadow-cyan-500/20');
+        btn.classList.add('bg-slate-800/90', 'text-slate-300');
+      }
+    });
+
+    document.querySelectorAll('.tool-section-group').forEach((sec) => {
+      if (category === 'all' || sec.dataset.toolGroup === category) {
+        sec.classList.remove('hidden');
+      } else {
+        sec.classList.add('hidden');
+      }
+    });
+  },
+
   bindEvents() {
     // Chuyển đổi Tab điều hướng chính
     document.querySelectorAll('.nav-tab-btn').forEach((btn) => {
@@ -261,12 +291,12 @@ const App = {
 
     if (!data.alerts || data.alerts.length === 0) {
       banner.innerHTML = `
-        <div class="flex items-center justify-between p-3 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs">
+        <div class="flex items-center justify-between px-3.5 py-2 rounded-xl bg-emerald-950/35 border border-emerald-500/25 text-emerald-300 text-xs">
           <div class="flex items-center gap-2">
             <span>🛡️</span>
-            <span>Hệ thống an ninh tối đa! Không phát hiện trùng lặp Proxy hay mật khẩu nguy hiểm. (Điểm: ${data.healthScore}/100)</span>
+            <span>Hệ thống an ninh tối đa! Không phát hiện trùng lặp Proxy hay mật khẩu yếu.</span>
           </div>
-          <span class="font-mono font-bold bg-emerald-500/20 px-2 py-0.5 rounded">100% SECURE</span>
+          <span class="font-mono font-bold bg-emerald-500/20 px-2 py-0.5 rounded text-[11px]">Điểm: ${data.healthScore}/100 • SECURE</span>
         </div>
       `;
       return;
@@ -277,32 +307,34 @@ const App = {
     const missing2FACount = data.summary.missing2FACount || 0;
 
     banner.innerHTML = `
-      <div class="p-4 rounded-xl bg-gradient-to-r from-amber-950/40 via-rose-950/30 to-slate-900 border border-amber-500/30 shadow-lg text-xs">
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-2">
-            <span class="text-base">⚠️</span>
-            <span class="font-bold text-amber-200">BỘ GỢI Ý & PHÁT HIỆN RỦI RO HỆ THỐNG</span>
-            <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">Điểm an toàn: ${data.healthScore}/100</span>
-          </div>
-          <span class="text-slate-400">Phát hiện ${data.alerts.length} cảnh báo</span>
+      <div class="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-950/40 via-rose-950/25 to-slate-900/80 border border-amber-500/30 shadow-md text-xs flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-sm">⚠️</span>
+          <span class="font-bold text-amber-200">RỦI RO AN NINH:</span>
+          <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono text-[11px]">Điểm: ${data.healthScore}/100</span>
         </div>
-        <div class="flex flex-wrap gap-2 mt-2">
+        <div class="flex flex-wrap items-center gap-1.5">
           ${collisionCount > 0 ? `
-            <button class="px-2.5 py-1 rounded bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-500/40 flex items-center gap-1.5 transition-all" onclick="App.filterByAlert('collision')">
+            <button class="px-2 py-1 rounded-lg bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-500/40 flex items-center gap-1 text-[11px] transition-all" onclick="App.filterByAlert('collision')">
               <span>🚨</span>
-              <span>${collisionCount} cụm trùng IP Proxy (Nguy cơ Checkpoint)</span>
+              <span>${collisionCount} trùng IP Proxy</span>
             </button>
           ` : ''}
           ${weakCount > 0 ? `
-            <button class="px-2.5 py-1 rounded bg-amber-900/60 hover:bg-amber-800 text-amber-200 border border-amber-500/40 flex items-center gap-1.5 transition-all" onclick="App.filterByAlert('weak_password')">
+            <button class="px-2 py-1 rounded-lg bg-amber-900/60 hover:bg-amber-800 text-amber-200 border border-amber-500/40 flex items-center gap-1 text-[11px] transition-all" onclick="App.filterByAlert('weak_password')">
               <span>🔑</span>
-              <span>${weakCount} tài khoản mật khẩu yếu</span>
+              <span>${weakCount} mật khẩu yếu</span>
             </button>
           ` : ''}
           ${missing2FACount > 0 ? `
-            <button class="px-2.5 py-1 rounded bg-cyan-900/60 hover:bg-cyan-800 text-cyan-200 border border-cyan-500/40 flex items-center gap-1.5 transition-all" onclick="App.filterByAlert('missing_2fa')">
+            <button class="px-2 py-1 rounded-lg bg-cyan-900/60 hover:bg-cyan-800 text-cyan-200 border border-cyan-500/40 flex items-center gap-1 text-[11px] transition-all" onclick="App.filterByAlert('missing_2fa')">
               <span>⏱️</span>
-              <span>${missing2FACount} tài khoản chưa bật 2FA</span>
+              <span>${missing2FACount} chưa bật 2FA</span>
+            </button>
+          ` : ''}
+          ${this.activeAlertFilter ? `
+            <button class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600/40 text-[11px] transition-all" onclick="App.activeAlertFilter = null; App.applyFilters();">
+              ✕ Bỏ lọc
             </button>
           ` : ''}
         </div>
@@ -348,7 +380,9 @@ const App = {
   renderTable() {
     const tbody = document.getElementById('accounts-tbody');
     const countBadge = document.getElementById('accounts-count');
+    const kpiTotal = document.getElementById('kpi-total-accounts');
     if (countBadge) countBadge.innerText = `${this.filteredAccounts.length} / ${this.accounts.length}`;
+    if (kpiTotal) kpiTotal.innerText = this.accounts.length;
 
     if (!tbody) return;
 
@@ -974,7 +1008,9 @@ const App = {
   renderScheduleBadge() {
     const badge = document.getElementById('schedules-badge');
     const headerBadge = document.getElementById('header-sched-badge');
+    const kpiSched = document.getElementById('kpi-pending-schedules');
     const pendingCount = this.schedules.filter(s => s.status === 'pending').length;
+    if (kpiSched) kpiSched.innerText = pendingCount;
 
     if (badge) {
       badge.innerText = pendingCount;

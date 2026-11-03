@@ -37,184 +37,250 @@
   <canvas id="ambient-canvas" class="fixed inset-0 pointer-events-none z-20"></canvas>
 
   <!-- ==================== HEADER BAR ==================== -->
-  <header class="glass-header sticky top-0 z-40 px-3 md:px-6 py-2.5 flex flex-col gap-2.5 border-b border-slate-800/80">
-    <!-- Row 1: Brand & Right Actions -->
-    <div class="flex items-center justify-between gap-3">
-      <!-- Left: Brand Logo & Title -->
-      <div class="flex items-center gap-2.5 min-w-0">
-        <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-teal-500 to-emerald-400 flex items-center justify-center font-black text-slate-950 text-xl md:text-2xl shadow-lg shadow-cyan-500/20 shrink-0">
-          ⚡
-        </div>
-        <div class="min-w-0">
-          <h1 class="text-sm md:text-base font-extrabold tracking-tight text-white flex items-center gap-2 truncate">
-            <span>AccProxy Sovereign</span>
-            <span class="text-[9px] md:text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 font-mono font-semibold shrink-0">v16.2 APEX</span>
-          </h1>
-          <p class="hidden sm:block text-[11px] text-slate-400 truncate">Account & Proxy Manager • Content Matrix • Piik Live Stream</p>
-        </div>
-      </div>
-
-      <!-- Right Controls: Thermal HUD, Backup, Refresh & Profile -->
-      <div class="flex items-center gap-2 shrink-0">
-        <!-- Hardware Thermal HUD Pill -->
-        <div id="header-hardware-hud" onclick="App.openHardwareModal()" class="cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/50 text-[11px] font-mono transition-all" title="Xem tình trạng nhiệt độ & phần cứng Redmi K50G">
-          <span class="flex items-center gap-1">
-            <span>🌡️</span>
-            <span id="hud-temp-val" class="font-bold text-emerald-400">--°C</span>
-          </span>
-          <span class="hidden md:inline text-slate-600">|</span>
-          <span class="hidden md:flex items-center gap-1">
-            <span>🔋</span>
-            <span id="hud-bat-val" class="text-slate-300">--%</span>
-          </span>
-        </div>
-
-        <!-- 5D Atmospheric FX Switcher Pill -->
-        <div class="relative">
-          <button id="btn-ambient-toggle" onclick="AmbientEngine.toggleMenu()" class="px-2 md:px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-purple-900/80 via-indigo-900/80 to-slate-900/90 hover:from-purple-800 hover:to-indigo-800 border border-purple-500/40 hover:border-purple-400 text-purple-200 text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-purple-500/20 transition-all cursor-pointer" title="Khí quyển 5D: Sấm sét, Pháo hoa, Hoa đào, Tuyết, Mưa">
-            <span id="ambient-current-icon" class="text-sm">⚡</span>
-            <span class="hidden xl:inline text-[11px]" id="ambient-current-label">5D: Sấm Sét</span>
-            <span class="text-[9px] text-purple-400">▾</span>
-          </button>
-
-          <!-- Ambient Dropdown Menu -->
-          <div id="ambient-menu" class="hidden absolute right-0 mt-2 w-48 rounded-xl bg-slate-950/95 backdrop-blur-2xl border border-purple-500/30 shadow-2xl p-1.5 z-50 flex flex-col gap-1 text-xs">
-            <div class="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
-              ✨ Khí Quyển 5D Apex
-            </div>
-            <button onclick="AmbientEngine.setMode('lightning')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-purple-950/60 hover:text-purple-300 text-slate-200 text-left transition-colors" data-mode="lightning">
-              <span>⚡</span>
-              <span class="flex-1 font-semibold">Sấm Sét 5D</span>
-            </button>
-            <button onclick="AmbientEngine.setMode('fireworks')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-950/60 hover:text-amber-300 text-slate-200 text-left transition-colors" data-mode="fireworks">
-              <span>🎆</span>
-              <span class="flex-1 font-semibold">Pháo Hoa Rực Rỡ</span>
-            </button>
-            <button onclick="AmbientEngine.setMode('sakura')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-pink-950/60 hover:text-pink-300 text-slate-200 text-left transition-colors" data-mode="sakura">
-              <span>🌸</span>
-              <span class="flex-1 font-semibold">Hoa Đào Rơi</span>
-            </button>
-            <button onclick="AmbientEngine.setMode('snow')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-cyan-950/60 hover:text-cyan-300 text-slate-200 text-left transition-colors" data-mode="snow">
-              <span>❄️</span>
-              <span class="flex-1 font-semibold">Tuyết Rơi Mùa Đông</span>
-            </button>
-            <button onclick="AmbientEngine.setMode('rain')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-blue-950/60 hover:text-blue-300 text-slate-200 text-left transition-colors" data-mode="rain">
-              <span>🌧️</span>
-              <span class="flex-1 font-semibold">Mưa Rơi Cyberpunk</span>
-            </button>
-            <div class="border-t border-slate-800/80 my-0.5"></div>
-            <button onclick="AmbientEngine.setMode('off')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-rose-950/50 hover:text-rose-300 text-slate-400 text-left transition-colors" data-mode="off">
-              <span>🚫</span>
-              <span class="flex-1">Tắt Hiệu Ứng</span>
-            </button>
+  <header class="glass-header sticky top-0 z-40 px-3 md:px-6 py-2.5 border-b border-slate-800/80">
+    <div class="max-w-7xl w-full mx-auto flex flex-col gap-2.5">
+      <!-- Row 1: Brand & Right Actions -->
+      <div class="flex items-center justify-between gap-3">
+        <!-- Left: Brand Logo & Title -->
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-teal-500 to-emerald-400 flex items-center justify-center font-black text-slate-950 text-xl md:text-2xl shadow-lg shadow-cyan-500/20 shrink-0">
+            ⚡
+          </div>
+          <div class="min-w-0">
+            <h1 class="text-sm md:text-base font-extrabold tracking-tight text-white flex items-center gap-2 truncate">
+              <span>AccProxy Sovereign</span>
+              <span class="text-[9px] md:text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-mono font-semibold shrink-0">v16.2 APEX</span>
+            </h1>
+            <p class="hidden sm:block text-[11px] text-slate-400 truncate">Trung Tâm Chỉ Huy Đa Kênh • Proxy • AI Content • Pocket Server</p>
           </div>
         </div>
 
-        <!-- Backup Telegram Pill -->
-        <button id="btn-backup-telegram" onclick="App.openBackupModal()" class="px-2.5 md:px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition-all border border-blue-400/30" title="Sao lưu Database SQLite & gửi trực tiếp về Telegram">
-          <span>💾</span>
-          <span class="hidden sm:inline">Backup</span>
-        </button>
+        <!-- Right Controls: Thermal HUD, 5D FX, Backup, Refresh & Profile -->
+        <div class="flex items-center gap-2 shrink-0">
+          <!-- Hardware Thermal HUD Pill -->
+          <div id="header-hardware-hud" onclick="App.openHardwareModal()" class="cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/50 text-[11px] font-mono transition-all" title="Xem tình trạng nhiệt độ & phần cứng Redmi K50G">
+            <span class="flex items-center gap-1">
+              <span>🌡️</span>
+              <span id="hud-temp-val" class="font-bold text-emerald-400">--°C</span>
+            </span>
+            <span class="hidden md:inline text-slate-600">|</span>
+            <span class="hidden md:flex items-center gap-1">
+              <span>🔋</span>
+              <span id="hud-bat-val" class="text-slate-300">--%</span>
+            </span>
+          </div>
 
-        <!-- Refresh Button -->
-        <button id="btn-refresh" class="p-1.5 md:p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 transition-colors" title="Đồng bộ toàn hệ thống">
-          🔄
-        </button>
+          <!-- 5D Atmospheric FX Switcher Pill -->
+          <div class="relative">
+            <button id="btn-ambient-toggle" onclick="AmbientEngine.toggleMenu()" class="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-900/80 via-indigo-900/80 to-slate-900/90 hover:from-purple-800 hover:to-indigo-800 border border-purple-500/40 hover:border-purple-400 text-purple-200 text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-purple-500/20 transition-all cursor-pointer" title="Khí quyển 5D: Sấm sét, Pháo hoa, Hoa đào, Tuyết, Mưa">
+              <span id="ambient-current-icon" class="text-sm">⚡</span>
+              <span class="hidden xl:inline text-[11px]" id="ambient-current-label">5D: Sấm Sét</span>
+              <span class="text-[9px] text-purple-400">▾</span>
+            </button>
 
-        <!-- User Profile Badge -->
-        <div id="user-profile-badge" class="pl-2 border-l border-slate-800 flex items-center gap-1.5"></div>
+            <!-- Ambient Dropdown Menu -->
+            <div id="ambient-menu" class="hidden absolute right-0 mt-2 w-48 rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-purple-500/30 shadow-2xl p-1.5 z-50 flex flex-col gap-1 text-xs">
+              <div class="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                ✨ Khí Quyển 5D Apex
+              </div>
+              <button onclick="AmbientEngine.setMode('lightning')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-purple-950/60 hover:text-purple-300 text-slate-200 text-left transition-colors" data-mode="lightning">
+                <span>⚡</span>
+                <span class="flex-1 font-semibold">Sấm Sét 5D</span>
+              </button>
+              <button onclick="AmbientEngine.setMode('fireworks')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-950/60 hover:text-amber-300 text-slate-200 text-left transition-colors" data-mode="fireworks">
+                <span>🎆</span>
+                <span class="flex-1 font-semibold">Pháo Hoa Rực Rỡ</span>
+              </button>
+              <button onclick="AmbientEngine.setMode('sakura')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-pink-950/60 hover:text-pink-300 text-slate-200 text-left transition-colors" data-mode="sakura">
+                <span>🌸</span>
+                <span class="flex-1 font-semibold">Hoa Đào Rơi</span>
+              </button>
+              <button onclick="AmbientEngine.setMode('snow')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-cyan-950/60 hover:text-cyan-300 text-slate-200 text-left transition-colors" data-mode="snow">
+                <span>❄️</span>
+                <span class="flex-1 font-semibold">Tuyết Rơi Mùa Đông</span>
+              </button>
+              <button onclick="AmbientEngine.setMode('rain')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-blue-950/60 hover:text-blue-300 text-slate-200 text-left transition-colors" data-mode="rain">
+                <span>🌧️</span>
+                <span class="flex-1 font-semibold">Mưa Rơi Cyberpunk</span>
+              </button>
+              <div class="border-t border-slate-800/80 my-0.5"></div>
+              <button onclick="AmbientEngine.setMode('off')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-rose-950/50 hover:text-rose-300 text-slate-400 text-left transition-colors" data-mode="off">
+                <span>🚫</span>
+                <span class="flex-1">Tắt Hiệu Ứng</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Backup Telegram Pill -->
+          <button id="btn-backup-telegram" onclick="App.openBackupModal()" class="px-2.5 md:px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition-all border border-blue-400/30" title="Sao lưu Database SQLite & gửi trực tiếp về Telegram">
+            <span>💾</span>
+            <span class="hidden sm:inline">Backup</span>
+          </button>
+
+          <!-- Refresh Button -->
+          <button id="btn-refresh" class="p-1.5 md:p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 transition-colors" title="Đồng bộ toàn hệ thống">
+            🔄
+          </button>
+
+          <!-- User Profile Badge -->
+          <div id="user-profile-badge" class="pl-2 border-l border-slate-800 flex items-center gap-1.5"></div>
+        </div>
       </div>
-    </div>
 
-    <!-- Row 2: Responsive Navigation Tab Pills (Never hidden! Smooth horizontal scroll on mobile, flex on desktop) -->
-    <nav class="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900/90 border border-slate-800/90 overflow-x-auto no-scrollbar whitespace-nowrap scroll-smooth">
-      <button class="nav-tab-btn active px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-accounts">
-        <span>🛡️</span>
-        <span>Tài Khoản & Proxy</span>
-      </button>
-      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-schedules">
-        <span>🎬</span>
-        <span>Lịch Up Video</span>
-        <span id="header-sched-badge" class="px-1.5 py-0.2 rounded-full bg-pink-500 text-white text-[10px] font-mono">0</span>
-      </button>
-      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-assets">
-        <span>📁</span>
-        <span>Kho Kịch Bản & Ảnh</span>
-        <span id="header-assets-badge" class="px-1.5 py-0.2 rounded-full bg-cyan-600 text-white text-[10px] font-mono">0</span>
-      </button>
-      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-piik">
-        <span>📺</span>
-        <span>Piik Live Stream</span>
-        <span id="header-stream-badge" class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-      </button>
-      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-tools">
-        <span>🛠️</span>
-        <span>Vũ Khí Xây Kênh</span>
-      </button>
-      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-knowledge">
-        <span>🧠</span>
-        <span>Tri Thức AI Nhóm</span>
-        <span id="header-knowledge-badge" class="px-1.5 py-0.2 rounded-full bg-violet-600 text-white text-[10px] font-mono">360+</span>
-      </button>
-      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 admin-only shrink-0" data-tab="tab-admin">
-        <span>👥</span>
-        <span>Quản Trị & Logs</span>
-      </button>
-    </nav>
+      <!-- Row 2: Responsive Segmented Navigation Tab Bar -->
+      <nav class="flex items-center md:justify-between gap-1.5 p-1 rounded-2xl bg-slate-900/90 border border-slate-800/90 overflow-x-auto no-scrollbar whitespace-nowrap scroll-smooth">
+        <button class="nav-tab-btn active flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-accounts">
+          <span>🛡️</span>
+          <span>Kênh & Proxy</span>
+        </button>
+        <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-schedules">
+          <span>🎬</span>
+          <span>Lịch Up Video</span>
+          <span id="header-sched-badge" class="px-1.5 py-0.2 rounded-full bg-pink-500 text-white text-[10px] font-mono">0</span>
+        </button>
+        <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-assets">
+          <span>📁</span>
+          <span>Kho Kịch Bản</span>
+          <span id="header-assets-badge" class="px-1.5 py-0.2 rounded-full bg-cyan-600 text-white text-[10px] font-mono">0</span>
+        </button>
+        <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-piik">
+          <span>📺</span>
+          <span>Live Stream</span>
+          <span id="header-stream-badge" class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        </button>
+        <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-tools">
+          <span>🛠️</span>
+          <span>Trạm Vũ Khí</span>
+        </button>
+        <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-knowledge">
+          <span>🧠</span>
+          <span>Tri Thức AI</span>
+          <span id="header-knowledge-badge" class="px-1.5 py-0.2 rounded-full bg-violet-600 text-white text-[10px] font-mono">360+</span>
+        </button>
+        <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 admin-only shrink-0" data-tab="tab-admin">
+          <span>👥</span>
+          <span>Quản Trị</span>
+        </button>
+      </nav>
+    </div>
   </header>
 
   <!-- ==================== MAIN CONTENT CONTAINER ==================== -->
-  <main id="main-app" class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col gap-5 transition-all">
-
-    <!-- SUGGESTIONS & RADAR CẢNH BÁO AN NINH -->
-    <section id="suggestions-banner"></section>
+  <main id="main-app" class="flex-1 max-w-7xl w-full mx-auto p-3.5 md:p-6 flex flex-col gap-4 transition-all">
 
     <!-- ==================== TAB 1: QUẢN LÝ TÀI KHOẢN & PROXY ==================== -->
     <div id="tab-accounts" class="tab-pane flex flex-col gap-4">
+
+      <!-- BENTO QUICK COMMAND & KPI STRIP (4 Ô TIỆN ÍCH NHANH) -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- KPI 1: Tổng Kênh -->
+        <div class="glass-panel p-3.5 rounded-2xl border border-cyan-500/20 flex items-center justify-between gap-2">
+          <div>
+            <div class="text-[11px] text-slate-400 font-medium">Tổng Kênh & Tài Khoản</div>
+            <div class="text-xl font-black text-white font-mono mt-0.5" id="kpi-total-accounts">0</div>
+            <button onclick="document.getElementById('btn-add-account').click()" class="text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold mt-1 flex items-center gap-1">
+              <span>+ Thêm kênh mới</span>
+              <span>→</span>
+            </button>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-xl shrink-0">
+            🛡️
+          </div>
+        </div>
+
+        <!-- KPI 2: Lịch Đăng Video -->
+        <div class="glass-panel p-3.5 rounded-2xl border border-pink-500/20 flex items-center justify-between gap-2">
+          <div>
+            <div class="text-[11px] text-slate-400 font-medium">Video Chờ Đăng Hôm Nay</div>
+            <div class="text-xl font-black text-pink-400 font-mono mt-0.5" id="kpi-pending-schedules">0</div>
+            <button onclick="App.switchTabProgrammatically('tab-schedules')" class="text-[11px] text-pink-400 hover:text-pink-300 font-semibold mt-1 flex items-center gap-1">
+              <span>Mở lịch đăng bài</span>
+              <span>→</span>
+            </button>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-pink-500/15 border border-pink-500/30 flex items-center justify-center text-xl shrink-0">
+            🎬
+          </div>
+        </div>
+
+        <!-- KPI 3: Xưởng Video & AI Nhanh -->
+        <div class="glass-panel p-3.5 rounded-2xl border border-purple-500/20 flex items-center justify-between gap-2">
+          <div>
+            <div class="text-[11px] text-slate-400 font-medium">Xưởng AI & Tải Video Sạch</div>
+            <div class="text-xs font-bold text-purple-300 mt-1">Không Logo • Đổi MD5</div>
+            <button onclick="App.switchTabProgrammatically('tab-tools', 'video')" class="text-[11px] text-purple-400 hover:text-purple-300 font-semibold mt-1.5 flex items-center gap-1">
+              <span>Mở trạm vũ khí</span>
+              <span>→</span>
+            </button>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-xl shrink-0">
+            🤖
+          </div>
+        </div>
+
+        <!-- KPI 4: Kho Tri Thức AI 360+ -->
+        <div class="glass-panel p-3.5 rounded-2xl border border-violet-500/20 flex items-center justify-between gap-2">
+          <div>
+            <div class="text-[11px] text-slate-400 font-medium">Kho Tri Thức AI Nhóm</div>
+            <div class="text-xl font-black text-violet-300 font-mono mt-0.5">360+ <span class="text-xs font-normal text-slate-400">Repos</span></div>
+            <button onclick="App.switchTabProgrammatically('tab-knowledge')" class="text-[11px] text-violet-400 hover:text-violet-300 font-semibold mt-1 flex items-center gap-1">
+              <span>Khám phá ngay</span>
+              <span>→</span>
+            </button>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-violet-500/15 border border-violet-500/30 flex items-center justify-center text-xl shrink-0">
+            🧠
+          </div>
+        </div>
+      </div>
+
+      <!-- SUGGESTIONS & RADAR CẢNH BÁO AN NINH (GỌN GÀNG TRONG TAB KÊNH) -->
+      <section id="suggestions-banner"></section>
+
       <!-- Toolbar & Platform Filter -->
-      <section class="glass-panel p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <section class="glass-panel p-3.5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-1.5">
-          <button class="filter-btn active-filter px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 text-white transition-all flex items-center gap-1" data-platform="all">
+          <button class="filter-btn active-filter px-3 py-1.5 rounded-xl text-xs font-semibold bg-cyan-600 text-white transition-all flex items-center gap-1" data-platform="all">
             <span>Tất Cả</span>
             <span id="accounts-count" class="px-1.5 py-0.2 rounded-full bg-black/40 text-[10px] font-mono">0 / 0</span>
           </button>
-          <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" data-platform="facebook">
+          <button class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" data-platform="facebook">
             Facebook
           </button>
-          <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" data-platform="google">
+          <button class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" data-platform="google">
             Google / YouTube
           </button>
-          <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" data-platform="tiktok">
+          <button class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" data-platform="tiktok">
             TikTok
           </button>
-          <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" data-platform="x">
+          <button class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" data-platform="x">
             X (Twitter)
           </button>
-          <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" data-platform="custom">
+          <button class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" data-platform="custom">
             Khác
           </button>
         </div>
 
-        <div class="flex items-center gap-2.5">
-          <div class="relative flex-1 md:w-60">
-            <input type="text" id="search-input" placeholder="Tìm theo tên, proxy, email..." class="w-full bg-slate-900/90 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors">
+        <div class="flex items-center gap-2">
+          <div class="relative flex-1 md:w-64">
+            <input type="text" id="search-input" placeholder="Tìm theo tên, proxy, email..." class="w-full bg-slate-900/90 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors">
             <span class="absolute left-2.5 top-2 text-xs text-slate-500">🔍</span>
           </div>
 
-          <button id="btn-import-accounts" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+          <button id="btn-import-accounts" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors">
             <span>📥</span>
-            <span>Import</span>
+            <span class="hidden sm:inline">Import</span>
           </button>
 
-          <button id="btn-add-account" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-cyan-500/20 transition-all">
+          <button id="btn-add-account" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-cyan-500/20 transition-all">
             <span>+</span>
-            <span>Thêm Kênh / Acc</span>
+            <span>Thêm Kênh</span>
           </button>
         </div>
       </section>
 
       <!-- Accounts Table -->
-      <section class="glass-panel rounded-xl overflow-hidden shadow-2xl flex-1 flex flex-col">
+      <section class="glass-panel rounded-2xl overflow-hidden shadow-2xl flex-1 flex flex-col">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
@@ -316,452 +382,493 @@
     </div>
 
     <!-- ==================== TAB 4: TRẠM VŨ KHÍ XÂY KÊNH (CONTENT SUITE) ==================== -->
-    <div id="tab-tools" class="tab-pane hidden flex flex-col gap-5">
+    <div id="tab-tools" class="tab-pane hidden flex flex-col gap-4">
 
-      <!-- VŨ KHÍ MỚI: TRẠM KẾT NỐI API WEB BÁN PROXY (PROXY SELLER HUB) -->
-      <div class="glass-panel p-5 rounded-xl flex flex-col gap-4 border-amber-500/20">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-800">
-          <div class="flex items-center gap-2.5">
-            <span class="text-2xl">🔌</span>
-            <div>
-              <h3 class="text-base font-bold text-amber-300 flex items-center gap-2">
-                <span>Tích Hợp API Key Của Web Bán Proxy (Proxy Seller Hub)</span>
-                <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">SELLER API</span>
-              </h3>
-              <p class="text-xs text-slate-400 mt-0.5">Check trực tiếp trạng thái Key còn hạn hay chết, IP hiện tại, cờ quốc gia và tự động gán vào kênh</p>
-            </div>
+      <!-- SUB-NAVIGATION FILTER BAR CHO TRẠM VŨ KHÍ -->
+      <div class="glass-panel p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-cyan-500/20">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-lg shrink-0">
+            🛠️
           </div>
-          <button onclick="App.openAddProviderForm()" class="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-slate-950 text-xs font-bold shadow-md shadow-amber-500/20 flex items-center gap-1.5">
-            <span>+</span>
-            <span>Thêm API Key Mới</span>
+          <div>
+            <h2 class="text-sm font-extrabold text-white">Trung Tâm Vũ Khí Đa Năng (All-in-One Suite)</h2>
+            <p class="text-[11px] text-slate-400">Chọn phân khu bên phải để lọc nhanh công cụ hoặc xem toàn bộ trên Bento Grid</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-1.5" id="tools-cat-bar">
+          <button type="button" onclick="App.filterToolCategory('all')" class="tool-cat-btn active px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-600 text-white shadow-md shadow-cyan-500/20 transition-all" data-tcat="all">
+            🔥 Tất Cả (9)
+          </button>
+          <button type="button" onclick="App.filterToolCategory('video')" class="tool-cat-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/90 hover:bg-slate-700 text-slate-300 transition-all" data-tcat="video">
+            🎬 Video & AI (4)
+          </button>
+          <button type="button" onclick="App.filterToolCategory('proxy')" class="tool-cat-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/90 hover:bg-slate-700 text-slate-300 transition-all" data-tcat="proxy">
+            🌐 Mạng & Proxy (2)
+          </button>
+          <button type="button" onclick="App.filterToolCategory('system')" class="tool-cat-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/90 hover:bg-slate-700 text-slate-300 transition-all" data-tcat="system">
+            🛡️ Máy Chủ & Backup (3)
           </button>
         </div>
+      </div>
 
-        <!-- Form Nhập & Kiểm Tra API Key Bên Bán -->
-        <div id="provider-input-panel" class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col gap-3 text-xs">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <!-- ==================== PHÂN KHU 1: VIDEO & AI CONTENT (4 VŨ KHÍ) ==================== -->
+      <div class="tool-section-group flex flex-col gap-4" data-tool-group="video">
+        <!-- Row 1A: Cào Video Không Logo & Máy Rửa Video MD5 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- VŨ KHÍ 6: CÀO VIDEO SẠCH KHÔNG LOGO -->
+          <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between gap-3 border-emerald-500/20 text-xs">
             <div>
-              <label class="block font-semibold text-slate-300 mb-1">Chọn Nhà Cung Cấp / Web Bán Proxy *</label>
-              <select id="prov-type" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200" onchange="App.handleProviderTypeChange()">
-                <option value="proxyv6">ProxyV6 (proxyv6.net - Key Xoay IPv6/IPv4)</option>
-                <option value="tmproxy">TMProxy (tmproxy.com - IP Việt Nam)</option>
-                <option value="tinproxy">TinProxy (tinproxy.com - Proxy Xoay)</option>
-                <option value="webshare">Webshare.io (Quốc Tế / Mỹ / Châu Âu)</option>
-                <option value="proxyno1">ProxyNo1 (proxyno1.com)</option>
-                <option value="custom">Web Bán Proxy Khác (Custom API Endpoint)</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">Tên Gợi Nhớ Gói Proxy *</label>
-              <input type="text" id="prov-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200" placeholder="VD: TMProxy Xoay 20 Kênh">
-            </div>
-
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">API Key Của Bên Bán *</label>
-              <input type="text" id="prov-key" required class="w-full bg-slate-900 border border-amber-500/40 rounded-lg px-3 py-2 font-mono text-amber-300 placeholder-slate-600" placeholder="Dán API Key vào đây...">
-            </div>
-          </div>
-
-          <!-- URL Endpoint cho Custom -->
-          <div id="prov-custom-url-container" class="hidden">
-            <label class="block font-semibold text-slate-300 mb-1">API Endpoint URL của bên bán (Dùng {API_KEY} để thay thế key)</label>
-            <input type="url" id="prov-url" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono" placeholder="https://api.myproxy.com/get-proxy?key={API_KEY}">
-          </div>
-
-          <!-- Buttons -->
-          <div class="flex items-center justify-end gap-2.5 pt-1">
-            <button type="button" onclick="App.testLiveProviderKey()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 font-semibold flex items-center gap-1.5 transition-colors">
-              <span>⚡</span>
-              <span>Test Trực Tiếp Key</span>
-            </button>
-            <button type="button" onclick="App.saveProviderKey()" class="px-5 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-slate-950 font-bold shadow-lg shadow-amber-500/20">
-              Lưu Vào Hệ Thống
-            </button>
-          </div>
-
-          <!-- Card Kết Quả Kiểm Tra Trực Tiếp (Live Result Card) -->
-          <div id="provider-test-result" class="hidden p-4 rounded-xl bg-slate-900 border border-amber-500/40 flex flex-col gap-2.5">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2" id="prov-status-badge">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span class="font-bold text-emerald-400 text-sm">TRẠNG THÁI: ACTIVE (HỢP LỆ)</span>
+              <div class="flex items-center justify-between pb-2.5 border-b border-slate-800 mb-3">
+                <div class="flex items-center gap-2.5">
+                  <span class="text-2xl">🤖</span>
+                  <div>
+                    <h3 class="text-sm font-bold text-emerald-300">Cào Video Không Logo & Tự Đổi MD5</h3>
+                    <p class="text-[11px] text-slate-400">Dán link TikTok / Douyin / Reels → Tải bản sạch HD & đổi hash tự động</p>
+                  </div>
+                </div>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold">NO LOGO</span>
               </div>
-              <div id="prov-flag-container"></div>
+
+              <form id="scrape-video-form" class="flex flex-col gap-2.5">
+                <input type="url" id="scrape-video-url" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500" placeholder="Dán link video: https://www.tiktok.com/@.../video/...">
+                <div class="flex items-center gap-2">
+                  <input type="text" id="scrape-video-title" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 text-xs focus:outline-none focus:border-emerald-500" placeholder="Đặt tên gợi nhớ (Tùy chọn)...">
+                  <button type="submit" id="btn-submit-scrape" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold flex items-center gap-1.5 shadow-md shadow-emerald-500/20 shrink-0">
+                    <span>🚀</span>
+                    <span>Tải & Rửa Hash</span>
+                  </button>
+                </div>
+              </form>
             </div>
 
-            <div class="p-3 rounded-lg bg-slate-950 font-mono text-xs flex flex-col md:flex-row md:items-center justify-between gap-2 border border-slate-800">
+            <div id="scrape-video-status" class="hidden p-2.5 rounded-xl bg-slate-950/80 border border-emerald-500/30 text-[11px] text-emerald-300"></div>
+          </div>
+
+          <!-- VŨ KHÍ 1: RỬA MÃ VIDEO & ĐỔI MD5 LÁCH BẢN QUYỀN -->
+          <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between gap-3 border-emerald-500/20 text-xs">
+            <div class="flex items-center justify-between pb-2.5 border-b border-slate-800">
+              <div class="flex items-center gap-2.5">
+                <span class="text-2xl">🧼</span>
+                <div>
+                  <h3 class="text-sm font-bold text-emerald-300">Máy Rửa Mã Video Có Sẵn & Đổi Hash MD5</h3>
+                  <p class="text-[11px] text-slate-400">Tẩy sạch EXIF metadata, chèn entropy đổi mã Hash 100% trong 0.1s</p>
+                </div>
+              </div>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 font-mono font-bold">HASH SPOOF</span>
+            </div>
+
+            <div class="flex flex-col gap-2.5">
+              <div class="border-2 border-dashed border-slate-700 hover:border-emerald-500/60 rounded-xl p-3.5 text-center transition-colors cursor-pointer bg-slate-950/40" id="drop-video-zone" onclick="document.getElementById('video-file-input').click()">
+                <input type="file" id="video-file-input" accept="video/mp4,video/quicktime,video/mkv" class="hidden" onchange="App.handleVideoFileSelect(event)">
+                <div class="font-semibold text-slate-200 flex items-center justify-center gap-1.5">
+                  <span>📹</span>
+                  <span>Nhấp chọn hoặc kéo thả file Video (.MP4 / .MOV) vào đây</span>
+                </div>
+                <div class="text-[10px] text-slate-500 mt-0.5">Xử lý ngay lập tức, giữ nguyên 100% chất lượng gốc</div>
+              </div>
+
+              <div id="sanitizer-result" class="hidden p-3 rounded-xl bg-slate-950/80 border border-emerald-500/30 flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-emerald-400 text-xs">✓ ĐÃ ĐỔI MÃ HASH THÀNH CÔNG!</span>
+                  <a id="btn-download-sanitized" class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md">
+                    Tải Về File Mới
+                  </a>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                  <div class="p-1.5 rounded bg-slate-900 border border-slate-800">
+                    <div class="text-slate-500">MD5 Gốc:</div>
+                    <div id="old-md5" class="text-slate-300 truncate">--</div>
+                  </div>
+                  <div class="p-1.5 rounded bg-slate-900 border border-emerald-500/40">
+                    <div class="text-emerald-400">MD5 Mới:</div>
+                    <div id="new-md5" class="text-emerald-300 truncate font-bold">--</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 1B: AI Tạo Kịch Bản 60s & Kho Hook 3 Giây -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- VŨ KHÍ 5: AI TẠO KỊCH BẢN & 10 HOOK TRIỆU VIEW -->
+          <div class="glass-panel p-5 rounded-2xl flex flex-col gap-3.5 border-purple-500/20">
+            <div class="flex items-center justify-between pb-2.5 border-b border-slate-800">
+              <div class="flex items-center gap-2.5">
+                <span class="text-2xl">✍️</span>
+                <div>
+                  <h3 class="text-sm font-bold text-purple-300">AI Tạo Kịch Bản 60s & 10 Hook Triệu View</h3>
+                  <p class="text-[11px] text-slate-400">Sinh 3 góc Hook 3s đầu, kịch bản 4 phần và bộ hashtag SEO</p>
+                </div>
+              </div>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono font-bold">AI WRITER</span>
+            </div>
+
+            <form id="ai-generator-form" class="flex flex-col gap-2.5 text-xs">
               <div>
-                <span class="text-slate-500">Proxy Nhận Được:</span>
-                <span id="prov-proxy-val" class="font-bold text-cyan-300 ml-1">--</span>
+                <label class="block font-semibold text-slate-300 mb-1">Chủ đề hoặc ngách nội dung video</label>
+                <input type="text" id="ai-gen-topic" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-purple-500" placeholder="VD: Bí quyết kiếm tiền affiliate, Làm video AI không lộ mặt...">
               </div>
-              <div class="flex items-center gap-3">
-                <span class="text-slate-400 text-[11px]" id="prov-time-val"></span>
-                <button id="btn-prov-assign" class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs" onclick="App.openAssignProxyModal()">
-                  📥 Gán Vào Kênh
+
+              <div class="flex items-center justify-between gap-2">
+                <select id="ai-gen-platform" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200">
+                  <option value="tiktok">TikTok (Thuật toán giữ chân 3s đầu)</option>
+                  <option value="shorts">YouTube Shorts</option>
+                  <option value="reels">Facebook Reels</option>
+                </select>
+                <button type="submit" id="btn-submit-ai-gen" class="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold flex items-center gap-1.5 shadow-md shadow-purple-500/20">
+                  <span>✨</span>
+                  <span>AI Sinh Kịch Bản</span>
                 </button>
               </div>
-            </div>
+            </form>
 
-            <div class="text-[11px] text-slate-400" id="prov-msg-val"></div>
-          </div>
-        </div>
-
-        <!-- Bảng Danh Sách Provider Keys Đã Lưu -->
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs">
-            <thead>
-              <tr class="bg-slate-900/60 text-[10px] font-semibold text-slate-400 uppercase">
-                <th class="py-2.5 px-3">Tên Gói & Bên Bán</th>
-                <th class="py-2.5 px-3">Loại Provider</th>
-                <th class="py-2.5 px-3">API Key</th>
-                <th class="py-2.5 px-3">Proxy Gần Nhất</th>
-                <th class="py-2.5 px-3">Trạng Thái</th>
-                <th class="py-2.5 px-3 text-right">Thao Tác</th>
-              </tr>
-            </thead>
-            <tbody id="providers-tbody" class="divide-y divide-slate-800/40"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- 2 Columns: Video Sanitizer & Telegram Bot -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-        <!-- VŨ KHÍ 1: RỬA MÃ VIDEO & ĐỔI MD5 LÁCH BẢN QUYỀN -->
-        <div class="glass-panel p-5 rounded-xl flex flex-col gap-3.5 border-emerald-500/20">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-            <div class="flex items-center gap-2">
-              <span class="text-2xl">🧼</span>
-              <div>
-                <h3 class="text-sm font-bold text-emerald-300">Máy Rửa Mã Video & Đổi Hash MD5 Lách Thuật Toán</h3>
-                <p class="text-[11px] text-slate-400">Tẩy sạch EXIF metadata, chèn entropy box đổi mã Hash 100% trong 0.1s</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-3 text-xs">
-            <div class="border-2 border-dashed border-slate-700 hover:border-emerald-500/60 rounded-xl p-5 text-center transition-colors cursor-pointer" id="drop-video-zone" onclick="document.getElementById('video-file-input').click()">
-              <input type="file" id="video-file-input" accept="video/mp4,video/quicktime,video/mkv" class="hidden" onchange="App.handleVideoFileSelect(event)">
-              <div class="text-3xl mb-2">📹</div>
-              <div class="font-semibold text-slate-200">Nhấp vào đây hoặc kéo thả file Video (MP4 / MOV)</div>
-              <div class="text-[11px] text-slate-500 mt-1">Xử lý ngay tại chỗ, không suy hao chất lượng, đổi hash tức thì</div>
-            </div>
-
-            <div id="sanitizer-result" class="hidden p-3.5 rounded-lg bg-slate-950/80 border border-emerald-500/30 flex flex-col gap-2">
+            <!-- Kết quả AI Generator -->
+            <div id="ai-gen-result" class="hidden p-3.5 rounded-xl bg-slate-950/80 border border-purple-500/30 flex flex-col gap-2.5 text-xs max-h-56 overflow-y-auto">
               <div class="flex items-center justify-between">
-                <span class="font-bold text-emerald-400 text-xs">✓ ĐÃ TẨY RỬA VÀ ĐỔI MÃ HASH THÀNH CÔNG!</span>
-                <a id="btn-download-sanitized" class="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md">
-                  Tải Về File Mới
-                </a>
-              </div>
-              <div class="grid grid-cols-2 gap-2 text-[10px] font-mono mt-1">
-                <div class="p-2 rounded bg-slate-900 border border-slate-800">
-                  <div class="text-slate-500">Mã MD5 Gốc:</div>
-                  <div id="old-md5" class="text-slate-300 truncate">--</div>
-                </div>
-                <div class="p-2 rounded bg-slate-900 border border-emerald-500/40">
-                  <div class="text-emerald-400">Mã MD5 Mới (Unique):</div>
-                  <div id="new-md5" class="text-emerald-300 truncate font-bold">--</div>
+                <span class="font-bold text-purple-300 text-xs" id="ai-res-title">Kịch Bản Sinh Ra</span>
+                <div class="flex items-center gap-1.5">
+                  <button type="button" onclick="App.copyAiScript()" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[11px]">📋 Copy</button>
+                  <button type="button" onclick="App.saveAiScriptToSchedule()" class="px-2 py-0.5 rounded bg-pink-600 text-white font-bold text-[11px]">📅 Lên Lịch</button>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- VŨ KHÍ 2: CẤU HÌNH BÁO ĐỘNG TELEGRAM & SAO LƯU DATABASE -->
-        <div class="glass-panel p-5 rounded-xl flex flex-col gap-3.5 border-cyan-500/20">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-            <div class="flex items-center gap-2">
-              <span class="text-2xl">📢</span>
-              <div>
-                <h3 class="text-sm font-bold text-cyan-300">Telegram Bot & Sao Lưu Database Tự Động</h3>
-                <p class="text-[11px] text-slate-400">Bắn chuông nhắc lịch đăng video & sao lưu kho quân lương về máy chủ cá nhân</p>
+              <div class="space-y-1 bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                <div class="text-[10px] font-mono text-amber-400 font-bold">3 GÓC HOOK 3S ĐẦU TIÊN:</div>
+                <ul id="ai-res-hooks" class="list-disc list-inside text-[11px] text-amber-200/90 space-y-0.5"></ul>
               </div>
+              <div class="font-mono text-slate-300 text-[11px] whitespace-pre-wrap bg-slate-900 p-2.5 rounded-lg border border-slate-800" id="ai-res-script"></div>
+              <div class="text-[10px] font-mono text-cyan-400 bg-slate-900 p-2 rounded border border-slate-800" id="ai-res-hashtags"></div>
             </div>
           </div>
 
-          <form id="telegram-form" class="flex flex-col gap-3 text-xs">
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1 flex items-center justify-between">
-                <span>Telegram Bot Token</span>
-                <a href="https://t.me/BotFather" target="_blank" class="text-[10px] text-cyan-400 hover:underline">Lấy Token @BotFather ↗</a>
-              </label>
-              <input type="text" id="tg-token" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ">
-            </div>
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1 flex items-center justify-between">
-                <span>Telegram Chat ID (hoặc Group ID)</span>
-                <a href="https://t.me/userinfobot" target="_blank" class="text-[10px] text-cyan-400 hover:underline">Lấy Chat ID @userinfobot ↗</a>
-              </label>
-              <input type="text" id="tg-chat-id" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono" placeholder="-100123456789 hoặc @username">
-            </div>
-            <div class="flex items-center justify-end gap-2 pt-1">
-              <button type="button" onclick="App.testTelegramAlert()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 font-semibold">
-                🔔 Test Chuông Báo
-              </button>
-              <button type="submit" class="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold shadow-md shadow-cyan-500/20">
-                Lưu Cấu Hình
-              </button>
-            </div>
-          </form>
-
-          <!-- KHU VỰC SAO LƯU 1-CLICK -->
-          <div class="mt-2 pt-3 border-t border-slate-800 flex flex-col gap-2.5 bg-slate-950/60 p-3 rounded-xl border border-blue-500/20">
-            <div class="flex items-center justify-between">
+          <!-- VŨ KHÍ 3: KHO HOOK 3 GIÂY & KỊCH BẢN TRIỆU VIEW (COMPACT SCROLLABLE) -->
+          <div class="glass-panel p-5 rounded-2xl flex flex-col gap-3 border-amber-500/20">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-800">
               <div class="flex items-center gap-2">
-                <span class="text-lg">💾</span>
+                <span class="text-2xl">🧲</span>
                 <div>
-                  <div class="font-bold text-slate-200 text-xs">Kho Lưu Trữ An Toàn (Safe SQLite Snapshot)</div>
-                  <div class="text-[10px] text-slate-400">Trích xuất toàn bộ tài khoản, proxy, lịch đăng và gửi file về Telegram</div>
+                  <h3 class="text-sm font-bold text-amber-300">Kho Hook 3 Giây & Mẫu Câu Giật Gân</h3>
+                  <p class="text-[11px] text-slate-400">1-Click copy câu mở đầu giữ chân người xem 3s đầu</p>
                 </div>
               </div>
+              <div class="flex flex-wrap items-center gap-1" id="hook-categories-container"></div>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
-              <button type="button" onclick="App.triggerTelegramBackup()" class="flex-1 py-2 px-3 rounded-lg bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/20">
-                <span>🚀</span>
-                <span>Sao Lưu Về Telegram Ngay</span>
-              </button>
-              <button type="button" onclick="App.downloadBackupDirect()" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs flex items-center gap-1.5 border border-slate-700">
-                <span>📥</span>
-                <span>Tải .db Về Máy</span>
-              </button>
-            </div>
+
+            <div id="hooks-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-52 overflow-y-auto pr-1"></div>
           </div>
         </div>
       </div>
 
-      <!-- VŨ KHÍ 3: KHO HOOK 3 GIÂY & KỊCH BẢN TRIỆU VIEW -->
-      <div class="glass-panel p-5 rounded-xl flex flex-col gap-4">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-800">
-          <div>
-            <h3 class="text-base font-bold text-white flex items-center gap-2">
-              <span>🧲 Kho Lưu Trữ Hook 3 Giây Đầu Tiên & Mẫu Caption Chuẩn SEO</span>
-              <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">VIRAL VAULT</span>
-            </h3>
-            <p class="text-xs text-slate-400">Các câu mở đầu giật gân giúp giữ chân người xem 3s đầu kịch nóc thuật toán</p>
-          </div>
-
-          <div class="flex items-center gap-1.5" id="hook-categories-container"></div>
-        </div>
-
-        <div id="hooks-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
-      </div>
-
-      <!-- 2 COLUMNS: VŨ KHÍ 4 & 5 (RADAR NHIỆT ĐỘ & AI TẠO KỊCH BẢN) -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-        <!-- VŨ KHÍ 4: RADAR NHIỆT ĐỘ & BẢO VỆ QUÁ NHIỆT 2 TẦNG -->
-        <div class="glass-panel p-5 rounded-xl flex flex-col gap-3.5 border-rose-500/20">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-            <div class="flex items-center gap-2">
-              <span class="text-2xl">🌡️</span>
+      <!-- ==================== PHÂN KHU 2: MẠNG & PROXY (2 VŨ KHÍ) ==================== -->
+      <div class="tool-section-group grid grid-cols-1 lg:grid-cols-3 gap-4" data-tool-group="proxy">
+        <!-- VŨ KHÍ PROXY 1: TRẠM KẾT NỐI API WEB BÁN PROXY (2 COLS) -->
+        <div class="glass-panel p-5 rounded-2xl flex flex-col gap-3.5 border-amber-500/20 lg:col-span-2">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-800">
+            <div class="flex items-center gap-2.5">
+              <span class="text-2xl">🔌</span>
               <div>
-                <h3 class="text-sm font-bold text-rose-300">Radar Giám Sát Phần Cứng & Bảo Vệ Quá Nhiệt 2 Tầng</h3>
-                <p class="text-[11px] text-slate-400">Tự động khởi động lại lần 1 & tắt hẳn server lần 2 khi Snapdragon 8 Gen 1 quá nhiệt</p>
+                <h3 class="text-sm font-bold text-amber-300 flex items-center gap-2">
+                  <span>Trạm Kết Nối API Web Bán Proxy (Proxy Seller Hub)</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">SELLER API</span>
+                </h3>
+                <p class="text-[11px] text-slate-400">Kiểm tra trực tiếp Key sống/chết, lấy IP mới, cờ quốc gia và 1-click gán vào kênh</p>
               </div>
             </div>
-            <button type="button" onclick="App.checkThermalNow()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-rose-300 text-xs font-semibold">
-              🧪 Kiểm Tra Ngay
+            <button onclick="App.openAddProviderForm()" class="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 text-xs font-bold shadow-md shadow-amber-500/20 flex items-center gap-1 shrink-0">
+              <span>+</span>
+              <span>Nhập / Test Key</span>
             </button>
           </div>
 
-          <!-- Gauges Grid -->
-          <div class="grid grid-cols-3 gap-2 text-center text-xs">
-            <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-              <span class="text-[10px] text-slate-400">Nhiệt độ CPU</span>
-              <div id="hw-cpu-temp" class="text-lg font-black text-rose-400 font-mono mt-0.5">--°C</div>
-              <span class="text-[9px] text-slate-500">Snapdragon</span>
+          <!-- Form Nhập & Kiểm Tra API Key Bên Bán -->
+          <div id="provider-input-panel" class="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col gap-3 text-xs">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Web Bán Proxy *</label>
+                <select id="prov-type" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-slate-200" onchange="App.handleProviderTypeChange()">
+                  <option value="proxyv6">ProxyV6 (proxyv6.net)</option>
+                  <option value="tmproxy">TMProxy (tmproxy.com)</option>
+                  <option value="tinproxy">TinProxy (tinproxy.com)</option>
+                  <option value="webshare">Webshare.io (Quốc Tế)</option>
+                  <option value="proxyno1">ProxyNo1 (proxyno1.com)</option>
+                  <option value="custom">Custom API Endpoint</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Tên Gợi Nhớ Gói *</label>
+                <input type="text" id="prov-name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-slate-200" placeholder="VD: TMProxy Xoay VIP">
+              </div>
+
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">API Key Bên Bán *</label>
+                <input type="text" id="prov-key" required class="w-full bg-slate-900 border border-amber-500/40 rounded-xl px-2.5 py-1.5 font-mono text-amber-300 placeholder-slate-600" placeholder="Dán API Key vào đây...">
+              </div>
             </div>
-            <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-              <span class="text-[10px] text-slate-400">Nhiệt độ Pin</span>
-              <div id="hw-battery-temp" class="text-lg font-black text-amber-400 font-mono mt-0.5">--°C</div>
-              <span class="text-[9px] text-slate-500" id="hw-battery-lvl">Pin --%</span>
+
+            <!-- URL Endpoint cho Custom -->
+            <div id="prov-custom-url-container" class="hidden">
+              <label class="block font-semibold text-slate-300 mb-1">API Endpoint URL (Dùng {API_KEY} để thay thế key)</label>
+              <input type="url" id="prov-url" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-slate-200 font-mono" placeholder="https://api.myproxy.com/get-proxy?key={API_KEY}">
             </div>
-            <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-              <span class="text-[10px] text-slate-400">RAM Sử Dụng</span>
-              <div id="hw-ram-usage" class="text-lg font-black text-cyan-400 font-mono mt-0.5">--%</div>
-              <span class="text-[9px] text-slate-500" id="hw-ram-free">-- MB trống</span>
+
+            <div class="flex items-center justify-end gap-2">
+              <button type="button" onclick="App.testLiveProviderKey()" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 font-semibold flex items-center gap-1 transition-colors">
+                <span>⚡</span>
+                <span>Test Trực Tiếp Key</span>
+              </button>
+              <button type="button" onclick="App.saveProviderKey()" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-slate-950 font-bold shadow-md shadow-amber-500/20">
+                Lưu Key
+              </button>
+            </div>
+
+            <!-- Card Kết Quả Kiểm Tra Trực Tiếp -->
+            <div id="provider-test-result" class="hidden p-3 rounded-xl bg-slate-900 border border-amber-500/40 flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2" id="prov-status-badge">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span class="font-bold text-emerald-400 text-xs">TRẠNG THÁI: ACTIVE (HỢP LỆ)</span>
+                </div>
+                <div id="prov-flag-container"></div>
+              </div>
+
+              <div class="p-2.5 rounded-lg bg-slate-950 font-mono text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-slate-800">
+                <div>
+                  <span class="text-slate-500">Proxy Nhận Được:</span>
+                  <span id="prov-proxy-val" class="font-bold text-cyan-300 ml-1">--</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-[11px]" id="prov-time-val"></span>
+                  <button id="btn-prov-assign" class="px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs" onclick="App.openAssignProxyModal()">
+                    📥 Gán Vào Kênh
+                  </button>
+                </div>
+              </div>
+              <div class="text-[11px] text-slate-400" id="prov-msg-val"></div>
             </div>
           </div>
 
-          <!-- Thermal Failsafe Status Banner -->
-          <div id="thermal-status-card" class="p-3 rounded-lg bg-slate-950/60 border border-emerald-500/30 flex items-center justify-between text-xs">
-            <div class="flex items-center gap-2">
-              <span id="thermal-status-icon" class="text-lg">🟢</span>
+          <!-- Bảng Danh Sách Provider Keys Đã Lưu -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="bg-slate-900/60 text-[10px] font-semibold text-slate-400 uppercase">
+                  <th class="py-2 px-2.5">Tên Gói</th>
+                  <th class="py-2 px-2.5">Provider</th>
+                  <th class="py-2 px-2.5">API Key</th>
+                  <th class="py-2 px-2.5">Proxy Gần Nhất</th>
+                  <th class="py-2 px-2.5">Trạng Thái</th>
+                  <th class="py-2 px-2.5 text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="providers-tbody" class="divide-y divide-slate-800/40"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- VŨ KHÍ 7: RADAR QUÉT SỨC KHỎE PROXY TOÀN DIỆN (1 COL) -->
+        <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between gap-3 border-cyan-500/20 text-xs">
+          <div>
+            <div class="flex items-center gap-2.5 pb-2.5 border-b border-slate-800 mb-3">
+              <span class="text-2xl">📡</span>
               <div>
-                <div class="font-bold text-white text-xs" id="thermal-status-title">Nhiệt Độ Bình Thường</div>
-                <div class="text-[10px] text-slate-400" id="thermal-status-desc">Hệ thống đang hoạt động dưới ngưỡng cảnh báo an toàn</div>
+                <h3 class="text-sm font-bold text-cyan-300">Radar Quét Sức Khỏe Proxy</h3>
+                <p class="text-[11px] text-slate-400">Kiểm tra sống/chết, đo độ trễ & tự xoay IP khi proxy hỏng</p>
               </div>
             </div>
-            <span id="thermal-failsafe-badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-300 font-bold">AN TOÀN</span>
+
+            <div class="grid grid-cols-2 gap-2.5 text-center my-3">
+              <div class="p-3 rounded-xl bg-slate-950/80 border border-emerald-500/20">
+                <span class="text-[11px] text-slate-400">Proxy Sống</span>
+                <div class="text-2xl font-black text-emerald-400 font-mono mt-1" id="proxy-stat-alive">--</div>
+                <span class="text-[10px] text-emerald-500/80">Hoạt động tốt</span>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-950/80 border border-rose-500/20">
+                <span class="text-[11px] text-slate-400">Proxy Hỏng</span>
+                <div class="text-2xl font-black text-rose-400 font-mono mt-1" id="proxy-stat-dead">--</div>
+                <span class="text-[10px] text-rose-500/80">Cần đổi IP</span>
+              </div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-slate-950/50 border border-slate-800/80 text-[11px] text-slate-400 leading-relaxed">
+              💡 Khi phát hiện proxy chết, hệ thống sẽ tự bắn cảnh báo về Telegram và gọi API xoay IP mới nếu kênh đã gắn Provider.
+            </div>
+          </div>
+
+          <button type="button" onclick="App.checkAllProxiesNow()" id="btn-check-all-proxies" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20">
+            <span>⚡</span>
+            <span>Quét Toàn Bộ Proxy Ngay (1-Click)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================== PHÂN KHU 3: MÁY CHỦ & SAO LƯU TELEGRAM (3 VŨ KHÍ) ==================== -->
+      <div class="tool-section-group grid grid-cols-1 lg:grid-cols-3 gap-4" data-tool-group="system">
+        <!-- VŨ KHÍ 4: RADAR NHIỆT ĐỘ & BẢO VỆ QUÁ NHIỆT 2 TẦNG -->
+        <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between gap-3 border-rose-500/20">
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center justify-between pb-2.5 border-b border-slate-800">
+              <div class="flex items-center gap-2">
+                <span class="text-2xl">🌡️</span>
+                <div>
+                  <h3 class="text-sm font-bold text-rose-300">Bảo Vệ Quá Nhiệt 2 Tầng</h3>
+                  <p class="text-[11px] text-slate-400">Reboot Lần 1 & Tắt Server Lần 2</p>
+                </div>
+              </div>
+              <button type="button" onclick="App.checkThermalNow()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 text-xs font-semibold">
+                🧪 Đo Ngay
+              </button>
+            </div>
+
+            <!-- Gauges Grid -->
+            <div class="grid grid-cols-3 gap-2 text-center text-xs">
+              <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800">
+                <span class="text-[10px] text-slate-400">CPU</span>
+                <div id="hw-cpu-temp" class="text-base font-black text-rose-400 font-mono mt-0.5">--°C</div>
+                <span class="text-[9px] text-slate-500">8 Gen 1</span>
+              </div>
+              <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800">
+                <span class="text-[10px] text-slate-400">Pin</span>
+                <div id="hw-battery-temp" class="text-base font-black text-amber-400 font-mono mt-0.5">--°C</div>
+                <span class="text-[9px] text-slate-500" id="hw-battery-lvl">Pin --%</span>
+              </div>
+              <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800">
+                <span class="text-[10px] text-slate-400">RAM</span>
+                <div id="hw-ram-usage" class="text-base font-black text-cyan-400 font-mono mt-0.5">--%</div>
+                <span class="text-[9px] text-slate-500" id="hw-ram-free">-- MB</span>
+              </div>
+            </div>
+
+            <!-- Thermal Failsafe Status Banner -->
+            <div id="thermal-status-card" class="p-2.5 rounded-xl bg-slate-950/60 border border-emerald-500/30 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span id="thermal-status-icon" class="text-base">🟢</span>
+                <div>
+                  <div class="font-bold text-white text-xs" id="thermal-status-title">Nhiệt Độ Bình Thường</div>
+                  <div class="text-[10px] text-slate-400" id="thermal-status-desc">Dưới ngưỡng cảnh báo</div>
+                </div>
+              </div>
+              <span id="thermal-failsafe-badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-300 font-bold">AN TOÀN</span>
+            </div>
           </div>
 
           <!-- Thermal Threshold Form -->
-          <form id="thermal-config-form" class="flex flex-col gap-2.5 text-xs">
+          <form id="thermal-config-form" class="flex flex-col gap-2 text-xs pt-2 border-t border-slate-800/80">
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <label class="block font-semibold text-slate-400 text-[11px] mb-1">Ngưỡng Cảnh Báo (°C)</label>
-                <input type="number" step="0.5" id="cfg-warn-temp" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 font-mono" value="42.0">
+                <label class="block font-semibold text-slate-400 text-[10px] mb-1">Cảnh Báo (°C)</label>
+                <input type="number" step="0.5" id="cfg-warn-temp" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-slate-200 font-mono" value="42.0">
               </div>
               <div>
-                <label class="block font-semibold text-slate-400 text-[11px] mb-1">Ngưỡng Khẩn Cấp (°C)</label>
-                <input type="number" step="0.5" id="cfg-crit-temp" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 font-mono" value="46.0">
+                <label class="block font-semibold text-slate-400 text-[10px] mb-1">Khẩn Cấp (°C)</label>
+                <input type="number" step="0.5" id="cfg-crit-temp" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-slate-200 font-mono" value="46.0">
               </div>
             </div>
 
             <div class="flex items-center justify-between pt-1">
-              <label class="flex items-center gap-2 cursor-pointer text-slate-300 text-[11px]">
-                <input type="checkbox" id="cfg-thermal-auto" checked class="w-4 h-4 rounded text-rose-600 bg-slate-900 border-slate-700">
-                <span>Bật tự động Reboot (Lần 1) & Tắt hẳn (Lần 2)</span>
+              <label class="flex items-center gap-1.5 cursor-pointer text-slate-300 text-[11px]">
+                <input type="checkbox" id="cfg-thermal-auto" checked class="w-3.5 h-3.5 rounded text-rose-600 bg-slate-900 border-slate-700">
+                <span>Tự động Reboot & Shutdown</span>
               </label>
-              <button type="submit" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold">
-                Lưu Ngưỡng
+              <button type="submit" class="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold">
+                Lưu
               </button>
             </div>
           </form>
         </div>
 
-        <!-- VŨ KHÍ 5: AI TẠO KỊCH BẢN & 10 HOOK TRIỆU VIEW -->
-        <div class="glass-panel p-5 rounded-xl flex flex-col gap-3.5 border-purple-500/20">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-            <div class="flex items-center gap-2">
-              <span class="text-2xl">✍️</span>
-              <div>
-                <h3 class="text-sm font-bold text-purple-300">AI Tạo Kịch Bản 60s & 10 Hook Triệu View</h3>
-                <p class="text-[11px] text-slate-400">Sinh 3 góc Hook 3s đầu, kịch bản giữ chân khán giả và bộ hashtag SEO</p>
-              </div>
-            </div>
-          </div>
-
-          <form id="ai-generator-form" class="flex flex-col gap-2.5 text-xs">
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">Chủ đề hoặc ngách nội dung</label>
-              <input type="text" id="ai-gen-topic" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200" placeholder="VD: Bí quyết kiếm tiền affiliate, Làm video không lộ mặt...">
-            </div>
-
-            <div class="flex items-center justify-between gap-2">
-              <select id="ai-gen-platform" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200">
-                <option value="tiktok">TikTok (Thuật toán 3s đầu)</option>
-                <option value="shorts">YouTube Shorts</option>
-                <option value="reels">Facebook Reels</option>
-              </select>
-              <button type="submit" id="btn-submit-ai-gen" class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold flex items-center gap-1.5 shadow-md shadow-purple-500/20">
-                <span>✨</span>
-                <span>AI Sinh Nội Dung</span>
-              </button>
-            </div>
-          </form>
-
-          <!-- Kết quả AI Generator -->
-          <div id="ai-gen-result" class="hidden p-3.5 rounded-xl bg-slate-950/80 border border-purple-500/30 flex flex-col gap-2.5 text-xs max-h-56 overflow-y-auto">
-            <div class="flex items-center justify-between">
-              <span class="font-bold text-purple-300 text-xs" id="ai-res-title">Kịch Bản Sinh Ra</span>
-              <div class="flex items-center gap-1.5">
-                <button type="button" onclick="App.copyAiScript()" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[11px]">📋 Copy</button>
-                <button type="button" onclick="App.saveAiScriptToSchedule()" class="px-2 py-0.5 rounded bg-pink-600 text-white font-bold text-[11px]">📅 Lên Lịch</button>
-              </div>
-            </div>
-            <div class="space-y-1 bg-slate-900 p-2.5 rounded-lg border border-slate-800">
-              <div class="text-[10px] font-mono text-amber-400 font-bold">3 GÓC HOOK 3S ĐẦU TIÊN:</div>
-              <ul id="ai-res-hooks" class="list-disc list-inside text-[11px] text-amber-200/90 space-y-0.5"></ul>
-            </div>
-            <div class="font-mono text-slate-300 text-[11px] whitespace-pre-wrap bg-slate-900 p-2.5 rounded-lg border border-slate-800" id="ai-res-script"></div>
-            <div class="text-[10px] font-mono text-cyan-400 bg-slate-900 p-2 rounded border border-slate-800" id="ai-res-hashtags"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3 COLUMNS: VŨ KHÍ 6, 7 & 8 (CÀO VIDEO NO-WATERMARK, QUÉT PROXY, TỰ ĐỘNG SAO LƯU) -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-        <!-- VŨ KHÍ 6: CÀO VIDEO SẠCH KHÔNG LOGO -->
-        <div class="glass-panel p-5 rounded-xl flex flex-col justify-between gap-3 border-emerald-500/20 text-xs">
+        <!-- VŨ KHÍ 2: CẤU HÌNH BÁO ĐỘNG TELEGRAM -->
+        <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between gap-3 border-cyan-500/20">
           <div>
-            <div class="flex items-center gap-2 pb-2 border-b border-slate-800 mb-2.5">
-              <span class="text-2xl">🤖</span>
-              <div>
-                <h3 class="text-sm font-bold text-emerald-300">Cào Video Không Logo & Rửa MD5</h3>
-                <p class="text-[11px] text-slate-400">Dán link TikTok/Douyin -> Tải bản sạch & đổi hash tự động</p>
+            <div class="flex items-center justify-between pb-2.5 border-b border-slate-800 mb-3">
+              <div class="flex items-center gap-2">
+                <span class="text-2xl">📢</span>
+                <div>
+                  <h3 class="text-sm font-bold text-cyan-300">Cấu Hình Telegram Bot</h3>
+                  <p class="text-[11px] text-slate-400">Nhận chuông nhắc đăng bài & file sao lưu</p>
+                </div>
               </div>
             </div>
 
-            <form id="scrape-video-form" class="flex flex-col gap-2">
-              <input type="url" id="scrape-video-url" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200" placeholder="https://www.tiktok.com/@.../video/...">
-              <input type="text" id="scrape-video-title" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-[11px]" placeholder="Tiêu đề gợi nhớ (Tùy chọn)">
-              <button type="submit" id="btn-submit-scrape" class="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20">
-                <span>🚀</span>
-                <span>Tải & Tẩy Rửa Hash Ngay</span>
-              </button>
+            <form id="telegram-form" class="flex flex-col gap-2.5 text-xs">
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1 flex items-center justify-between">
+                  <span>Telegram Bot Token</span>
+                  <a href="https://t.me/BotFather" target="_blank" class="text-[10px] text-cyan-400 hover:underline">@BotFather ↗</a>
+                </label>
+                <input type="text" id="tg-token" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 font-mono" placeholder="123456789:ABCdef...">
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1 flex items-center justify-between">
+                  <span>Chat ID / Group ID</span>
+                  <a href="https://t.me/userinfobot" target="_blank" class="text-[10px] text-cyan-400 hover:underline">@userinfobot ↗</a>
+                </label>
+                <input type="text" id="tg-chat-id" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 font-mono" placeholder="-100123456789">
+              </div>
+              <div class="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onclick="App.testTelegramAlert()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 font-semibold">
+                  🔔 Test Chuông
+                </button>
+                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold shadow-md shadow-cyan-500/20">
+                  Lưu Token
+                </button>
+              </div>
             </form>
           </div>
 
-          <div id="scrape-video-status" class="hidden p-2.5 rounded-lg bg-slate-950/80 border border-emerald-500/30 text-[11px] text-emerald-300"></div>
-        </div>
-
-        <!-- VŨ KHÍ 7: RADAR QUÉT SỨC KHỎE PROXY TOÀN DIỆN -->
-        <div class="glass-panel p-5 rounded-xl flex flex-col justify-between gap-3 border-cyan-500/20 text-xs">
-          <div>
-            <div class="flex items-center gap-2 pb-2 border-b border-slate-800 mb-2.5">
-              <span class="text-2xl">📡</span>
-              <div>
-                <h3 class="text-sm font-bold text-cyan-300">Radar Quét Sức Khỏe Proxy</h3>
-                <p class="text-[11px] text-slate-400">Kiểm tra sống/chết, đo độ trễ & tự xoay IP khi chết</p>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 text-center my-2">
-              <div class="p-2 rounded bg-slate-950 border border-slate-800">
-                <span class="text-[10px] text-slate-500">Proxy Sống</span>
-                <div class="text-base font-bold text-emerald-400 font-mono" id="proxy-stat-alive">--</div>
-              </div>
-              <div class="p-2 rounded bg-slate-950 border border-slate-800">
-                <span class="text-[10px] text-slate-500">Proxy Hỏng</span>
-                <div class="text-base font-bold text-rose-400 font-mono" id="proxy-stat-dead">--</div>
-              </div>
-            </div>
+          <div class="p-2.5 rounded-xl bg-slate-950/50 border border-slate-800/80 text-[10px] text-slate-400">
+            🔔 Bot sẽ tự bắn báo động khi đến giờ đăng video, khi proxy hỏng hoặc khi máy chủ quá nhiệt.
           </div>
-
-          <button type="button" onclick="App.checkAllProxiesNow()" id="btn-check-all-proxies" class="w-full py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20">
-            <span>⚡</span>
-            <span>Quét Toàn Bộ Proxy (1-Click)</span>
-          </button>
         </div>
 
-        <!-- VŨ KHÍ 8: TỰ ĐỘNG HÓA LỊCH SAO LƯU DATABASE -->
-        <div class="glass-panel p-5 rounded-xl flex flex-col justify-between gap-3 border-blue-500/20 text-xs">
-          <div>
-            <div class="flex items-center gap-2 pb-2 border-b border-slate-800 mb-2.5">
-              <span class="text-2xl">⏰</span>
+        <!-- VŨ KHÍ 8: SAO LƯU 1-CLICK & LỊCH TỰ ĐỘNG SAO LƯU DATABASE -->
+        <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between gap-3 border-blue-500/20 text-xs">
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center gap-2 pb-2.5 border-b border-slate-800">
+              <span class="text-2xl">💾</span>
               <div>
-                <h3 class="text-sm font-bold text-blue-300">Lịch Tự Động Sao Lưu Định Kỳ</h3>
-                <p class="text-[11px] text-slate-400">Tự động bắn snapshot SQLite về Telegram theo chu kỳ</p>
+                <h3 class="text-sm font-bold text-blue-300">Sao Lưu & Lịch Auto-Backup</h3>
+                <p class="text-[11px] text-slate-400">Gửi file SQLite `.db` kèm SHA256 về Telegram</p>
               </div>
             </div>
 
-            <form id="auto-backup-form" class="flex flex-col gap-2.5">
-              <label class="flex items-center justify-between p-2 rounded bg-slate-950 border border-slate-800 cursor-pointer">
-                <span class="text-slate-300 font-semibold">Bật Sao Lưu Tự Động:</span>
+            <!-- KHU VỰC SAO LƯU 1-CLICK -->
+            <div class="flex flex-col gap-2 bg-slate-950/60 p-3 rounded-xl border border-blue-500/20">
+              <div class="font-bold text-slate-200 text-[11px]">Sao Lưu Tức Thì (1-Click Snapshot):</div>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="App.triggerTelegramBackup()" class="flex-1 py-2 px-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-md shadow-blue-500/20">
+                  <span>🚀</span>
+                  <span>Gửi Về Telegram</span>
+                </button>
+                <button type="button" onclick="App.downloadBackupDirect()" class="py-2 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs flex items-center gap-1 border border-slate-700">
+                  <span>📥</span>
+                  <span>Tải .db</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- LỊCH TỰ ĐỘNG -->
+            <form id="auto-backup-form" class="flex flex-col gap-2 pt-1">
+              <label class="flex items-center justify-between p-2 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer">
+                <span class="text-slate-300 font-semibold text-[11px]">⏰ Bật Sao Lưu Định Kỳ:</span>
                 <input type="checkbox" id="auto-backup-toggle" class="w-4 h-4 rounded text-blue-600 bg-slate-900 border-slate-700">
               </label>
 
-              <div>
-                <label class="block font-semibold text-slate-400 text-[10px] mb-1">Chu kỳ sao lưu:</label>
-                <select id="auto-backup-freq" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200">
-                  <option value="6">Mỗi 6 tiếng một lần</option>
-                  <option value="12" selected>Mỗi 12 tiếng một lần</option>
-                  <option value="24">Mỗi 24 tiếng (Hàng ngày)</option>
+              <div class="flex items-center gap-2">
+                <select id="auto-backup-freq" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-slate-200">
+                  <option value="6">Chu kỳ: 6 tiếng/lần</option>
+                  <option value="12" selected>Chu kỳ: 12 tiếng/lần</option>
+                  <option value="24">Chu kỳ: 24 tiếng/lần</option>
                 </select>
+                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold shrink-0">
+                  Lưu Lịch
+                </button>
               </div>
-
-              <button type="submit" class="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold">
-                Lưu Lịch Sao Lưu
-              </button>
             </form>
           </div>
 
           <div class="text-[10px] text-slate-500 italic text-center">
-            Bảo toàn 100% tài khoản dù điện thoại có reset!
+            An toàn tuyệt đối 100% dữ liệu kênh & proxy!
           </div>
         </div>
       </div>
@@ -979,14 +1086,17 @@
           </div>
         </div>
 
-        <!-- 4 TRỤ CỘT CÔNG NGHỆ CHIẾN LƯỢC (EXECUTIVE DIGEST) -->
-        <div class="mt-2">
-          <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-            <span>⚡</span>
-            <span>4 Trụ Cột Công Nghệ Tác Chiến & Đột Phá AI Nhóm Tập Trung:</span>
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3" id="kn-pillars-container"></div>
-        </div>
+        <!-- 4 TRỤ CỘT CÔNG NGHỆ CHIẾN LƯỢC (ACCORDION GỌN GÀNG) -->
+        <details class="group bg-slate-950/60 rounded-xl border border-violet-500/20 p-3 transition-all">
+          <summary class="cursor-pointer list-none flex items-center justify-between text-xs font-bold text-violet-200 select-none">
+            <span class="flex items-center gap-1.5">
+              <span>⚡</span>
+              <span>Xem Tóm Tắt 4 Trụ Cột Công Nghệ Chiến Lược Của Nhóm (Executive Digest)</span>
+            </span>
+            <span class="text-[10px] px-2.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 font-mono">Bấm để mở rộng ▾</span>
+          </summary>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mt-3 pt-3 border-t border-slate-800/80" id="kn-pillars-container"></div>
+        </details>
       </div>
 
       <!-- KHO TÀI LIỆU CHI TIẾT (REPOS & HUB TABS) -->

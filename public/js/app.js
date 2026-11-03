@@ -925,6 +925,7 @@ const App = {
   // Audit Logs (Admin)
   async openAuditModal() {
     const modal = document.getElementById('audit-modal');
+    if (!modal) return;
     modal.classList.remove('hidden');
     try {
       const res = await API.get('/audit-logs?limit=50');

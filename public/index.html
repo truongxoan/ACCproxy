@@ -35,82 +35,89 @@
 <body class="bg-[#070b14] text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-black">
 
   <!-- ==================== HEADER BAR ==================== -->
-  <header class="glass-header sticky top-0 z-40 px-6 py-3 flex items-center justify-between">
-    <div class="flex items-center gap-4">
-      <div class="flex items-center gap-2.5">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-teal-500 to-emerald-400 flex items-center justify-center font-black text-slate-950 text-2xl shadow-lg shadow-cyan-500/20">
+  <header class="glass-header sticky top-0 z-40 px-3 md:px-6 py-2.5 flex flex-col gap-2.5 border-b border-slate-800/80">
+    <!-- Row 1: Brand & Right Actions -->
+    <div class="flex items-center justify-between gap-3">
+      <!-- Left: Brand Logo & Title -->
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-teal-500 to-emerald-400 flex items-center justify-center font-black text-slate-950 text-xl md:text-2xl shadow-lg shadow-cyan-500/20 shrink-0">
           ⚡
         </div>
-        <div>
-          <h1 class="text-base font-extrabold tracking-tight text-white flex items-center gap-2">
+        <div class="min-w-0">
+          <h1 class="text-sm md:text-base font-extrabold tracking-tight text-white flex items-center gap-2 truncate">
             <span>AccProxy Sovereign</span>
-            <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 font-mono font-semibold">v16.2 APEX</span>
+            <span class="text-[9px] md:text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 font-mono font-semibold shrink-0">v16.2 APEX</span>
           </h1>
-          <p class="text-[11px] text-slate-400">Account & Proxy Manager • Content Matrix • Piik Live Stream</p>
+          <p class="hidden sm:block text-[11px] text-slate-400 truncate">Account & Proxy Manager • Content Matrix • Piik Live Stream</p>
         </div>
+      </div>
+
+      <!-- Right Controls: Thermal HUD, Backup, Refresh & Profile -->
+      <div class="flex items-center gap-2 shrink-0">
+        <!-- Hardware Thermal HUD Pill -->
+        <div id="header-hardware-hud" onclick="App.openHardwareModal()" class="cursor-pointer flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/50 text-[11px] font-mono transition-all" title="Xem tình trạng nhiệt độ & phần cứng Redmi K50G">
+          <span class="flex items-center gap-1">
+            <span>🌡️</span>
+            <span id="hud-temp-val" class="font-bold text-emerald-400">--°C</span>
+          </span>
+          <span class="hidden md:inline text-slate-600">|</span>
+          <span class="hidden md:flex items-center gap-1">
+            <span>🔋</span>
+            <span id="hud-bat-val" class="text-slate-300">--%</span>
+          </span>
+        </div>
+
+        <!-- Backup Telegram Pill -->
+        <button id="btn-backup-telegram" onclick="App.openBackupModal()" class="px-2.5 md:px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition-all border border-blue-400/30" title="Sao lưu Database SQLite & gửi trực tiếp về Telegram">
+          <span>💾</span>
+          <span class="hidden sm:inline">Backup</span>
+        </button>
+
+        <!-- Refresh Button -->
+        <button id="btn-refresh" class="p-1.5 md:p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 transition-colors" title="Đồng bộ toàn hệ thống">
+          🔄
+        </button>
+
+        <!-- User Profile Badge -->
+        <div id="user-profile-badge" class="pl-2 border-l border-slate-800 flex items-center gap-1.5"></div>
       </div>
     </div>
 
-    <!-- Navigation Tab Pills -->
-    <nav class="hidden lg:flex items-center gap-1.5 p-1 rounded-xl bg-slate-900/80 border border-slate-800">
-      <button class="nav-tab-btn active px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5" data-tab="tab-accounts">
+    <!-- Row 2: Responsive Navigation Tab Pills (Never hidden! Smooth horizontal scroll on mobile, flex on desktop) -->
+    <nav class="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900/90 border border-slate-800/90 overflow-x-auto no-scrollbar whitespace-nowrap scroll-smooth">
+      <button class="nav-tab-btn active px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-accounts">
         <span>🛡️</span>
         <span>Tài Khoản & Proxy</span>
       </button>
-      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5" data-tab="tab-schedules">
+      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-schedules">
         <span>🎬</span>
         <span>Lịch Up Video</span>
         <span id="header-sched-badge" class="px-1.5 py-0.2 rounded-full bg-pink-500 text-white text-[10px] font-mono">0</span>
       </button>
-      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5" data-tab="tab-assets">
+      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-assets">
         <span>📁</span>
         <span>Kho Kịch Bản & Ảnh</span>
         <span id="header-assets-badge" class="px-1.5 py-0.2 rounded-full bg-cyan-600 text-white text-[10px] font-mono">0</span>
       </button>
-      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5" data-tab="tab-piik">
+      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-piik">
         <span>📺</span>
         <span>Piik Live Stream</span>
         <span id="header-stream-badge" class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
       </button>
-      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5" data-tab="tab-tools">
+      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-tools">
         <span>🛠️</span>
         <span>Vũ Khí Xây Kênh</span>
       </button>
-      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5" data-tab="tab-knowledge">
+      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-knowledge">
         <span>🧠</span>
         <span>Tri Thức AI Nhóm</span>
         <span id="header-knowledge-badge" class="px-1.5 py-0.2 rounded-full bg-violet-600 text-white text-[10px] font-mono">360+</span>
       </button>
-      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 admin-only" data-tab="tab-admin">
+      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 admin-only shrink-0" data-tab="tab-admin">
         <span>👥</span>
         <span>Quản Trị & Logs</span>
       </button>
     </nav>
-
-    <!-- Right Controls: Profile & Tools -->
-    <div class="flex items-center gap-2.5">
-      <!-- Hardware Thermal HUD Pill -->
-      <div id="header-hardware-hud" onclick="App.openHardwareModal()" class="cursor-pointer hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/50 text-[11px] font-mono transition-all" title="Xem tình trạng nhiệt độ & phần cứng Redmi K50G">
-        <span class="flex items-center gap-1">
-          <span>🌡️</span>
-          <span id="hud-temp-val" class="font-bold text-emerald-400">--°C</span>
-        </span>
-        <span class="text-slate-600">|</span>
-        <span class="flex items-center gap-1">
-          <span>🔋</span>
-          <span id="hud-bat-val" class="text-slate-300">--%</span>
-        </span>
-      </div>
-
-      <button id="btn-backup-telegram" onclick="App.openBackupModal()" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition-all border border-blue-400/30" title="Sao lưu Database SQLite & gửi trực tiếp về Telegram">
-        <span>💾</span>
-        <span class="hidden sm:inline">Backup Telegram</span>
-      </button>
-      <button id="btn-refresh" class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 transition-colors" title="Đồng bộ toàn hệ thống">
-        🔄
-      </button>
-      <div id="user-profile-badge" class="pl-2 border-l border-slate-800 flex items-center gap-2"></div>
-    </div>
   </header>
 
   <!-- ==================== MAIN CONTENT CONTAINER ==================== -->
@@ -124,8 +131,9 @@
       <!-- Toolbar & Platform Filter -->
       <section class="glass-panel p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex flex-wrap items-center gap-1.5">
-          <button class="filter-btn active-filter px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 text-white transition-all" data-platform="all">
-            Tất Cả
+          <button class="filter-btn active-filter px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 text-white transition-all flex items-center gap-1" data-platform="all">
+            <span>Tất Cả</span>
+            <span id="accounts-count" class="px-1.5 py-0.2 rounded-full bg-black/40 text-[10px] font-mono">0 / 0</span>
           </button>
           <button class="filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" data-platform="facebook">
             Facebook

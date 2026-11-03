@@ -7,8 +7,9 @@ const db = require('../src/config/db');
 const { encrypt, decrypt } = require('../src/services/cryptoService');
 const { generateToken, cleanSecret } = require('../src/services/totpService');
 const { parseProxyString } = require('../src/services/proxyService');
+const fs = require('fs');
 const { evaluatePasswordStrength, analyzeSecuritySuggestions } = require('../src/services/suggestionService');
-const { createUser, getUserByUsername, getUserById, deleteUser, grantPermission, getUserPermissions, syncUserPermissions } = require('../src/services/rbacService');
+const { createUser, getUserByUsername, getUserById, getAllUsers, deleteUser, grantPermission, getUserPermissions, syncUserPermissions } = require('../src/services/rbacService');
 
 console.log('================================================================');
 console.log('⚡ BẮT ĐẦU KIỂM ĐỊNH TOÀN DIỆN HỆ THỐNG ACCPROXY SOVEREIGN');
@@ -177,6 +178,22 @@ runTest('Security Suggestion Engine Analysis', () => {
   const analysis = analyzeSecuritySuggestions();
   assert.ok(typeof analysis.healthScore === 'number');
   assert.ok(Array.isArray(analysis.alerts));
+});
+
+// 9. Kiểm tra getAllUsers() & Toàn vẹn Method trên App Controller (Zero Missing Methods)
+runTest('RBAC getAllUsers() Listing & Frontend App Controller Method Integrity', () => {
+  const tempUser = createUser(`member_list_${Date.now()}`, 'Pass@123', 'user', ['tab-accounts']);
+  const usersList = getAllUsers();
+  assert.ok(Array.isArray(usersList) && usersList.length >= 2, 'getAllUsers() must return all members');
+  const found = usersList.find((u) => u.id === tempUser.id);
+  assert.ok(found, 'Newly added member must appear in getAllUsers()');
+  deleteUser(tempUser.id);
+
+  const appCode = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'app.js'), 'utf8');
+  const calls = [...appCode.matchAll(/this\.([a-zA-Z0-9_]+)\s*\(/g)].map((m) => m[1]);
+  const defs = [...appCode.matchAll(/^\s*(?:async\s+)?([a-zA-Z0-9_]+)\s*\(/gm)].map((m) => m[1]);
+  const missing = [...new Set(calls)].filter((c) => !defs.includes(c));
+  assert.strictEqual(missing.length, 0, `Missing methods on App controller: ${missing.join(', ')}`);
 });
 
 console.log('================================================================');

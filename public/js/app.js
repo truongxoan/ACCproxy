@@ -41,6 +41,30 @@ const App = {
     'tab-knowledge': { icon: '🧠', label: 'Tri Thức AI', short: '🧠 Tri Thức' }
   },
 
+  /**
+   * Chuẩn hóa và khử độc chuỗi HTML (HTML Entity Sanitizer) chống XSS & lỗi cú pháp template
+   * @param {any} str
+   * @returns {string}
+   */
+  escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  /**
+   * Sao chép nhanh văn bản vào Clipboard qua Security Engine
+   * @param {string} text
+   * @param {string} [label='Dữ liệu']
+   */
+  async copyText(text, label = 'Dữ liệu') {
+    await Security.safeCopy(text, label, 15);
+  },
+
   async init() {
     this.bindEvents();
     const isAuthed = await Auth.init();
@@ -69,6 +93,10 @@ const App = {
     }
     if (Auth.isTabAllowed('tab-tools')) {
       await this.loadHardwareMetrics();
+    }
+    if (Auth.currentUser?.role === 'admin' || Auth.isTabAllowed('tab-admin')) {
+      await this.loadUsersList();
+      await this.loadAuditLogs();
     }
   },
 
@@ -1019,9 +1047,24 @@ const App = {
     try {
       const res = await API.get('/users');
       const tbody = document.getElementById('users-tbody');
-      if (!tbody || !res.success) return;
+      if (!tbody || !res || !res.success) return;
 
-      tbody.innerHTML = res.users
+      const users = Array.isArray(res.users) ? res.users : [];
+      const countBadge = document.getElementById('users-count-badge');
+      if (countBadge) countBadge.innerText = `${users.length} thành viên`;
+
+      if (users.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-8 text-center text-slate-400">
+              Chưa có thành viên nào. Nhấp "+ Thêm User" để tạo tài khoản mới!
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = users
         .map((u) => {
           const isSuper = u.username === 'TX' || u.username === 'admin';
           const tabs = Array.isArray(u.allowed_tabs) ? u.allowed_tabs : ['tab-accounts'];
@@ -1137,8 +1180,13 @@ const App = {
       });
       Toast.success(`Đã tạo thành viên [${username}] và áp dụng quyền hiển thị thành công!`);
       this.closeCreateUserModal();
-      await this.loadUsersList();
-      await this.loadAuditLogs();
+      const adminTab = document.getElementById('tab-admin');
+      if (adminTab && adminTab.classList.contains('hidden')) {
+        this.activateTabById('tab-admin');
+      } else {
+        await this.loadUsersList();
+        await this.loadAuditLogs();
+      }
     } catch (err) {
       Toast.error(`Lỗi tạo user: ${err.message}`);
     }

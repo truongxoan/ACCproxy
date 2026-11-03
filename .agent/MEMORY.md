@@ -29,28 +29,34 @@
   - Radar Định Vị Proxy & Lá Cờ Quốc Gia (Flag Badge): Tự động trích xuất mã nước ISO (VN, US, SG, JP...) và render lá cờ thu nhỏ 16x12px kèm mã quốc gia cạnh tên kênh và proxy.
   - Tích hợp API Key Web Bán Proxy (Proxy Seller Hub): Hỗ trợ ProxyV6 (proxyv6.net), TMProxy, TinProxy, Webshare, ProxyNo1, Custom API, kiểm tra tình trạng sống/chết của Key bên bán, đếm ngược đổi IP và 1-click gán proxy vào kênh.
   - Kho Tư Liệu Kịch Bản & Ảnh Thumbnail (.md, .txt, .png): Tải file lên, trình đọc kịch bản Markdown với nút copy code, sửa trực tiếp trên web, xem ảnh full res và 1-click đẩy sang Lịch đăng video.
-- **Tính Năng Mới Vừa Tích Hợp (Sovereign Apex Upgrade):**
-  - **Sao Lưu Database SQLite Về Telegram (1-Click Safe Backup Snapshot):**
-    - Trích xuất snapshot nhất quán qua `db.backup()` trong WAL Mode, tính mã băm SHA256 và dung lượng.
-    - Đẩy file `.db` trực tiếp qua Telegram Bot API (`sendDocument` multipart) kèm bản tóm tắt quân số (acc, proxy, lịch video, assets).
-    - Tự động dọn dẹp các bản backup cũ (giữ lại 15 bản gần nhất) và hỗ trợ tải trực tiếp `.db` về máy.
-  - **Kho Tri Thức & 360+ Siêu Vũ Khí Mã Nguồn Mở (Zalo Community Knowledge Hub):**
-    - Tích hợp mục riêng `Tri Thức AI Nhóm` tổng hợp từ 2 kho của `GROUP TRAO ĐỔI - AI, CÔNG NGHỆ` (`b2.triennguyen.com`).
-    - 360+ GitHub Repositories (12.4M+ Stars) phân theo 8 danh mục chuyên sâu: `AI & Agents`, `MCP & Skills`, `Dev Tools & CLI`, `Web & Fullstack`, `Automation & Scraping`, `Self-Hosted & Infra`, `Libraries & Core`, `Lưu trữ/Riêng tư`.
-    - 274+ Bài chia sẻ Hub chuyên sâu về Voice AI, Neural TTS siêu nhẹ chạy local (Qwen, Amphion, Mozilla TTS, Kokoro, ChatTTS, MeloTTS).
-    - 4 Trụ Cột Công Nghệ Tác Chiến (Executive Digest): Agentic AI & MCP, Voice AI / TTS, Automation / Video Scraping, Self-Hosted Infra.
-    - Bộ lọc real-time, tìm kiếm tức thì, phân trang và nút `Đồng Bộ Live Từ Nhóm` (`POST /api/knowledge/sync`).
+- **5 Siêu Vũ Khí Đa Di Năng Vừa Hoàn Tất (Sovereign Apex Overhaul):**
+  - **1. Radar Giám Sát Phần Cứng & Cơ Chế Bảo Vệ Quá Nhiệt 2 Tầng (Thermal Failsafe Sentinel):**
+    - Đọc trực tiếp cảm biến Snapdragon 8 Gen 1 và pin qua sysfs (`/sys/class/thermal`, `/sys/class/power_supply/battery`) trên Android/Termux.
+    - Cảnh báo vàng (Warning 42°C): Bắn tin nhắn Telegram nhắc nhở.
+    - Quá nhiệt lần 1 (Critical 46°C): Bắn Báo Động Đỏ Telegram + Tự động Khởi Động Lại Server `(Soft Restart / PM2 restart)` xả tải RAM và CPU.
+    - Quá nhiệt lần 2 (Vẫn >= 46°C sau lần 1 trong 15 phút): Bắn Báo Động Tối Cao Telegram + Kích hoạt lệnh **TẮT HẲN SERVER `(Emergency Shutdown / PM2 stop)`** để bảo vệ an toàn cho pin và máy điện thoại.
+  - **2. Tự Động Hóa Lịch Sao Lưu Định Kỳ (Auto-Backup Cron Job):**
+    - Lên lịch ngầm tự động snapshot SQLite WAL mode mỗi 6h, 12h hoặc 24h và đẩy file `.db` về Telegram kèm SHA256.
+  - **3. Radar Quét Sức Khỏe Proxy Toàn Diện & Tự Đổi Proxy Khi Chết (Auto Proxy Sentinel):**
+    - Kiểm tra proxy sống/chết, đo latency, country code qua `https-proxy-agent` + `https.get`.
+    - Bắn Telegram khi phát hiện proxy chết và tự động gọi API nhà cung cấp proxy xoay IP mới.
+  - **4. AI Tạo Kịch Bản 60s & 10 Hook Triệu View (AI Viral Content Generator):**
+    - Sinh 3 góc Hook 3s tương phản/tò mò/sốc + Kịch bản 60s 4 phần + 10 hashtag SEO chuẩn thuật toán.
+  - **5. Cào Video Không Logo & Rửa MD5 Tự Động (Clean Video Scraper):**
+    - Dán link TikTok/Douyin/Reels -> Tải bản sạch no-watermark -> Tẩy EXIF & đổi hash MD5 -> Đăng ký vào Kho Tư Liệu `vault_assets`.
+- **Kho Tri Thức & 360+ Siêu Vũ Khí Mã Nguồn Mở (Zalo Community Knowledge Hub):**
+  - Tích hợp mục riêng `Tri Thức AI Nhóm` tổng hợp từ 2 kho của `GROUP TRAO ĐỔI - AI, CÔNG NGHỆ` (`b2.triennguyen.com`).
+  - 360+ GitHub Repositories (12.4M+ Stars) phân theo 8 danh mục chuyên sâu.
+  - 274+ Bài chia sẻ Hub chuyên sâu về Voice AI, Neural TTS siêu nhẹ chạy local (Qwen, Amphion, Kokoro).
+  - 4 Trụ Cột Công Nghệ Tác Chiến (Executive Digest): Agentic AI & MCP, Voice AI / TTS, Automation / Video Scraping, Self-Hosted Infra.
 - **Repository GitHub Chính Thức:**
   - Tên Repo: `truongxoan/ACCproxy`
   - URL: `https://github.com/truongxoan/ACCproxy`
   - Branch: `main` (clean 100%, bảo mật .env/data/profiles qua .gitignore)
-- **Hỗ trợ Đa Người Dùng Từ Xa:**
-  - Server lắng nghe `0.0.0.0:3000` phục vụ 2 - 6 người cùng truy cập đồng bộ qua mạng LAN hoặc Cloudflare Tunnel / VPN.
 - **Triển Khai Thành Công Pocket Home Server (Redmi K50G - ingres - Android 14 ARM64):**
   - Môi trường: Termux ARM64, Node.js v24.22.2 LTS, NPM v12.2.1, Python 3.14, Clang/Make C++23 Native Builder.
   - Native Addon: `better-sqlite3.node` (2.05MB) được biên dịch trực tiếp trên chip Snapdragon 8 Gen 1.
-  - Process Manager: PM2 v7.1.1 Daemon quản lý tiến trình `accproxy` (PID 18653), tự hồi sinh khi crash.
-  - Tunnel Ready: Cài sẵn `cloudflared` v2026.10.7 arm64 tại `$PREFIX/bin/cloudflared`.
+  - Process Manager: PM2 v7.1.1 Daemon quản lý tiến trình `accproxy`, tự hồi sinh khi crash hoặc reboot.
   - Địa chỉ truy cập:
     + Tên Miền Công Khai Toàn Cầu (Cloudflare Tunnel SSL): `https://acc.txlab.io.vn` & `https://txlab.io.vn`
     + Mạng Wi-Fi: `http://192.168.0.102:3000`

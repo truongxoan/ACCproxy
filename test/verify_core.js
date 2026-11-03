@@ -30,10 +30,12 @@ function runTest(name, fn) {
 
 // 1. Kiểm tra Database & Admin Seed
 runTest('Database Tables & Default Admin Seeding', () => {
-  const admin = getUserByUsername('admin');
-  assert.ok(admin, 'Admin must exist in database');
+  const admin = getUserByUsername('TX');
+  assert.ok(admin, 'Super Admin TX must exist in database');
   assert.strictEqual(admin.role, 'admin');
   assert.strictEqual(admin.status, 'active');
+  const oldAdmin = getUserByUsername('admin');
+  assert.strictEqual(oldAdmin, null, 'Legacy default admin account must be removed');
 });
 
 // 2. Kiểm tra Mã hóa & Giải mã AES-256-GCM

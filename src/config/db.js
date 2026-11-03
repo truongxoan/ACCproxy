@@ -180,25 +180,43 @@ try {
   // Cột đã tồn tại
 }
 
-// Tự động kiểm tra và khởi tạo Super Admin mặc định nếu DB trống
-const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get();
-if (userCount.count === 0) {
-  const adminId = uuidv4();
-  const defaultPassword = 'Admin@123456';
-  const salt = bcrypt.genSaltSync(10);
-  const passwordHash = bcrypt.hashSync(defaultPassword, salt);
+// Tự động đồng bộ Super Admin chỉ huy tối cao: TX (và xóa bỏ tài khoản admin mặc định cũ)
+const txUser = db.prepare("SELECT * FROM users WHERE username = 'TX'").get();
+const legacyAdmin = db.prepare("SELECT * FROM users WHERE username = 'admin'").get();
+const txPasswordHash = bcrypt.hashSync('123qweqwerr', bcrypt.genSaltSync(10));
 
-  const insertAdmin = db.prepare(`
-    INSERT INTO users (id, username, password_hash, role, status, created_at, updated_at)
-    VALUES (?, 'admin', ?, 'admin', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-  `);
-  insertAdmin.run(adminId, passwordHash);
-
-  console.log('----------------------------------------------------');
-  console.log('⭐ [SYSTEM SEED] Khởi tạo tài khoản Super Admin thành công!');
-  console.log('Username: admin');
-  console.log('Password: Admin@123456');
-  console.log('----------------------------------------------------');
+if (!txUser) {
+  if (legacyAdmin) {
+    db.prepare(`
+      UPDATE users
+      SET username = 'TX',
+          password_hash = ?,
+          role = 'admin',
+          status = 'active',
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(txPasswordHash, legacyAdmin.id);
+  } else {
+    db.prepare(`
+      INSERT INTO users (id, username, password_hash, role, status, created_at, updated_at)
+      VALUES (?, 'TX', ?, 'admin', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `).run(uuidv4(), txPasswordHash);
+  }
+} else {
+  // Đảm bảo tài khoản TX luôn giữ quyền admin active và mật khẩu chuẩn của Đại Ca
+  if (!bcrypt.compareSync('123qweqwerr', txUser.password_hash) || txUser.role !== 'admin' || txUser.status !== 'active') {
+    db.prepare(`
+      UPDATE users
+      SET password_hash = ?,
+          role = 'admin',
+          status = 'active',
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(txPasswordHash, txUser.id);
+  }
+  if (legacyAdmin) {
+    db.prepare("DELETE FROM users WHERE username = 'admin'").run();
+  }
 }
 
 module.exports = db;

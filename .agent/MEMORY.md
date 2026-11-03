@@ -83,3 +83,9 @@
     4. ❄️ Tuyết Rơi Mùa Đông: Bông tuyết trắng đa tầng Parallax bay chầm chậm.
     5. 🌧️ Mưa Rơi Cyberpunk: Tia mưa tốc độ cao tạo gợn sóng va đập đáy màn hình.
   - Widget chuyển đổi nhanh ngay trên thanh Header, lưu trạng thái vĩnh viễn vào `localStorage`.
+- **Đại Tu Giao Diện Bento Command Center Gọn Gàng & Tiện Ích Tối Đa (2026-11-03):**
+  - Thiết kế lại toàn bộ `public/index.html` theo chuẩn **Bento Grid & Command Center** (`max-w-7xl mx-auto`):
+    - **Dải 4 Thẻ KPI & Truy Cập Nhanh (Bento Quick Command Strip)** ngay đầu tab Tài Khoản (`#kpi-total-accounts`, `#kpi-pending-schedules`, lối tắt mở Xưởng Video AI & Kho Tri Thức 360+ Repos).
+    - **Thanh Lọc Nhóm Công Cụ Thông Minh (`filterToolCategory`)** trong tab `Kho Công Cụ & 2FA`: Phân chia 9 vũ khí thành 3 cụm Bento rõ ràng (`🎬 Video & AI (4)`, `🌐 Mạng & Proxy (2)`, `🛡️ Máy Chủ & Backup (3)`), bấm 1 chạm lọc ngay nhóm cần dùng không phải cuộn trang dài.
+    - **Thu Gọn 4 Trụ Cột Chiến Lược (`<details>` Accordion)** trong tab `Tri Thức AI Nhóm` để bảng tìm kiếm và lưới 360+ Repo hiển thị ngay lập tức trong tầm mắt.
+  - Đã đồng bộ trực tiếp lên máy chủ điện thoại Redmi K50G (`run-as com.termux git pull` + `pm2 restart all`) và phát sóng trực tiếp trên `https://acc.txlab.io.vn`.

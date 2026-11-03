@@ -29,6 +29,17 @@
   - Radar Định Vị Proxy & Lá Cờ Quốc Gia (Flag Badge): Tự động trích xuất mã nước ISO (VN, US, SG, JP...) và render lá cờ thu nhỏ 16x12px kèm mã quốc gia cạnh tên kênh và proxy.
   - Tích hợp API Key Web Bán Proxy (Proxy Seller Hub): Hỗ trợ ProxyV6 (proxyv6.net), TMProxy, TinProxy, Webshare, ProxyNo1, Custom API, kiểm tra tình trạng sống/chết của Key bên bán, đếm ngược đổi IP và 1-click gán proxy vào kênh.
   - Kho Tư Liệu Kịch Bản & Ảnh Thumbnail (.md, .txt, .png): Tải file lên, trình đọc kịch bản Markdown với nút copy code, sửa trực tiếp trên web, xem ảnh full res và 1-click đẩy sang Lịch đăng video.
+- **Tính Năng Mới Vừa Tích Hợp (Sovereign Apex Upgrade):**
+  - **Sao Lưu Database SQLite Về Telegram (1-Click Safe Backup Snapshot):**
+    - Trích xuất snapshot nhất quán qua `db.backup()` trong WAL Mode, tính mã băm SHA256 và dung lượng.
+    - Đẩy file `.db` trực tiếp qua Telegram Bot API (`sendDocument` multipart) kèm bản tóm tắt quân số (acc, proxy, lịch video, assets).
+    - Tự động dọn dẹp các bản backup cũ (giữ lại 15 bản gần nhất) và hỗ trợ tải trực tiếp `.db` về máy.
+  - **Kho Tri Thức & 360+ Siêu Vũ Khí Mã Nguồn Mở (Zalo Community Knowledge Hub):**
+    - Tích hợp mục riêng `Tri Thức AI Nhóm` tổng hợp từ 2 kho của `GROUP TRAO ĐỔI - AI, CÔNG NGHỆ` (`b2.triennguyen.com`).
+    - 360+ GitHub Repositories (12.4M+ Stars) phân theo 8 danh mục chuyên sâu: `AI & Agents`, `MCP & Skills`, `Dev Tools & CLI`, `Web & Fullstack`, `Automation & Scraping`, `Self-Hosted & Infra`, `Libraries & Core`, `Lưu trữ/Riêng tư`.
+    - 274+ Bài chia sẻ Hub chuyên sâu về Voice AI, Neural TTS siêu nhẹ chạy local (Qwen, Amphion, Mozilla TTS, Kokoro, ChatTTS, MeloTTS).
+    - 4 Trụ Cột Công Nghệ Tác Chiến (Executive Digest): Agentic AI & MCP, Voice AI / TTS, Automation / Video Scraping, Self-Hosted Infra.
+    - Bộ lọc real-time, tìm kiếm tức thì, phân trang và nút `Đồng Bộ Live Từ Nhóm` (`POST /api/knowledge/sync`).
 - **Repository GitHub Chính Thức:**
   - Tên Repo: `truongxoan/ACCproxy`
   - URL: `https://github.com/truongxoan/ACCproxy`
@@ -38,7 +49,7 @@
 - **Triển Khai Thành Công Pocket Home Server (Redmi K50G - ingres - Android 14 ARM64):**
   - Môi trường: Termux ARM64, Node.js v24.22.2 LTS, NPM v12.2.1, Python 3.14, Clang/Make C++23 Native Builder.
   - Native Addon: `better-sqlite3.node` (2.05MB) được biên dịch trực tiếp trên chip Snapdragon 8 Gen 1.
-  - Process Manager: PM2 v7.1.1 Daemon quản lý tiến trình `accproxy` (PID 29730), tự hồi sinh khi crash.
+  - Process Manager: PM2 v7.1.1 Daemon quản lý tiến trình `accproxy` (PID 18653), tự hồi sinh khi crash.
   - Tunnel Ready: Cài sẵn `cloudflared` v2026.10.7 arm64 tại `$PREFIX/bin/cloudflared`.
   - Địa chỉ truy cập:
     + Tên Miền Công Khai Toàn Cầu (Cloudflare Tunnel SSL): `https://acc.txlab.io.vn` & `https://txlab.io.vn`

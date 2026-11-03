@@ -60,7 +60,8 @@ function getHardwareMetrics() {
 
   const finalCpu = cpuTemp || 38.0;
   const finalBattery = batteryTemp || 32.0;
-  const maxTemp = Math.max(finalCpu, finalBattery);
+  // maxTemp phản ánh trực tiếp nhiệt độ Pin (linh kiện nhạy cảm nhất về an toàn phần cứng / sạc trên điện thoại)
+  const maxTemp = finalBattery;
 
   const freeMem = os.freemem();
   const totalMem = os.totalmem();
@@ -91,8 +92,8 @@ function getThermalConfig() {
   const autoActionRow = db.prepare("SELECT value FROM system_settings WHERE key = 'thermal_auto_action'").get();
 
   return {
-    warningTemp: warnRow ? parseFloat(warnRow.value) : 42.0,
-    criticalTemp: critRow ? parseFloat(critRow.value) : 46.0,
+    warningTemp: warnRow ? parseFloat(warnRow.value) : 44.0,
+    criticalTemp: critRow ? parseFloat(critRow.value) : 48.0,
     overheatCount: countRow ? parseInt(countRow.value, 10) : 0,
     lastRebootAt: lastRebootRow ? parseInt(lastRebootRow.value, 10) : 0,
     autoActionEnabled: autoActionRow ? autoActionRow.value === '1' : true
@@ -146,13 +147,17 @@ async function checkThermalSentinel() {
   let status = 'NORMAL';
   let actionTaken = null;
 
-  // Nếu nhiệt độ đã hạ về mức an toàn (< 40°C), reset biến đếm quá nhiệt
-  if (metrics.maxTemp < 40.0 && config.overheatCount > 0) {
+  // Đánh giá ngưỡng theo đặc tính phần cứng (Pin nguy hiểm khi >= 48°C; Snapdragon CPU chịu nhiệt đến 85°C)
+  const isCritical = (metrics.batteryTemp >= config.criticalTemp) || (metrics.cpuTemp >= 82.0);
+  const isWarning = (metrics.batteryTemp >= config.warningTemp) || (metrics.cpuTemp >= 70.0);
+
+  // Nếu nhiệt độ đã hạ về mức an toàn (Pin < 42°C và CPU < 65°C), reset biến đếm quá nhiệt
+  if (metrics.batteryTemp < 42.0 && metrics.cpuTemp < 65.0 && config.overheatCount > 0) {
     saveThermalState(0);
     const safeMsg = `
 ✅ <b>[HẠ NHIỆT AN TOÀN] MÁY CHỦ ĐIỆN THOẠI ĐÃ MÁT TRỞ LẠI!</b> ❄️
 ---------------------------------------------
-🌡️ <b>Nhiệt độ hiện tại:</b> ${metrics.maxTemp}°C (CPU: ${metrics.cpuTemp}°C | Pin: ${metrics.batteryTemp}°C)
+🌡️ <b>Nhiệt độ hiện tại:</b> Pin: ${metrics.batteryTemp}°C | CPU: ${metrics.cpuTemp}°C
 🔋 <b>Mức Pin:</b> ${metrics.batteryLevel}%
 💾 <b>RAM sử dụng:</b> ${metrics.memUsagePercent}% (${metrics.freeMemMb} MB trống)
 🛡️ <b>Trạng thái:</b> Đã reset bộ đếm cảnh báo quá nhiệt về 0. Hệ thống hoạt động bình thường!
@@ -161,14 +166,14 @@ async function checkThermalSentinel() {
     return { metrics, status: 'NORMAL', actionTaken: 'RESET_OVERHEAT_COUNT' };
   }
 
-  // Ngưỡng 1: Cảnh báo nóng máy (>= warningTemp)
-  if (metrics.maxTemp >= config.warningTemp && metrics.maxTemp < config.criticalTemp) {
+  // Ngưỡng 1: Cảnh báo nóng máy
+  if (isWarning && !isCritical) {
     status = 'WARNING';
     return { metrics, status, actionTaken: null };
   }
 
-  // Ngưỡng 2: Quá nhiệt nghiêm trọng (>= criticalTemp)
-  if (metrics.maxTemp >= config.criticalTemp && config.autoActionEnabled && !isActionExecuting) {
+  // Ngưỡng 2: Quá nhiệt nghiêm trọng
+  if (isCritical && config.autoActionEnabled && !isActionExecuting) {
     status = 'CRITICAL';
     const cooldownWindow = 15 * 60 * 1000; // 15 phút
     const timeSinceLastReboot = now - config.lastRebootAt;
@@ -182,7 +187,7 @@ async function checkThermalSentinel() {
       const alertMsg = `
 🚨 <b>[BÁO ĐỘNG ĐỎ - QUÁ NHIỆT LẦN 1] MÁY CHỦ ĐIỆN THOẠI QUÁ NÓNG!</b> 🔥
 ---------------------------------------------
-🌡️ <b>Nhiệt độ chạm ngưỡng:</b> <code>${metrics.maxTemp}°C</code> (Vượt mức cho phép ${config.criticalTemp}°C)!
+🌡️ <b>Nhiệt độ chạm ngưỡng:</b> Pin: <code>${metrics.batteryTemp}°C</code> (Ngưỡng ${config.criticalTemp}°C) | CPU: <code>${metrics.cpuTemp}°C</code>
 📱 <b>Thiết bị:</b> Xiaomi Redmi K50G (Snapdragon 8 Gen 1)
 🔋 <b>Pin:</b> ${metrics.batteryLevel}% | <b>RAM:</b> ${metrics.memUsagePercent}%
 ---------------------------------------------
@@ -207,7 +212,7 @@ Nếu sau khi khởi động lại mà nhiệt độ vẫn không hạ, hệ th�
       const emergencyMsg = `
 💀 <b>[BÁO ĐỘNG TỐI CAO - KHẨN CẤP] KHỞI ĐỘNG LẦN 1 VẪN QUÁ NHIỆT!</b> 🆘
 ---------------------------------------------
-🌡️ <b>Nhiệt độ đo được:</b> <code>${metrics.maxTemp}°C</code> (Vẫn trên ngưỡng ${config.criticalTemp}°C)!
+🌡️ <b>Nhiệt độ đo được:</b> Pin: <code>${metrics.batteryTemp}°C</code> | CPU: <code>${metrics.cpuTemp}°C</code>
 ⏰ <b>Thời gian từ lần khởi động lại trước:</b> ${Math.round(timeSinceLastReboot / 1000)} giây.
 ---------------------------------------------
 🛡️ <b>KÍCH HOẠT QUY CHUẨN TẮT HẲN SERVER (EMERGENCY SHUTDOWN):</b>

@@ -29,6 +29,9 @@ const socialVaultRoutes = require('./routes/socialVaultRoutes');
 
 const app = express();
 
+// 0. Tin tưởng Proxy phía trước (Cloudflare Tunnel, Nginx) để lấy IP thật và chống lỗi rate-limit
+app.set('trust proxy', true);
+
 // 1. Lớp phòng thủ mạng (Network & HTTP Headers Protection)
 app.use(
   helmet({
@@ -54,6 +57,7 @@ const loginLimiter = rateLimit({
   max: 20, // Tối đa 20 lần thử sai từ một địa chỉ IP
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: {
     success: false,
     message: 'Bạn đã thử đăng nhập sai quá nhiều lần. Vui lòng quay lại sau 15 phút!'

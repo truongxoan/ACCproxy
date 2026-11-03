@@ -96,20 +96,12 @@ const Auth = {
     });
   },
 
-  // Cơ chế phát hiện treo máy & khóa tự động (Auto-Lock)
+  // Cơ chế khóa tự động: ĐÃ GỠ BỎ THEO LỆNH ĐẠI CA TÚ
   setupInactivityTracker() {
     this.clearInactivityTracker();
-    const resetTimer = () => {
-      if (this.isLocked) return;
-      clearTimeout(this.idleTimer);
-      this.idleTimer = setTimeout(() => this.lockSession(), this.lockTimeoutMs);
-    };
-
-    ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
-      window.addEventListener(evt, resetTimer, { passive: true });
-    });
-
-    resetTimer();
+    this.isLocked = false;
+    const lockOverlay = document.getElementById('lock-screen-modal');
+    if (lockOverlay) lockOverlay.classList.add('hidden');
   },
 
   clearInactivityTracker() {
@@ -117,18 +109,10 @@ const Auth = {
   },
 
   lockSession() {
-    if (this.isLocked || !this.currentUser) return;
-    this.isLocked = true;
+    // Đã vô hiệu hóa hoàn toàn theo lệnh của Đại Ca Tú
+    this.isLocked = false;
     const lockOverlay = document.getElementById('lock-screen-modal');
-    if (lockOverlay) {
-      lockOverlay.classList.remove('hidden');
-      document.getElementById('lock-username').innerText = this.currentUser.username;
-      const passInput = document.getElementById('lock-password');
-      if (passInput) {
-        passInput.value = '';
-        passInput.focus();
-      }
-    }
+    if (lockOverlay) lockOverlay.classList.add('hidden');
   },
 
   async unlockSession(password) {

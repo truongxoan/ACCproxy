@@ -16,17 +16,111 @@ body {
   overflow-x: hidden;
 }
 
-/* Glassmorphism Cards */
+/* Glassmorphism Cards & 5D Hover Elevation */
 .glass-panel {
-  background: rgba(13, 20, 36, 0.7);
+  background: rgba(13, 20, 36, 0.72);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-color);
-  box-shadow: 0 10px 35px -5px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.3s ease,
+              background 0.3s ease;
+  position: relative;
+}
+
+/* Glass shine light sweep on hover */
+.glass-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -140%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.04), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.75s ease;
+  pointer-events: none;
+}
+
+.glass-panel:hover::before {
+  left: 140%;
+}
+
+/* Hover elevation: nổi lên với hiệu ứng kính trong sang trọng */
+.glass-panel:hover {
+  transform: translateY(-4px) scale(1.002);
+  background: rgba(18, 28, 50, 0.82);
+  border-color: rgba(6, 182, 212, 0.45);
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.75),
+              0 0 25px -2px rgba(6, 182, 212, 0.22),
+              inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Specialty Color Border Glows on Hover */
+.glass-panel.border-amber-500\/20:hover {
+  border-color: rgba(245, 158, 11, 0.55) !important;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.75), 0 0 25px -2px rgba(245, 158, 11, 0.25), inset 0 1px 0 0 rgba(255, 255, 255, 0.12) !important;
+}
+.glass-panel.border-emerald-500\/20:hover {
+  border-color: rgba(16, 185, 129, 0.55) !important;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.75), 0 0 25px -2px rgba(16, 185, 129, 0.25), inset 0 1px 0 0 rgba(255, 255, 255, 0.12) !important;
+}
+.glass-panel.border-cyan-500\/20:hover {
+  border-color: rgba(6, 182, 212, 0.55) !important;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.75), 0 0 25px -2px rgba(6, 182, 212, 0.25), inset 0 1px 0 0 rgba(255, 255, 255, 0.12) !important;
+}
+.glass-panel.border-rose-500\/20:hover {
+  border-color: rgba(244, 63, 94, 0.55) !important;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.75), 0 0 25px -2px rgba(244, 63, 94, 0.25), inset 0 1px 0 0 rgba(255, 255, 255, 0.12) !important;
+}
+.glass-panel.border-purple-500\/20:hover {
+  border-color: rgba(168, 85, 247, 0.55) !important;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.75), 0 0 25px -2px rgba(168, 85, 247, 0.25), inset 0 1px 0 0 rgba(255, 255, 255, 0.12) !important;
+}
+.glass-panel.border-blue-500\/20:hover {
+  border-color: rgba(59, 130, 246, 0.55) !important;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.75), 0 0 25px -2px rgba(59, 130, 246, 0.25), inset 0 1px 0 0 rgba(255, 255, 255, 0.12) !important;
+}
+.glass-panel.border-violet-500\/30:hover {
+  border-color: rgba(139, 92, 246, 0.65) !important;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.75), 0 0 30px -2px rgba(139, 92, 246, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Sub-card interactive elevation */
+.interactive-card,
+div[class*="rounded-xl bg-slate-950"],
+div[class*="rounded-xl border border-slate-800"] {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background-color 0.25s ease;
+}
+.interactive-card:hover,
+div[class*="rounded-xl bg-slate-950"]:hover {
+  transform: translateY(-2px);
+  border-color: rgba(6, 182, 212, 0.35);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 15px rgba(6, 182, 212, 0.15);
+}
+
+/* Table Row Hover Shine */
+tbody tr {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+tbody tr:hover {
+  background: rgba(14, 165, 233, 0.08) !important;
+  transform: translateX(3px);
+  box-shadow: inset 3px 0 0 0 #06b6d4;
+}
+
+/* Button & Pill Hover Elevate */
+button, .filter-btn, .nav-tab-btn {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+button:hover:not(:disabled) {
+  filter: brightness(1.08);
 }
 
 .glass-header {
-  background: rgba(7, 11, 20, 0.88);
+  background: rgba(7, 11, 20, 0.9);
   backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--border-color);
 }

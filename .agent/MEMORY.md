@@ -63,3 +63,8 @@
     + Máy tính nối USB: `http://localhost:3000` (ADB Port Forward tcp:3000)
     + Tài khoản mặc định: `admin` / `Admin@123456`
     + Tunnel ID: `f6a0c9a1-9be0-4835-b6a3-d2fe92979b23` (txlab-server chạy ngầm PM2 id 1)
+
+## 3. Mệnh Lệnh Khóa Cứng: Tự Động Git Commit & Đẩy Mã Nguồn Lên Hệ Thống
+- **Chỉ thị tối cao từ Đại Ca Tú (2026-11-03):**
+  - Mọi tác vụ code, tạo mới tính năng, vá lỗi (hotfix), tối ưu giao diện hay tinh chỉnh hệ thống, **BẮT BUỘC TỰ ĐỘNG CHẠY KIỂM ĐỊNH (TESTS PASS) -> TỰ ĐỘNG GIT ADD -> TỰ ĐỘNG GIT COMMIT -> VÀ PUSH THẲNG LÊN TRẬN ĐỊA GITHUB `origin/main`** ngay lập tức mà không cần Đại Ca phải nhắc nhở một lời nào!
+  - Luôn đảm bảo trận địa GitHub `truongxoan/ACCproxy` và máy chủ điện thoại Redmi K50G luôn đồng bộ bản build mới nhất 100%.

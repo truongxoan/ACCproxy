@@ -68,3 +68,18 @@
 - **Chỉ thị tối cao từ Đại Ca Tú (2026-11-03):**
   - Mọi tác vụ code, tạo mới tính năng, vá lỗi (hotfix), tối ưu giao diện hay tinh chỉnh hệ thống, **BẮT BUỘC TỰ ĐỘNG CHẠY KIỂM ĐỊNH (TESTS PASS) -> TỰ ĐỘNG GIT ADD -> TỰ ĐỘNG GIT COMMIT -> VÀ PUSH THẲNG LÊN TRẬN ĐỊA GITHUB `origin/main`** ngay lập tức mà không cần Đại Ca phải nhắc nhở một lời nào!
   - Luôn đảm bảo trận địa GitHub `truongxoan/ACCproxy` và máy chủ điện thoại Redmi K50G luôn đồng bộ bản build mới nhất 100%.
+
+## 4. Giao Diện Khí Quyển 5D & Trải Nghiệm Tác Chiến Apex (2026-11-03)
+- **Gỡ Bỏ Hoàn Toàn Màn Hình Khóa Tự Động (Auto-Lock Removed):**
+  - Đã triệt tiêu hoàn toàn màn hình khóa treo máy phiền toái theo lệnh Đại Ca Tú.
+  - Vô hiệu hóa `setupInactivityTracker()` và `lockSession()`, ẩn hoàn toàn `lock-screen-modal`. Đại Ca thao tác liên tục không bị gián đoạn.
+- **Hiệu Ứng Nổi Khối Kính Trong Khi Rê Chuột (Glass Elevation & Hover Sheen):**
+  - Rê chuột vào các Panel, Thẻ Card, Nút bấm và Bảng dữ liệu sẽ tự động nâng khối 3D (`translateY(-4px)`), viền kính sáng quầng neon (`box-shadow glow`), phản chiếu tia sáng quét ngang (`light sweep skew`).
+- **Bộ Động Cơ Khí Quyển 5D Đỉnh Cao (`ambientEngine.js`):**
+  - Canvas 60 FPS tối ưu, pointer-events: none, không tốn tài nguyên CPU:
+    1. ⚡ Sấm Sét 5D: Tia sét phân nhánh fractal giật sáng màn hình kèm rung chấn visual.
+    2. 🎆 Pháo Hoa Rực Rỡ: Tên lửa phóng từ đáy màn hình và phát nổ bung hạt đa sắc màu.
+    3. 🌸 Hoa Đào Rơi: Cánh hoa đào uốn lượn 3D tumble flip theo luồng gió xuân.
+    4. ❄️ Tuyết Rơi Mùa Đông: Bông tuyết trắng đa tầng Parallax bay chầm chậm.
+    5. 🌧️ Mưa Rơi Cyberpunk: Tia mưa tốc độ cao tạo gợn sóng va đập đáy màn hình.
+  - Widget chuyển đổi nhanh ngay trên thanh Header, lưu trạng thái vĩnh viễn vào `localStorage`.

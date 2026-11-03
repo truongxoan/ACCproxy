@@ -22,6 +22,7 @@ const scheduleRoutes = require('./routes/scheduleRoutes');
 const toolRoutes = require('./routes/toolRoutes');
 const providerRoutes = require('./routes/providerRoutes');
 const assetRoutes = require('./routes/assetRoutes');
+const knowledgeRoutes = require('./routes/knowledgeRoutes');
 
 const app = express();
 
@@ -70,6 +71,7 @@ app.use('/api/schedules', scheduleRoutes);
 app.use('/api/tools', toolRoutes);
 app.use('/api/providers', providerRoutes);
 app.use('/api/assets', assetRoutes);
+app.use('/api/knowledge', knowledgeRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

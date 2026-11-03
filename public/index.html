@@ -76,6 +76,11 @@
         <span>🛠️</span>
         <span>Vũ Khí Xây Kênh</span>
       </button>
+      <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5" data-tab="tab-knowledge">
+        <span>🧠</span>
+        <span>Tri Thức AI Nhóm</span>
+        <span id="header-knowledge-badge" class="px-1.5 py-0.2 rounded-full bg-violet-600 text-white text-[10px] font-mono">360+</span>
+      </button>
       <button class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 admin-only" data-tab="tab-admin">
         <span>👥</span>
         <span>Quản Trị & Logs</span>
@@ -83,7 +88,11 @@
     </nav>
 
     <!-- Right Controls: Profile & Tools -->
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2.5">
+      <button id="btn-backup-telegram" onclick="App.openBackupModal()" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition-all border border-blue-400/30" title="Sao lưu Database SQLite & gửi trực tiếp về Telegram">
+        <span>💾</span>
+        <span class="hidden sm:inline">Backup Telegram</span>
+      </button>
       <button id="btn-refresh" class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 transition-colors" title="Đồng bộ toàn hệ thống">
         🔄
       </button>
@@ -396,25 +405,31 @@
           </div>
         </div>
 
-        <!-- VŨ KHÍ 2: CẤU HÌNH BÁO ĐỘNG TELEGRAM -->
+        <!-- VŨ KHÍ 2: CẤU HÌNH BÁO ĐỘNG TELEGRAM & SAO LƯU DATABASE -->
         <div class="glass-panel p-5 rounded-xl flex flex-col gap-3.5 border-cyan-500/20">
           <div class="flex items-center justify-between pb-2 border-b border-slate-800">
             <div class="flex items-center gap-2">
               <span class="text-2xl">📢</span>
               <div>
-                <h3 class="text-sm font-bold text-cyan-300">Báo Động Đỏ Telegram (Bắn Chuông Điện Thoại)</h3>
-                <p class="text-[11px] text-slate-400">Tự động bắn tin nhắn vào nhóm Telegram khi tới khung giờ vàng</p>
+                <h3 class="text-sm font-bold text-cyan-300">Telegram Bot & Sao Lưu Database Tự Động</h3>
+                <p class="text-[11px] text-slate-400">Bắn chuông nhắc lịch đăng video & sao lưu kho quân lương về máy chủ cá nhân</p>
               </div>
             </div>
           </div>
 
           <form id="telegram-form" class="flex flex-col gap-3 text-xs">
             <div>
-              <label class="block font-semibold text-slate-300 mb-1">Telegram Bot Token</label>
+              <label class="block font-semibold text-slate-300 mb-1 flex items-center justify-between">
+                <span>Telegram Bot Token</span>
+                <a href="https://t.me/BotFather" target="_blank" class="text-[10px] text-cyan-400 hover:underline">Lấy Token @BotFather ↗</a>
+              </label>
               <input type="text" id="tg-token" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ">
             </div>
             <div>
-              <label class="block font-semibold text-slate-300 mb-1">Telegram Chat ID (hoặc Group ID)</label>
+              <label class="block font-semibold text-slate-300 mb-1 flex items-center justify-between">
+                <span>Telegram Chat ID (hoặc Group ID)</span>
+                <a href="https://t.me/userinfobot" target="_blank" class="text-[10px] text-cyan-400 hover:underline">Lấy Chat ID @userinfobot ↗</a>
+              </label>
               <input type="text" id="tg-chat-id" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono" placeholder="-100123456789 hoặc @username">
             </div>
             <div class="flex items-center justify-end gap-2 pt-1">
@@ -426,6 +441,29 @@
               </button>
             </div>
           </form>
+
+          <!-- KHU VỰC SAO LƯU 1-CLICK -->
+          <div class="mt-2 pt-3 border-t border-slate-800 flex flex-col gap-2.5 bg-slate-950/60 p-3 rounded-xl border border-blue-500/20">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-lg">💾</span>
+                <div>
+                  <div class="font-bold text-slate-200 text-xs">Kho Lưu Trữ An Toàn (Safe SQLite Snapshot)</div>
+                  <div class="text-[10px] text-slate-400">Trích xuất toàn bộ tài khoản, proxy, lịch đăng và gửi file về Telegram</div>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" onclick="App.triggerTelegramBackup()" class="flex-1 py-2 px-3 rounded-lg bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/20">
+                <span>🚀</span>
+                <span>Sao Lưu Về Telegram Ngay</span>
+              </button>
+              <button type="button" onclick="App.downloadBackupDirect()" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs flex items-center gap-1.5 border border-slate-700">
+                <span>📥</span>
+                <span>Tải .db Về Máy</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -603,6 +641,115 @@
               </thead>
               <tbody id="audit-tbody" class="divide-y divide-slate-800/40"></tbody>
             </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ==================== TAB: KHO KIẾN THỨC & 360+ SIÊU REPOS NHÓM ==================== -->
+    <div id="tab-knowledge" class="tab-pane hidden flex flex-col gap-5">
+      <!-- HEADER BANNER & STATS -->
+      <div class="glass-panel p-5 rounded-2xl flex flex-col gap-4 border border-violet-500/30 bg-gradient-to-br from-violet-950/40 via-purple-950/20 to-slate-900 shadow-2xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-2xl">🧠</span>
+              <h2 class="text-lg font-extrabold text-white flex items-center gap-2">
+                <span>Kho Tri Thức & 360+ Siêu Vũ Khí Mã Nguồn Mở</span>
+                <span class="text-[10px] px-2.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 font-mono font-bold">GROUP TRAO ĐỔI - AI, CÔNG NGHỆ</span>
+              </h2>
+            </div>
+            <p class="text-xs text-slate-300">Tóm tắt tinh hoa từ 2 kho tri thức Zalo Community (Hub & GitHub Repositories) tuyển chọn bởi 74 chuyên gia</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="App.syncKnowledge()" id="btn-sync-knowledge" class="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs shadow-lg shadow-violet-500/20 flex items-center gap-1.5 transition-all">
+              <span id="sync-knowledge-spinner">🔄</span>
+              <span>Đồng Bộ Live Từ Nhóm</span>
+            </button>
+            <a href="https://b2.triennguyen.com/repos?groupId=1913869945242410752&token=23d355f6c265716d" target="_blank" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1 border border-slate-700">
+              <span>↗</span>
+              <span>Web Gốc</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- 4 THỐNG KÊ QUÂN LƯƠNG -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+          <div class="p-3 rounded-xl bg-slate-950/60 border border-violet-500/20 flex flex-col">
+            <span class="text-[11px] text-slate-400">Siêu Repositories</span>
+            <span class="text-lg font-black text-violet-300 font-mono mt-0.5" id="kn-stat-repos">360+</span>
+            <span class="text-[10px] text-slate-500">Mã nguồn AI/Tools</span>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-950/60 border border-amber-500/20 flex flex-col">
+            <span class="text-[11px] text-slate-400">Tổng Lượt Sao ⭐</span>
+            <span class="text-lg font-black text-amber-300 font-mono mt-0.5" id="kn-stat-stars">12,430,000+</span>
+            <span class="text-[10px] text-slate-500">Uy tín toàn cầu</span>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-950/60 border border-cyan-500/20 flex flex-col">
+            <span class="text-[11px] text-slate-400">Bài Chia Sẻ Hub</span>
+            <span class="text-lg font-black text-cyan-300 font-mono mt-0.5" id="kn-stat-hub">274+</span>
+            <span class="text-[10px] text-slate-500">Voice AI, TTS, Tools</span>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-950/60 border border-emerald-500/20 flex flex-col">
+            <span class="text-[11px] text-slate-400">Chuyên Gia Đóng Góp</span>
+            <span class="text-lg font-black text-emerald-300 font-mono mt-0.5" id="kn-stat-contributors">74</span>
+            <span class="text-[10px] text-slate-500">Thành viên nòng cốt</span>
+          </div>
+        </div>
+
+        <!-- 4 TRỤ CỘT CÔNG NGHỆ CHIẾN LƯỢC (EXECUTIVE DIGEST) -->
+        <div class="mt-2">
+          <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+            <span>⚡</span>
+            <span>4 Trụ Cột Công Nghệ Tác Chiến & Đột Phá AI Nhóm Tập Trung:</span>
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3" id="kn-pillars-container"></div>
+        </div>
+      </div>
+
+      <!-- KHO TÀI LIỆU CHI TIẾT (REPOS & HUB TABS) -->
+      <div class="glass-panel p-5 rounded-2xl flex flex-col gap-4">
+        <!-- Sub-tab switch & Search Toolbar -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <button onclick="App.switchKnowledgeSubTab('repos')" id="btn-kn-subtab-repos" class="px-4 py-2 rounded-xl text-xs font-bold bg-violet-600 text-white shadow-md shadow-violet-500/20 transition-all flex items-center gap-1.5">
+              <span>⭐</span>
+              <span>360+ Siêu Repositories</span>
+            </button>
+            <button onclick="App.switchKnowledgeSubTab('hub')" id="btn-kn-subtab-hub" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white transition-all flex items-center gap-1.5">
+              <span>📂</span>
+              <span>274+ Tài Nguyên & File AI</span>
+            </button>
+          </div>
+
+          <!-- Search Input -->
+          <div class="relative w-full md:w-80">
+            <input type="text" id="kn-search-input" oninput="App.handleKnowledgeSearch(event)" placeholder="Tìm kiếm theo tên, từ khóa, công nghệ..." class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-violet-500 transition-colors">
+            <span class="absolute left-3 top-2.5 text-xs text-slate-500">🔍</span>
+          </div>
+        </div>
+
+        <!-- Filter Category Chips (for Repos) -->
+        <div id="kn-category-chips" class="flex flex-wrap items-center gap-1.5"></div>
+
+        <!-- Grid Container -->
+        <div id="kn-items-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 min-h-[300px]">
+          <div class="col-span-full py-16 text-center text-slate-500">
+            <div class="animate-pulse">Đang nạp tri thức từ kho quân lương...</div>
+          </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="flex items-center justify-between pt-3 border-t border-slate-800 text-xs">
+          <div class="text-slate-400" id="kn-page-info">Hiển thị kết quả...</div>
+          <div class="flex items-center gap-2">
+            <button onclick="App.changeKnowledgePage(-1)" id="btn-kn-prev" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed">
+              ← Trang Trước
+            </button>
+            <span id="kn-current-page" class="font-mono text-violet-300 font-bold px-2 py-1 bg-slate-900 rounded border border-slate-800">1</span>
+            <button onclick="App.changeKnowledgePage(1)" id="btn-kn-next" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed">
+              Trang Sau →
+            </button>
           </div>
         </div>
       </div>
@@ -1038,6 +1185,80 @@
           <button type="submit" class="px-5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold shadow-md shadow-cyan-500/20">
             Bắt Đầu Tải Lên
           </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: SAO LƯU & CẤU HÌNH BACKUP TELEGRAM -->
+  <div id="backup-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+    <div class="glass-modal max-w-lg w-full p-6 rounded-2xl shadow-2xl flex flex-col gap-4 text-xs">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span>💾</span>
+          <span>Sao Lưu Database Về Telegram (Snapshot Safe)</span>
+        </h3>
+        <button onclick="App.closeBackupModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <div class="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col gap-2">
+        <div class="flex items-center justify-between text-[11px]">
+          <span class="text-slate-400">Trạng thái cấu hình Telegram:</span>
+          <span id="backup-modal-tg-status" class="font-bold text-amber-400 font-mono">Đang kiểm tra...</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center text-[10px] mt-1">
+          <div class="p-2 rounded bg-slate-900 border border-slate-800">
+            <div class="text-slate-500">Tài khoản</div>
+            <div id="backup-stat-acc" class="font-bold text-white text-xs mt-0.5">--</div>
+          </div>
+          <div class="p-2 rounded bg-slate-900 border border-slate-800">
+            <div class="text-slate-500">Proxy</div>
+            <div id="backup-stat-proxy" class="font-bold text-cyan-400 text-xs mt-0.5">--</div>
+          </div>
+          <div class="p-2 rounded bg-slate-900 border border-slate-800">
+            <div class="text-slate-500">Lịch video</div>
+            <div id="backup-stat-sched" class="font-bold text-pink-400 text-xs mt-0.5">--</div>
+          </div>
+        </div>
+      </div>
+
+      <form id="backup-config-form" class="flex flex-col gap-3">
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1 flex items-center justify-between">
+            <span>Telegram Bot Token</span>
+            <a href="https://t.me/BotFather" target="_blank" class="text-[10px] text-cyan-400 hover:underline">Lấy Token tại @BotFather ↗</a>
+          </label>
+          <input type="text" id="backup-tg-token" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono" placeholder="VD: 7123456789:AAFx... (Để trống nếu đã lưu)">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1 flex items-center justify-between">
+            <span>Telegram Chat ID / Group ID</span>
+            <a href="https://t.me/userinfobot" target="_blank" class="text-[10px] text-cyan-400 hover:underline">Lấy Chat ID tại @userinfobot ↗</a>
+          </label>
+          <input type="text" id="backup-tg-chat-id" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono" placeholder="VD: -100123456789 hoặc 987654321">
+        </div>
+
+        <div id="backup-progress-box" class="hidden p-3 rounded-lg bg-blue-950/40 border border-blue-500/40 text-blue-300 flex items-center gap-2">
+          <div class="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+          <span id="backup-progress-msg">Đang trích xuất snapshot SQLite và đẩy file về Telegram...</span>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+          <button type="button" onclick="App.downloadBackupDirect()" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold flex items-center gap-1.5 transition-colors">
+            <span>📥</span>
+            <span>Tải Trực Tiếp (.db)</span>
+          </button>
+
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="App.closeBackupModal()" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white">
+              Đóng
+            </button>
+            <button type="submit" id="btn-submit-backup" class="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold flex items-center gap-1.5 shadow-lg shadow-blue-500/20">
+              <span>🚀</span>
+              <span>Bắn Về Telegram Ngay</span>
+            </button>
+          </div>
         </div>
       </form>
     </div>

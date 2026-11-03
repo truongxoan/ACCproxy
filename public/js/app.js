@@ -13,6 +13,11 @@ const App = {
   assetAccountFilter: '',
   currentViewingAsset: null,
   selectedUploadFile: null,
+  knowledgeSubTab: 'repos',
+  knowledgeCategory: 'all',
+  knowledgeSearch: '',
+  knowledgePage: 1,
+  knowledgeTotalPages: 1,
 
   async init() {
     this.bindEvents();
@@ -45,6 +50,9 @@ const App = {
           this.loadTelegramConfig();
           this.loadHooks();
           this.loadProviders();
+        } else if (targetTab === 'tab-knowledge') {
+          this.loadKnowledgeSummary();
+          this.loadKnowledgeItems();
         } else if (targetTab === 'tab-admin') {
           this.loadUsersList();
           this.loadAuditLogs();
@@ -186,6 +194,14 @@ const App = {
     document.getElementById('telegram-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       await this.saveTelegramConfig();
+    });
+
+    // Form sao lưu database về Telegram trong Modal
+    document.getElementById('backup-config-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const token = document.getElementById('backup-tg-token')?.value || '';
+      const chatId = document.getElementById('backup-tg-chat-id')?.value || '';
+      await this.triggerTelegramBackup(token, chatId);
     });
   },
 
@@ -2396,6 +2412,396 @@ const App = {
       }
     } catch (err) {
       Toast.error(`Lỗi xóa: ${err.message}`);
+    }
+  },
+
+  // ==================== SAO LƯU DATABASE & TELEGRAM SNAPSHOT ====================
+  async openBackupModal() {
+    const modal = document.getElementById('backup-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+
+    const progressBox = document.getElementById('backup-progress-box');
+    if (progressBox) progressBox.classList.add('hidden');
+
+    const statusEl = document.getElementById('backup-modal-tg-status');
+    if (statusEl) {
+      statusEl.textContent = 'Đang kiểm tra...';
+      statusEl.className = 'font-bold text-amber-400 font-mono';
+    }
+
+    try {
+      const [tgRes, statsRes] = await Promise.all([
+        API.get('/tools/telegram'),
+        API.get('/tools/backup/stats')
+      ]);
+
+      if (tgRes && tgRes.success) {
+        const tokenInput = document.getElementById('backup-tg-token');
+        const chatInput = document.getElementById('backup-tg-chat-id');
+        if (tokenInput && tgRes.botToken) tokenInput.value = tgRes.botToken;
+        if (chatInput && tgRes.chatId) chatInput.value = tgRes.chatId;
+
+        if (statusEl) {
+          if (tgRes.hasToken && tgRes.chatId) {
+            statusEl.textContent = '🟢 Sẵn Sàng Bắn File';
+            statusEl.className = 'font-bold text-emerald-400 font-mono';
+          } else {
+            statusEl.textContent = '🟡 Chưa Cấu Hình Token/Chat ID';
+            statusEl.className = 'font-bold text-amber-400 font-mono';
+          }
+        }
+      }
+
+      if (statsRes && statsRes.success && statsRes.stats) {
+        const s = statsRes.stats;
+        const accEl = document.getElementById('backup-stat-acc');
+        const proxyEl = document.getElementById('backup-stat-proxy');
+        const schedEl = document.getElementById('backup-stat-sched');
+        if (accEl) accEl.textContent = `${s.accounts} acc`;
+        if (proxyEl) proxyEl.textContent = `${s.proxies} proxy`;
+        if (schedEl) schedEl.textContent = `${s.schedules} lịch`;
+      }
+    } catch (err) {
+      console.error('Lỗi nạp thông tin backup:', err);
+    }
+  },
+
+  closeBackupModal() {
+    const modal = document.getElementById('backup-modal');
+    if (modal) modal.classList.add('hidden');
+  },
+
+  async triggerTelegramBackup(customToken = null, customChatId = null) {
+    const progressBox = document.getElementById('backup-progress-box');
+    const submitBtn = document.getElementById('btn-submit-backup');
+
+    if (progressBox) {
+      progressBox.classList.remove('hidden');
+      const msgEl = document.getElementById('backup-progress-msg');
+      if (msgEl) msgEl.textContent = 'Đang trích xuất snapshot SQLite và đẩy file về Telegram...';
+    }
+    if (submitBtn) submitBtn.disabled = true;
+
+    Toast.info('Đang chuẩn bị gói dữ liệu snapshot kho quân lương...');
+
+    try {
+      const res = await API.post('/tools/backup/telegram', {
+        botToken: customToken,
+        chatId: customChatId
+      });
+
+      if (res.notConfigured) {
+        Toast.error(res.message);
+        this.openBackupModal();
+        return;
+      }
+
+      if (res.success) {
+        Toast.success(res.message || 'Đã gửi file backup về Telegram thành công!');
+        if (progressBox) {
+          const msgEl = document.getElementById('backup-progress-msg');
+          if (msgEl) msgEl.textContent = `✓ Đã gửi thành công: ${res.backupInfo?.filename} (${res.backupInfo?.sizeFormatted})`;
+        }
+        setTimeout(() => {
+          this.closeBackupModal();
+        }, 1500);
+      } else {
+        Toast.error(`Lỗi sao lưu: ${res.message || res.error}`);
+        if (progressBox) {
+          const msgEl = document.getElementById('backup-progress-msg');
+          if (msgEl) msgEl.textContent = `Lỗi: ${res.message || res.error}`;
+        }
+      }
+    } catch (err) {
+      Toast.error(`Lỗi kết nối sao lưu: ${err.message}`);
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  },
+
+  downloadBackupDirect() {
+    Toast.info('Đang chuẩn bị file snapshot SQLite để tải về máy...');
+    window.location.href = '/api/tools/backup/download';
+  },
+
+  // ==================== KHO TRI THỨC NHÓM & 360+ SIÊU REPOS ====================
+  async loadKnowledgeSummary() {
+    try {
+      const res = await API.get('/knowledge/summary');
+      if (!res || !res.success) return;
+
+      const reposEl = document.getElementById('kn-stat-repos');
+      const starsEl = document.getElementById('kn-stat-stars');
+      const hubEl = document.getElementById('kn-stat-hub');
+      const contribEl = document.getElementById('kn-stat-contributors');
+
+      if (reposEl) reposEl.textContent = `${res.stats.totalRepos}+`;
+      if (starsEl) starsEl.textContent = `${(res.stats.totalStars / 1000000).toFixed(1)}M+`;
+      if (hubEl) hubEl.textContent = `${res.stats.totalHubItems}+`;
+      if (contribEl) contribEl.textContent = `${res.stats.totalContributors}`;
+
+      // Render 4 Trụ Cột Công Nghệ Bento Cards
+      const pillarsContainer = document.getElementById('kn-pillars-container');
+      if (pillarsContainer && res.pillars) {
+        pillarsContainer.innerHTML = res.pillars.map(p => `
+          <div class="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-violet-500/40 flex flex-col justify-between transition-colors">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xl">${p.icon}</span>
+                <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-violet-500/20 text-violet-300 font-bold">${p.badge}</span>
+              </div>
+              <h4 class="font-bold text-white text-xs mb-1">${p.title}</h4>
+              <p class="text-[11px] text-slate-400 line-clamp-3 mb-2">${p.description}</p>
+            </div>
+            <div class="pt-2 border-t border-slate-800/80">
+              <div class="text-[10px] text-violet-300 font-semibold truncate">🎯 ${p.keyTools.join(' • ')}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render Category Filter Chips for Repos
+      const chipsContainer = document.getElementById('kn-category-chips');
+      if (chipsContainer && res.categories) {
+        const allCats = [{ category: 'Tất Cả', count: res.stats.totalRepos }, ...res.categories];
+        chipsContainer.innerHTML = allCats.map(c => `
+          <button onclick="App.selectKnowledgeCategory('${c.category}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold ${this.knowledgeCategory === c.category || (this.knowledgeCategory === 'all' && c.category === 'Tất Cả') ? 'bg-violet-600 text-white font-bold' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">
+            ${c.category} <span class="text-[10px] opacity-75 font-mono">(${c.count})</span>
+          </button>
+        `).join('');
+      }
+    } catch (err) {
+      console.error('Lỗi nạp tóm tắt tri thức:', err);
+    }
+  },
+
+  async loadKnowledgeItems() {
+    const grid = document.getElementById('kn-items-grid');
+    if (!grid) return;
+
+    grid.innerHTML = `
+      <div class="col-span-full py-16 text-center text-slate-500">
+        <div class="animate-pulse">Đang nạp dữ liệu từ kho tri thức nhóm...</div>
+      </div>
+    `;
+
+    try {
+      if (this.knowledgeSubTab === 'repos') {
+        const cat = this.knowledgeCategory === 'Tất Cả' ? 'all' : this.knowledgeCategory;
+        const res = await API.get(`/knowledge/repos?category=${encodeURIComponent(cat)}&search=${encodeURIComponent(this.knowledgeSearch)}&page=${this.knowledgePage}&limit=24`);
+        if (!res.success) throw new Error(res.message);
+
+        this.knowledgeTotalPages = res.totalPages || 1;
+        this.updateKnowledgePagination(res.page, res.totalPages, res.total, 'repositories');
+
+        if (!res.repos || res.repos.length === 0) {
+          grid.innerHTML = `
+            <div class="col-span-full py-12 text-center text-slate-500">
+              Không tìm thấy repository nào khớp với bộ lọc "${this.knowledgeSearch}".
+            </div>
+          `;
+          return;
+        }
+
+        grid.innerHTML = res.repos.map(r => `
+          <div class="glass-panel p-4 rounded-xl flex flex-col justify-between gap-3 border-slate-800 hover:border-violet-500/40 transition-colors">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20 font-bold truncate max-w-[140px]">
+                  ${r.category || 'Tool'}
+                </span>
+                <span class="flex items-center gap-1 text-[11px] font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                  ⭐ ${(r.stars || 0).toLocaleString()}
+                </span>
+              </div>
+
+              <h4 class="font-bold text-white text-xs mb-1 flex items-center gap-1.5 truncate">
+                <span>📦</span>
+                <a href="${r.repo_url}" target="_blank" class="hover:text-violet-300 hover:underline truncate" title="${r.full_name}">
+                  ${r.full_name}
+                </a>
+              </h4>
+
+              <p class="text-xs text-slate-300 line-clamp-2 mt-1 mb-2">
+                ${r.summary_vi || r.description || 'Không có mô tả chi tiết'}
+              </p>
+
+              ${r.target_audience ? `
+                <div class="text-[10px] text-slate-400 bg-slate-950/60 p-1.5 rounded border border-slate-800/80 mb-2 truncate">
+                  🎯 <b>Phù hợp:</b> ${r.target_audience}
+                </div>
+              ` : ''}
+            </div>
+
+            <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
+              <span class="text-[11px] font-mono text-cyan-400">${r.language || 'Code'}</span>
+              <div class="flex items-center gap-1.5">
+                <button onclick="Security.safeCopy('${r.repo_url}', 'Link Repository')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px]" title="Chép link GitHub">
+                  📋 Link
+                </button>
+                <a href="${r.repo_url}" target="_blank" class="px-2.5 py-1 rounded bg-violet-600 hover:bg-violet-500 text-white font-bold text-[11px] flex items-center gap-1 shadow-sm">
+                  <span>Mở Git</span>
+                  <span>↗</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        `).join('');
+
+      } else {
+        // Sub-tab Hub Items
+        const res = await API.get(`/knowledge/hub?search=${encodeURIComponent(this.knowledgeSearch)}&page=${this.knowledgePage}&limit=18`);
+        if (!res.success) throw new Error(res.message);
+
+        this.knowledgeTotalPages = res.totalPages || 1;
+        this.updateKnowledgePagination(res.page, res.totalPages, res.total, 'bài chia sẻ & file AI');
+
+        if (!res.items || res.items.length === 0) {
+          grid.innerHTML = `
+            <div class="col-span-full py-12 text-center text-slate-500">
+              Không tìm thấy tài nguyên nào khớp với bộ lọc.
+            </div>
+          `;
+          return;
+        }
+
+        grid.innerHTML = res.items.map(h => `
+          <div class="glass-panel p-4 rounded-xl flex flex-col justify-between gap-3 border-slate-800 hover:border-cyan-500/40 transition-colors">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-bold truncate">
+                  ${h.categoryLabel || h.category || 'AI Resource'}
+                </span>
+                <span class="text-[11px] text-slate-500 font-mono">${h.date || ''}</span>
+              </div>
+
+              <h4 class="font-bold text-white text-xs mb-1.5 line-clamp-2" title="${h.title}">
+                ${h.title}
+              </h4>
+
+              <p class="text-[11px] text-slate-400 line-clamp-2 mb-2">
+                ${h.summary || ''}
+              </p>
+
+              ${h.keyPoints && h.keyPoints.length > 0 ? `
+                <div class="space-y-1 bg-slate-950/60 p-2 rounded-lg border border-slate-800/80 mb-2">
+                  ${h.keyPoints.slice(0, 3).map(k => `
+                    <div class="text-[10px] text-slate-300 flex items-start gap-1">
+                      <span class="text-violet-400">•</span>
+                      <span class="line-clamp-1">${k}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+
+            <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
+              <span class="text-[11px] text-slate-400">👤 ${h.author || 'Thành viên'}</span>
+              <div class="flex items-center gap-1.5">
+                ${h.links && h.links.length > 0 ? `
+                  <a href="${h.links[0].url}" target="_blank" class="px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] flex items-center gap-1 shadow-sm">
+                    <span>Mở Link (${h.links.length})</span>
+                    <span>↗</span>
+                  </a>
+                ` : `
+                  <span class="text-[10px] text-slate-500 italic">Nội dung text</span>
+                `}
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+    } catch (err) {
+      grid.innerHTML = `
+        <div class="col-span-full py-12 text-center text-rose-400">
+          Lỗi nạp dữ liệu: ${err.message}
+        </div>
+      `;
+    }
+  },
+
+  updateKnowledgePagination(page, totalPages, total, unit) {
+    const infoEl = document.getElementById('kn-page-info');
+    const currEl = document.getElementById('kn-current-page');
+    const prevBtn = document.getElementById('btn-kn-prev');
+    const nextBtn = document.getElementById('btn-kn-next');
+
+    if (infoEl) infoEl.textContent = `Tổng ${total} ${unit} (Trang ${page}/${totalPages})`;
+    if (currEl) currEl.textContent = `${page}`;
+    if (prevBtn) prevBtn.disabled = page <= 1;
+    if (nextBtn) nextBtn.disabled = page >= totalPages;
+  },
+
+  switchKnowledgeSubTab(type) {
+    this.knowledgeSubTab = type;
+    this.knowledgePage = 1;
+
+    const btnRepos = document.getElementById('btn-kn-subtab-repos');
+    const btnHub = document.getElementById('btn-kn-subtab-hub');
+    const chipsContainer = document.getElementById('kn-category-chips');
+
+    if (type === 'repos') {
+      btnRepos.className = 'px-4 py-2 rounded-xl text-xs font-bold bg-violet-600 text-white shadow-md shadow-violet-500/20 transition-all flex items-center gap-1.5';
+      btnHub.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white transition-all flex items-center gap-1.5';
+      if (chipsContainer) chipsContainer.classList.remove('hidden');
+    } else {
+      btnHub.className = 'px-4 py-2 rounded-xl text-xs font-bold bg-cyan-600 text-white shadow-md shadow-cyan-500/20 transition-all flex items-center gap-1.5';
+      btnRepos.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white transition-all flex items-center gap-1.5';
+      if (chipsContainer) chipsContainer.classList.add('hidden');
+    }
+
+    this.loadKnowledgeItems();
+  },
+
+  selectKnowledgeCategory(cat) {
+    this.knowledgeCategory = cat;
+    this.knowledgePage = 1;
+    this.loadKnowledgeSummary();
+    this.loadKnowledgeItems();
+  },
+
+  handleKnowledgeSearch(e) {
+    this.knowledgeSearch = e.target.value;
+    this.knowledgePage = 1;
+    clearTimeout(this._knSearchDebounce);
+    this._knSearchDebounce = setTimeout(() => {
+      this.loadKnowledgeItems();
+    }, 300);
+  },
+
+  changeKnowledgePage(delta) {
+    const newPage = this.knowledgePage + delta;
+    if (newPage >= 1 && newPage <= this.knowledgeTotalPages) {
+      this.knowledgePage = newPage;
+      this.loadKnowledgeItems();
+      const grid = document.getElementById('kn-items-grid');
+      if (grid) grid.scrollIntoView({ behavior: 'smooth' });
+    }
+  },
+
+  async syncKnowledge() {
+    const btn = document.getElementById('btn-sync-knowledge');
+    const spinner = document.getElementById('sync-knowledge-spinner');
+    if (spinner) spinner.classList.add('animate-spin');
+    if (btn) btn.disabled = true;
+
+    Toast.info('Đang kết nối tới máy chủ tri thức nhóm để kéo dữ liệu mới nhất...');
+
+    try {
+      const res = await API.post('/knowledge/sync', {});
+      if (res.success) {
+        Toast.success(res.message);
+        await this.loadKnowledgeSummary();
+        await this.loadKnowledgeItems();
+      } else {
+        Toast.error(res.message);
+      }
+    } catch (err) {
+      Toast.error(`Lỗi đồng bộ: ${err.message}`);
+    } finally {
+      if (spinner) spinner.classList.remove('animate-spin');
+      if (btn) btn.disabled = false;
     }
   }
 };

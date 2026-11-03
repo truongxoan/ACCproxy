@@ -1,4 +1,6 @@
 const https = require('https');
+const fs = require('fs');
+const path = require('path');
 const db = require('../config/db');
 
 /**
@@ -46,6 +48,7 @@ async function sendTelegramMessage(text, customToken = null, customChatId = null
   if (!token || !chatId) {
     return {
       success: false,
+      notConfigured: true,
       error: 'Chưa cấu hình Telegram Bot Token hoặc Chat ID trong Cài Đặt!'
     };
   }
@@ -102,6 +105,74 @@ async function sendTelegramMessage(text, customToken = null, customChatId = null
 }
 
 /**
+ * Gửi file tài liệu / backup qua Telegram Bot API (sendDocument)
+ * Sử dụng native FormData và fetch built-in
+ * @param {string} filePath - Đường dẫn file cần gửi
+ * @param {string} [caption=''] - Chú thích đính kèm (HTML)
+ * @param {string} [customToken=null]
+ * @param {string} [customChatId=null]
+ * @returns {Promise<{ success: boolean, message?: string, error?: string, fileId?: string }>}
+ */
+async function sendTelegramDocument(filePath, caption = '', customToken = null, customChatId = null) {
+  const config = getTelegramConfig();
+  const token = customToken || config.botToken;
+  const chatId = customChatId || config.chatId;
+
+  if (!token || !chatId) {
+    return {
+      success: false,
+      notConfigured: true,
+      error: 'Chưa cấu hình Telegram Bot Token hoặc Chat ID trong Cài Đặt!'
+    };
+  }
+
+  if (!fs.existsSync(filePath)) {
+    return {
+      success: false,
+      error: `File không tồn tại: ${filePath}`
+    };
+  }
+
+  try {
+    const fileBuffer = fs.readFileSync(filePath);
+    const fileName = path.basename(filePath);
+
+    const formData = new FormData();
+    formData.append('chat_id', chatId);
+    if (caption) {
+      formData.append('caption', caption);
+      formData.append('parse_mode', 'HTML');
+    }
+    formData.append('document', new Blob([fileBuffer]), fileName);
+
+    const response = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, {
+      method: 'POST',
+      body: formData,
+      signal: AbortSignal.timeout(30000)
+    });
+
+    const parsed = await response.json();
+    if (parsed.ok) {
+      return {
+        success: true,
+        message: 'Đã gửi file về Telegram thành công!',
+        fileId: parsed.result?.document?.file_id
+      };
+    } else {
+      return {
+        success: false,
+        error: parsed.description || 'Lỗi từ Telegram Bot API khi gửi file'
+      };
+    }
+  } catch (err) {
+    return {
+      success: false,
+      error: `Lỗi kết nối khi gửi file tới Telegram: ${err.message}`
+    };
+  }
+}
+
+/**
  * Bắn chuông báo động nhắc nhở lịch đăng video tới Telegram
  * @param {object} schedule
  * @returns {Promise<object>}
@@ -128,5 +199,6 @@ module.exports = {
   getTelegramConfig,
   saveTelegramConfig,
   sendTelegramMessage,
+  sendTelegramDocument,
   sendVideoPostingAlert
 };

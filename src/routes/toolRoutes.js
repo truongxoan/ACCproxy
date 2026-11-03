@@ -1,7 +1,10 @@
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
 const { authenticateToken } = require('../middleware/auth');
 const { logAudit } = require('../middleware/auditLogger');
 const { getTelegramConfig, saveTelegramConfig, sendTelegramMessage, sendVideoPostingAlert } = require('../services/telegramService');
+const { createDatabaseBackup, sendBackupToTelegram, listBackups, getDatabaseStats } = require('../services/backupService');
 const { sanitizeVideoBuffer } = require('../services/videoSanitizerService');
 const { HOOK_CATEGORIES, getAllHooks } = require('../services/hookVaultService');
 const { getActiveAccountIds, captureScreenshot } = require('../services/browserService');
@@ -59,12 +62,75 @@ router.post('/telegram/test', async (req, res) => {
 ---------------------------------------------
 👤 <b>Người kiểm tra:</b> ${req.user.username} (${req.user.role})
 ⏰ <b>Thời gian:</b> ${new Date().toLocaleString('vi-VN')}
-🛡️ <b>Trạng thái:</b> Sẵn sàng bắn chuông báo động nhắc nhở lịch đăng video đa nền tảng!
+🛡️ <b>Trạng thái:</b> Sẵn sàng bắn chuông báo động nhắc nhở lịch đăng video & sao lưu database!
 `.trim();
 
     const result = await sendTelegramMessage(testMsg, botToken, chatId);
     logAudit(req, 'TEST_TELEGRAM', 'system', null, result);
     return res.json(result);
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/tools/backup/telegram
+ * Kích hoạt sao lưu database SQLite & gửi file về Telegram
+ */
+router.post('/backup/telegram', async (req, res) => {
+  try {
+    const { botToken, chatId } = req.body || {};
+    const result = await sendBackupToTelegram(req.user, botToken, chatId);
+
+    logAudit(req, 'BACKUP_TELEGRAM', 'system', null, {
+      success: result.success,
+      filename: result.backupInfo ? result.backupInfo.filename : null,
+      size: result.backupInfo ? result.backupInfo.size : null
+    });
+
+    if (result.notConfigured) {
+      return res.status(200).json(result);
+    }
+
+    return res.json(result);
+  } catch (error) {
+    return res.status(500).json({ success: false, message: `Lỗi sao lưu hệ thống: ${error.message}` });
+  }
+});
+
+/**
+ * GET /api/tools/backup/download
+ * Tải trực tiếp bản sao lưu SQLite snapshot mới nhất về máy tính hoặc điện thoại
+ */
+router.get('/backup/download', async (req, res) => {
+  try {
+    const backup = await createDatabaseBackup();
+    logAudit(req, 'DOWNLOAD_BACKUP', 'system', null, { filename: backup.filename });
+
+    return res.download(backup.filePath, backup.filename, (err) => {
+      if (err && !res.headersSent) {
+        return res.status(500).json({ success: false, message: 'Lỗi khi gửi file tải về' });
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /api/tools/backup/stats
+ * Thống kê tình trạng sao lưu và kho quân lương
+ */
+router.get('/backup/stats', (req, res) => {
+  try {
+    const stats = getDatabaseStats();
+    const history = listBackups();
+    return res.json({
+      success: true,
+      stats,
+      historyCount: history.length,
+      latestBackup: history[0] || null
+    });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }

@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node test/verify_core.js && node test/verify_assets.js"
+    "test": "node test/verify_core.js && node test/verify_assets.js && node test/verify_new_features.js"
   },
   "keywords": [
     "proxy",

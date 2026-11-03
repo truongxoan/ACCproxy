@@ -72,16 +72,40 @@
 
           <!-- 5D Atmospheric FX Switcher Pill -->
           <div class="relative">
-            <button id="btn-ambient-toggle" onclick="AmbientEngine.toggleMenu()" class="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-900/80 via-indigo-900/80 to-slate-900/90 hover:from-purple-800 hover:to-indigo-800 border border-purple-500/40 hover:border-purple-400 text-purple-200 text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-purple-500/20 transition-all cursor-pointer" title="Khí quyển 5D: Sấm sét, Pháo hoa, Hoa đào, Tuyết, Mưa">
-              <span id="ambient-current-icon" class="text-sm">⚡</span>
-              <span class="hidden xl:inline text-[11px]" id="ambient-current-label">5D: Sấm Sét</span>
+            <button id="btn-ambient-toggle" onclick="AmbientEngine.toggleMenu()" class="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-900/80 via-indigo-900/80 to-slate-900/90 hover:from-purple-800 hover:to-indigo-800 border border-purple-500/40 hover:border-purple-400 text-purple-200 text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-purple-500/20 transition-all cursor-pointer" title="Khí quyển 5D & Gather · 聚 3D Point-Cloud">
+              <span id="ambient-current-icon" class="text-sm">✨</span>
+              <span class="hidden xl:inline text-[11px]" id="ambient-current-label">Gather · 聚 3D</span>
               <span class="text-[9px] text-purple-400">▾</span>
             </button>
 
             <!-- Ambient Dropdown Menu -->
-            <div id="ambient-menu" class="hidden absolute right-0 mt-2 w-48 rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-purple-500/30 shadow-2xl p-1.5 z-50 flex flex-col gap-1 text-xs">
-              <div class="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
-                ✨ Khí Quyển 5D Apex
+            <div id="ambient-menu" class="hidden absolute right-0 mt-2 w-60 rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-purple-500/30 shadow-2xl p-2 z-50 flex flex-col gap-1 text-xs">
+              <div class="px-2.5 py-1 text-[10px] font-bold text-amber-300 uppercase tracking-wider border-b border-slate-800 flex items-center justify-between">
+                <span>✨ Gather · 聚 3D (DAO)</span>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">MỚI</span>
+              </div>
+              <button onclick="AmbientEngine.setMode('gather')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-950/60 hover:text-amber-200 text-slate-200 text-left transition-colors" data-mode="gather">
+                <span>✨</span>
+                <span class="flex-1 font-semibold">Gather · 聚 3D (Đầy Đủ)</span>
+              </button>
+              <button onclick="AmbientEngine.setMode('gather_taiji')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-emerald-950/60 hover:text-emerald-200 text-slate-200 text-left transition-colors" data-mode="gather_taiji">
+                <span>☯️</span>
+                <span class="flex-1 font-semibold">Gather: Thái Cực Cát Bay</span>
+              </button>
+              <button onclick="AmbientEngine.setMode('gather_hud')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-cyan-950/60 hover:text-cyan-200 text-slate-200 text-left transition-colors" data-mode="gather_hud">
+                <span>🎯</span>
+                <span class="flex-1 font-semibold">Gather: HUD Radar & Links</span>
+              </button>
+              <div class="grid grid-cols-2 gap-1 px-1 py-1">
+                <button onclick="AmbientEngine.nextGatherShape()" class="px-2 py-1 rounded-lg bg-slate-900 hover:bg-amber-950/70 border border-slate-700/80 hover:border-amber-500/40 text-[10px] font-semibold text-amber-300 transition-colors" title="Chuyển đổi giữa 4 hình khối 3D: DAO -> Thái Cực -> Tinh Cầu -> Sóng Giao Thoa">
+                  🔄 Đổi Khối 3D
+                </button>
+                <button onclick="AmbientEngine.spawnGatherLamp()" class="px-2 py-1 rounded-lg bg-slate-900 hover:bg-cyan-950/70 border border-slate-700/80 hover:border-cyan-500/40 text-[10px] font-semibold text-cyan-300 transition-colors" title="Thắp đèn năng lượng đa sắc trong đám mây cát (Snare Light)">
+                  💡 Thắp Đèn Cát
+                </button>
+              </div>
+              <div class="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-t border-b border-slate-800 mt-0.5">
+                🌩️ Khí Quyển 5D Cổ Điển
               </div>
               <button onclick="AmbientEngine.setMode('lightning')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-purple-950/60 hover:text-purple-300 text-slate-200 text-left transition-colors" data-mode="lightning">
                 <span>⚡</span>

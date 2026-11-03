@@ -99,3 +99,10 @@
 - **Két Sắt Mật Khẩu & Tài Khoản Mạng Xã Hội Cá Nhân (`🔐 Sổ Tay MXH` - 2026-11-03):**
   - Bổ sung bảng `social_vault` trong SQLite mã hóa AES-256-GCM và tuyến `/api/social-vault` (`src/routes/socialVaultRoutes.js`).
   - Hỗ trợ lưu trữ, tìm kiếm, lọc theo 14 nền tảng (Facebook, Zalo, TikTok, Gmail, Instagram, Telegram, YouTube, X, Shopee, Cloudflare/Tenten, GitHub/AI, Ngân Hàng, Apple ID, Khác), tự sinh mã 2FA 6 số trực tiếp, xem/copy mật khẩu 1 chạm, nhập nhanh hàng loạt và xuất file `.TXT`.
+- **Tích Hợp Toàn Bộ Hiệu Ứng `Gather · 聚 3D` Từ `https://gather.be-of-dao.com/` (`public/js/ambientEngine.js` v17.0 - 2026-11-03):**
+  - Đã dịch ngược và tái tạo trọn vẹn hệ thống hạt cát 3D đa chiều (`Gather · 聚 by DAO`) trực tiếp vào `AmbientEngine`:
+    - **4 Hình Khối 3D Biến Hình Mượt Mà (`SWARM` + `MELT`):** `DAO · 聚` (Chữ D + Tam giác + Hình tròn), `TAIJI · 陰陽` (Đĩa Thái Cực Âm Dương xoay 3D kèm 2 mắt âm dương), `ORB · 靈球` (Tinh cầu đa chiều vân nhiễu Fractal), và `RIPPLE · 波紋` (Sóng giao thoa 2 tâm).
+    - **Hiệu Ứng Gió Thổi Cát Tan Rã & Vệt Đuôi (`DRIFT` + `TRAILS`):** Hạt cát bên kia đường cắt gió tự động bung ra bay lượn xoáy 3D và để lại vệt sáng trước khi tụ hợp lại.
+    - **Tương Tác Bàn Tay Lướt Qua Khói Cát (`Pointer Smoke Wake - uBrush`):** Rê chuột/cảm ứng đến đâu sẽ đẩy xoáy các hạt cát 3D dạt ra như bàn tay lướt qua làn khói.
+    - **Đèn Năng Lượng Trong Cát (`Volumetric Snare Lamps - LIGHT`):** Click chuột vào nền hoặc tự động thắp sáng các lõi đèn năng lượng 3D (`Amber`, `Jade`, `Bone`, `Ice`, `Ember`, `Violet`) soi rực các hạt cát xung quanh.
+    - **Hệ Thống HUD Khóa Mục Tiêu & Đường Nối Chòm Sao (`TRACK` + `LINKS` + `SCAN` + `MARKS`):** 8 hộp ngoặc vuông khóa mục tiêu tự động nhảy tìm kiếm (`SEEK`) trên các hạt cát kèm thông số tọa độ 3D thời gian thực, đường nối chòm sao mảnh, mặt phẳng quét chiều sâu (`SCAN`) và khung thước đo không gian 3D (`MARKS`).

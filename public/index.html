@@ -33,8 +33,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body class="bg-[#070b14] text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-black">
-  <!-- 5D Atmospheric FX Canvas Layer -->
-  <canvas id="ambient-canvas" class="fixed inset-0 pointer-events-none z-20"></canvas>
+  <!-- 5D Atmospheric & Gather · 聚 3D Background Canvas Layer (Strictly Behind UI) -->
+  <canvas id="ambient-canvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
 
   <!-- ==================== HEADER BAR ==================== -->
   <header class="glass-header sticky top-0 z-40 px-3 md:px-6 py-2.5 border-b border-slate-800/80">
@@ -79,22 +79,22 @@
             </button>
 
             <!-- Ambient Dropdown Menu -->
-            <div id="ambient-menu" class="hidden absolute right-0 mt-2 w-60 rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-purple-500/30 shadow-2xl p-2 z-50 flex flex-col gap-1 text-xs">
+            <div id="ambient-menu" class="hidden absolute right-0 mt-2 w-64 rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-purple-500/30 shadow-2xl p-2 z-50 flex flex-col gap-1 text-xs">
               <div class="px-2.5 py-1 text-[10px] font-bold text-amber-300 uppercase tracking-wider border-b border-slate-800 flex items-center justify-between">
-                <span>✨ Gather · 聚 3D (DAO)</span>
-                <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">MỚI</span>
+                <span>✨ NỀN 3D GATHER · 聚 (DAO)</span>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">NỀN 3D</span>
               </div>
               <button onclick="AmbientEngine.setMode('gather')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-950/60 hover:text-amber-200 text-slate-200 text-left transition-colors" data-mode="gather">
                 <span>✨</span>
-                <span class="flex-1 font-semibold">Gather · 聚 3D (Đầy Đủ)</span>
+                <span class="flex-1 font-semibold">Gather · 聚 3D (Nền Đầy Đủ)</span>
               </button>
               <button onclick="AmbientEngine.setMode('gather_taiji')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-emerald-950/60 hover:text-emerald-200 text-slate-200 text-left transition-colors" data-mode="gather_taiji">
                 <span>☯️</span>
-                <span class="flex-1 font-semibold">Gather: Thái Cực Cát Bay</span>
+                <span class="flex-1 font-semibold">Gather: Thái Cực Cát Vàng</span>
               </button>
               <button onclick="AmbientEngine.setMode('gather_hud')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-cyan-950/60 hover:text-cyan-200 text-slate-200 text-left transition-colors" data-mode="gather_hud">
                 <span>🎯</span>
-                <span class="flex-1 font-semibold">Gather: HUD Radar & Links</span>
+                <span class="flex-1 font-semibold">Gather: HUD Radar & Chòm Sao</span>
               </button>
               <div class="grid grid-cols-2 gap-1 px-1 py-1">
                 <button onclick="AmbientEngine.nextGatherShape()" class="px-2 py-1 rounded-lg bg-slate-900 hover:bg-amber-950/70 border border-slate-700/80 hover:border-amber-500/40 text-[10px] font-semibold text-amber-300 transition-colors" title="Chuyển đổi giữa 4 hình khối 3D: DAO -> Thái Cực -> Tinh Cầu -> Sóng Giao Thoa">
@@ -104,33 +104,38 @@
                   💡 Thắp Đèn Cát
                 </button>
               </div>
-              <div class="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-t border-b border-slate-800 mt-0.5">
-                🌩️ Khí Quyển 5D Cổ Điển
+              <div class="px-2.5 py-1 text-[10px] font-bold text-cyan-300 uppercase tracking-wider border-t border-b border-slate-800 mt-0.5 flex items-center justify-between">
+                <span>⛈️ Thời Tiết Chân Thực (Real-Life)</span>
+                <span class="text-[9px] text-cyan-400">HD</span>
               </div>
+              <button onclick="AmbientEngine.setMode('storm')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-indigo-950/70 hover:text-cyan-200 text-slate-200 text-left transition-colors" data-mode="storm">
+                <span>⛈️</span>
+                <span class="flex-1 font-semibold">Giông Bão: Mưa Tầm Tã + Sấm Sét</span>
+              </button>
               <button onclick="AmbientEngine.setMode('lightning')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-purple-950/60 hover:text-purple-300 text-slate-200 text-left transition-colors" data-mode="lightning">
                 <span>⚡</span>
-                <span class="flex-1 font-semibold">Sấm Sét 5D</span>
-              </button>
-              <button onclick="AmbientEngine.setMode('fireworks')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-950/60 hover:text-amber-300 text-slate-200 text-left transition-colors" data-mode="fireworks">
-                <span>🎆</span>
-                <span class="flex-1 font-semibold">Pháo Hoa Rực Rỡ</span>
-              </button>
-              <button onclick="AmbientEngine.setMode('sakura')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-pink-950/60 hover:text-pink-300 text-slate-200 text-left transition-colors" data-mode="sakura">
-                <span>🌸</span>
-                <span class="flex-1 font-semibold">Hoa Đào Rơi</span>
-              </button>
-              <button onclick="AmbientEngine.setMode('snow')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-cyan-950/60 hover:text-cyan-300 text-slate-200 text-left transition-colors" data-mode="snow">
-                <span>❄️</span>
-                <span class="flex-1 font-semibold">Tuyết Rơi Mùa Đông</span>
+                <span class="flex-1 font-semibold">Sấm Sét Thực Tế (Tia Sét Phân Nhánh)</span>
               </button>
               <button onclick="AmbientEngine.setMode('rain')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-blue-950/60 hover:text-blue-300 text-slate-200 text-left transition-colors" data-mode="rain">
                 <span>🌧️</span>
-                <span class="flex-1 font-semibold">Mưa Rơi Cyberpunk</span>
+                <span class="flex-1 font-semibold">Mưa Rào Ngoài Đời (3 Lớp + Bắn Nước)</span>
+              </button>
+              <button onclick="AmbientEngine.setMode('fireworks')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-950/60 hover:text-amber-300 text-slate-200 text-left transition-colors" data-mode="fireworks">
+                <span>🎆</span>
+                <span class="flex-1 font-semibold">Pháo Hoa Đêm Giao Thừa</span>
+              </button>
+              <button onclick="AmbientEngine.setMode('sakura')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-pink-950/60 hover:text-pink-300 text-slate-200 text-left transition-colors" data-mode="sakura">
+                <span>🌸</span>
+                <span class="flex-1 font-semibold">Hoa Anh Đào Bay Trong Gió</span>
+              </button>
+              <button onclick="AmbientEngine.setMode('snow')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-cyan-950/60 hover:text-cyan-300 text-slate-200 text-left transition-colors" data-mode="snow">
+                <span>❄️</span>
+                <span class="flex-1 font-semibold">Tuyết Rơi Đa Tầng</span>
               </button>
               <div class="border-t border-slate-800/80 my-0.5"></div>
               <button onclick="AmbientEngine.setMode('off')" class="ambient-opt-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-rose-950/50 hover:text-rose-300 text-slate-400 text-left transition-colors" data-mode="off">
                 <span>🚫</span>
-                <span class="flex-1">Tắt Hiệu Ứng</span>
+                <span class="flex-1">Tắt Hiệu Ứng Nền</span>
               </button>
             </div>
           </div>
@@ -268,7 +273,7 @@
   </header>
 
   <!-- ==================== MAIN CONTENT CONTAINER ==================== -->
-  <main id="main-app" class="flex-1 max-w-7xl w-full mx-auto p-3.5 md:p-6 flex flex-col gap-4 transition-all">
+  <main id="main-app" class="relative z-10 flex-1 max-w-7xl w-full mx-auto p-3.5 md:p-6 flex flex-col gap-4 transition-all">
 
     <!-- ==================== TAB 1: QUẢN LÝ TÀI KHOẢN & PROXY ==================== -->
     <div id="tab-accounts" class="tab-pane flex flex-col gap-4">

@@ -49,11 +49,11 @@ function analyzeSecuritySuggestions(userId = null) {
 
   if (userId) {
     query = `
-      SELECT a.* FROM accounts a
-      JOIN user_account_permissions p ON a.id = p.account_id
-      WHERE p.user_id = ?
+      SELECT DISTINCT a.* FROM accounts a
+      LEFT JOIN user_account_permissions p ON a.id = p.account_id AND p.user_id = ?
+      WHERE a.owner_user_id = ? OR (p.user_id = ? AND p.can_view = 1)
     `;
-    params.push(userId);
+    params.push(userId, userId, userId);
   }
 
   const accounts = db.prepare(query).all(...params);

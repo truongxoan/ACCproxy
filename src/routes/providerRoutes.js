@@ -15,7 +15,24 @@ router.use(authenticateToken);
  */
 router.get('/', (req, res) => {
   try {
-    const rows = db.prepare('SELECT * FROM proxy_providers ORDER BY created_at DESC').all();
+    let rows = [];
+    if (req.user && req.user.role === 'admin') {
+      rows = db.prepare(`
+        SELECT p.*, u.username as owner_username
+        FROM proxy_providers p
+        LEFT JOIN users u ON p.owner_user_id = u.id
+        ORDER BY p.created_at DESC
+      `).all();
+    } else {
+      rows = db.prepare(`
+        SELECT p.*, u.username as owner_username
+        FROM proxy_providers p
+        LEFT JOIN users u ON p.owner_user_id = u.id
+        WHERE p.owner_user_id = ?
+        ORDER BY p.created_at DESC
+      `).all(req.user.id);
+    }
+
     const masked = rows.map(r => ({
       ...r,
       api_key_masked: r.api_key.length > 8 ? `${r.api_key.substring(0, 6)}••••••••` : '••••••••'
@@ -63,14 +80,15 @@ router.post('/', async (req, res) => {
     const id = uuidv4();
     const stmt = db.prepare(`
       INSERT INTO proxy_providers (
-        id, provider_name, provider_type, api_key, api_url,
+        id, owner_user_id, provider_name, provider_type, api_key, api_url,
         last_check_status, current_proxy, country_code, timeout_seconds,
         details, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `);
 
     stmt.run(
       id,
+      req.user?.id || null,
       provider_name.trim(),
       provider_type || 'custom',
       api_key.trim(),
@@ -104,6 +122,9 @@ router.post('/:id/check', async (req, res) => {
     const provider = db.prepare('SELECT * FROM proxy_providers WHERE id = ?').get(req.params.id);
     if (!provider) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy Provider Key' });
+    }
+    if (req.user.role !== 'admin' && provider.owner_user_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền kiểm tra Provider Key của người khác!' });
     }
 
     const checkResult = await dispatchCheckProvider(provider.provider_type, provider.api_key, provider.api_url);
@@ -151,6 +172,20 @@ router.post('/:id/assign-to-account', async (req, res) => {
     const provider = db.prepare('SELECT * FROM proxy_providers WHERE id = ?').get(req.params.id);
     if (!provider) {
       return res.status(404).json({ success: false, message: 'Provider không tồn tại' });
+    }
+    if (req.user.role !== 'admin' && provider.owner_user_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền sử dụng Provider Key của người khác!' });
+    }
+
+    const targetAcc = db.prepare('SELECT id, owner_user_id FROM accounts WHERE id = ?').get(account_id);
+    if (!targetAcc) {
+      return res.status(404).json({ success: false, message: 'Kênh cần gán không tồn tại' });
+    }
+    if (req.user.role !== 'admin' && targetAcc.owner_user_id !== req.user.id) {
+      const perm = db.prepare('SELECT can_view FROM user_account_permissions WHERE user_id = ? AND account_id = ?').get(req.user.id, account_id);
+      if (!perm || !perm.can_view) {
+        return res.status(403).json({ success: false, message: 'Bạn không có quyền gán Proxy vào kênh này!' });
+      }
     }
 
     // Kiểm tra và lấy proxy mới nhất từ bên bán
@@ -210,6 +245,13 @@ router.post('/:id/assign-to-account', async (req, res) => {
  */
 router.delete('/:id', (req, res) => {
   try {
+    const provider = db.prepare('SELECT id, owner_user_id FROM proxy_providers WHERE id = ?').get(req.params.id);
+    if (!provider) {
+      return res.status(404).json({ success: false, message: 'Provider không tồn tại' });
+    }
+    if (req.user.role !== 'admin' && provider.owner_user_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền xóa Provider API Key của người khác!' });
+    }
     db.prepare('DELETE FROM proxy_providers WHERE id = ?').run(req.params.id);
     logAudit(req, 'DELETE_PROVIDER_API', 'proxy_provider', req.params.id);
     return res.json({ success: true, message: 'Đã xóa Provider API Key' });

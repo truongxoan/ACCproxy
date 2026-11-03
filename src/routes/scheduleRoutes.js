@@ -38,14 +38,14 @@ router.get('/', (req, res) => {
       `).all();
     } else {
       schedules = db.prepare(`
-        SELECT s.*, a.account_name, a.username as account_username, a.login_url, u.username as assigned_username
+        SELECT DISTINCT s.*, a.account_name, a.username as account_username, a.login_url, u.username as assigned_username
         FROM content_schedules s
         JOIN accounts a ON s.account_id = a.id
-        JOIN user_account_permissions p ON a.id = p.account_id
+        LEFT JOIN user_account_permissions p ON a.id = p.account_id AND p.user_id = ?
         LEFT JOIN users u ON s.assigned_user_id = u.id
-        WHERE (p.user_id = ? AND p.can_view = 1) OR s.assigned_user_id = ?
+        WHERE a.owner_user_id = ? OR (p.user_id = ? AND p.can_view = 1) OR s.assigned_user_id = ?
         ORDER BY s.scheduled_time ASC
-      `).all(req.user.id, req.user.id);
+      `).all(req.user.id, req.user.id, req.user.id, req.user.id);
     }
 
     // Tính toán thời gian còn lại đến giờ đăng hôm nay
@@ -88,9 +88,28 @@ router.get('/', (req, res) => {
  */
 router.get('/summary', (req, res) => {
   try {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const total = db.prepare('SELECT COUNT(*) as c FROM content_schedules').get().c;
-    const posted = db.prepare("SELECT COUNT(*) as c FROM content_schedules WHERE status = 'posted'").get().c;
+    let total = 0;
+    let posted = 0;
+    if (req.user.role === ROLES.ADMIN) {
+      total = db.prepare('SELECT COUNT(*) as c FROM content_schedules').get().c;
+      posted = db.prepare("SELECT COUNT(*) as c FROM content_schedules WHERE status = 'posted'").get().c;
+    } else {
+      total = db.prepare(`
+        SELECT COUNT(DISTINCT s.id) as c
+        FROM content_schedules s
+        JOIN accounts a ON s.account_id = a.id
+        LEFT JOIN user_account_permissions p ON a.id = p.account_id AND p.user_id = ?
+        WHERE a.owner_user_id = ? OR (p.user_id = ? AND p.can_view = 1) OR s.assigned_user_id = ?
+      `).get(req.user.id, req.user.id, req.user.id, req.user.id).c;
+      posted = db.prepare(`
+        SELECT COUNT(DISTINCT s.id) as c
+        FROM content_schedules s
+        JOIN accounts a ON s.account_id = a.id
+        LEFT JOIN user_account_permissions p ON a.id = p.account_id AND p.user_id = ?
+        WHERE (a.owner_user_id = ? OR (p.user_id = ? AND p.can_view = 1) OR s.assigned_user_id = ?)
+          AND s.status = 'posted'
+      `).get(req.user.id, req.user.id, req.user.id, req.user.id).c;
+    }
     const pending = total - posted;
 
     return res.json({

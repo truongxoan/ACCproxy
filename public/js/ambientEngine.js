@@ -1,19 +1,18 @@
 // ============================================================================
-// ENI 5D ATMOSPHERIC & GATHER · 聚 3D POINT-CLOUD ENGINE v17.0 APEX
-// Tích hợp trọn vẹn bộ hiệu ứng từ https://gather.be-of-dao.com/ (Gather · 聚 by DAO):
-// - 3D Point-Cloud Sand Swarm & Morphing Forms (DAO, TAIJI Âm Dương, ORB, RIPPLE)
-// - Wind Drift Dissolution & Sand Streaks (DRIFT + TRAILS)
-// - Interactive Pointer Smoke Wake (uBrush - bàn tay lướt qua làn khói cát 3D)
-// - Volumetric Snare Lamps in the Sand (LIGHT - Bone, Ice, Amber, Ember, Jade, Violet)
-// - Cybernetic HUD Target Lock Boxes (TRACK + SEEK), Constellation Links (LINKS),
-//   Depth Scan Plane (SCAN) & 3D Perspective Ruler Frame (MARKS)
-// Cùng 5 hiệu ứng 5D truyền thống: Sấm Sét 5D, Pháo Hoa, Hoa Đào, Tuyết Rơi, Mưa Rơi
+// ENI 5D ATMOSPHERIC & GATHER · 聚 3D POINT-CLOUD ENGINE v18.0 REALISM APEX
+// Nền 3D hoàn toàn nằm ẩn dưới Background (z-0, sau các tấm kính mờ glass-panel)
+// - Gather · 聚 3D Point-Cloud (DAO, TAIJI Âm Dương, ORB, RIPPLE) mượt mà, hạt mịn
+// - Sấm Sét Thực Tế Ngoài Đời (Midpoint Displacement Fractal Lightning, Multi-branch
+//   Stepped Leaders, Return-Stroke Re-ignition Flicker, Cloud Anvil Illumination)
+// - Mưa Rào Ngoài Đời Thực (3-Layer Depth Parallax Rain, Wind Gusts, Ground Splash
+//   Droplets & Elliptical Water Ripples)
+// - Giông Bão Điện Ảnh (Storm Mode = Mưa Rào 3 Lớp + Sấm Sét Thực Tế Kết Hợp)
 // ============================================================================
 
 const AmbientEngine = {
   canvas: null,
   ctx: null,
-  mode: 'gather', // 'gather' | 'gather_taiji' | 'gather_hud' | 'lightning' | 'fireworks' | 'sakura' | 'snow' | 'rain' | 'off'
+  mode: 'gather', // 'gather' | 'gather_taiji' | 'gather_hud' | 'storm' | 'lightning' | 'rain' | 'fireworks' | 'sakura' | 'snow' | 'off'
   animId: null,
   width: 0,
   height: 0,
@@ -24,15 +23,16 @@ const AmbientEngine = {
   gather: {
     initialized: false,
     points: [],
-    pointCount: 1650,
+    ambientDust: [],
+    pointCount: 2200,
     shapeIndex: 0,
     shapeNames: ['DAO · 聚', 'TAIJI · 陰陽', 'ORB · 靈球', 'RIPPLE · 波紋'],
     morphFrom: 0,
     morphTo: 0,
     morphProgress: 1.0,
-    morphDuration: 2.6, // seconds
+    morphDuration: 2.8, // seconds
     lastShapeSwitch: 0,
-    shapeHoldTime: 8500, // ms between auto-morphs
+    shapeHoldTime: 9000, // ms between auto-morphs
     yaw: 0,
     pitch: 0,
     targetYaw: 0,
@@ -40,14 +40,11 @@ const AmbientEngine = {
     breathPhase: 0,
     scanZ: 0,
     driftAngle: -0.58,
-    driftLineOffset: 0.18,
-    // Interactive options
     enableTrackers: true,
     enableLinks: true,
     enableDrift: true,
     enableMarks: true,
     enableScan: true,
-    // Pointer Smoke Wake (uBrush - 16 trail slots)
     pointer: {
       x: 0,
       y: 0,
@@ -56,57 +53,63 @@ const AmbientEngine = {
       vx: 0,
       vy: 0,
       active: false,
-      trail: [] // { x, y, vx, vy, age }
+      trail: []
     },
-    // Volumetric Snare Lamps (LIGHT)
     lampPalettes: [
-      { name: 'Amber',  r: 255, g: 171, b: 61,  hex: '#ffab3d' },
-      { name: 'Jade',   r: 79,  g: 227, b: 193, hex: '#4fe3c1' },
-      { name: 'Bone',   r: 255, g: 233, b: 196, hex: '#ffe9c4' },
-      { name: 'Ice',    r: 217, g: 230, b: 255, hex: '#d9e6ff' },
-      { name: 'Ember',  r: 255, g: 79,  b: 56,  hex: '#ff4f38' },
-      { name: 'Violet', r: 143, g: 123, b: 255, hex: '#8f7bff' }
+      { name: 'Amber',  r: 255, g: 176, b: 68,  hex: '#ffb044' },
+      { name: 'Jade',   r: 68,  g: 230, b: 196, hex: '#44e6c4' },
+      { name: 'Gold',   r: 255, g: 228, b: 168, hex: '#ffe4a8' },
+      { name: 'Ice',    r: 176, g: 218, b: 255, hex: '#b0daff' },
+      { name: 'Ember',  r: 255, g: 92,  b: 64,  hex: '#ff5c40' },
+      { name: 'Violet', r: 162, g: 132, b: 255, hex: '#a284ff' }
     ],
     lampPaletteIdx: 0,
-    lamps: [], // { x, y, z, r, g, b, hex, life, maxLife, radius, phase }
+    lamps: [],
     lastAutoLamp: 0,
-    // Cybernetic HUD Trackers (TRACK)
-    trackers: [], // { id, ptIdx, targetPtIdx, x, y, z, sx, sy, visible, seekProgress, boxSize, nextHopTime }
-    // Feature anchors per shape for HUD trackers
-    anchors: [[], [], [], []]
+    trackers: []
   },
 
-  // Lightning state
+  // ==================== REALISTIC LIGHTNING STATE ====================
   lightning: {
     bolts: [],
+    sheetFlashes: [],
     timer: 0,
-    interval: 1800,
-    screenFlash: 0,
-    flashColor: 'rgba(255, 255, 255, 0)'
+    interval: 2200,
+    skyGlow: 0,
+    skyCenterX: 0.5,
+    skyCenterY: 0.1
   },
 
-  // Fireworks state
+  // ==================== REALISTIC RAIN STATE ====================
+  rain: {
+    drops: [],
+    splashes: [],
+    ripples: [],
+    mistClouds: [],
+    windAngle: -0.14,
+    targetWindAngle: -0.14,
+    windTimer: 0
+  },
+
+  // ==================== FIREWORKS STATE ====================
   fireworks: {
     rockets: [],
     sparks: [],
     timer: 0
   },
 
-  // Rain ripples
-  ripples: [],
-
   init() {
     this.canvas = document.getElementById('ambient-canvas');
     if (!this.canvas) return;
+    // Giữ tuyệt đối ở dưới nền (z-0) để không bao giờ đè lên chữ hay bảng điều khiển
+    this.canvas.style.zIndex = '0';
     this.ctx = this.canvas.getContext('2d');
 
     this.resize();
     window.addEventListener('resize', () => this.resize(), { passive: true });
 
-    // Bắt chuyển động chuột / cảm ứng để tạo hiệu ứng "bàn tay lướt qua khói cát" (uBrush)
     this.bindPointerEvents();
 
-    // Đóng dropdown khi click ra ngoài
     document.addEventListener('click', (e) => {
       const menu = document.getElementById('ambient-menu');
       const toggle = document.getElementById('btn-ambient-toggle');
@@ -115,18 +118,8 @@ const AmbientEngine = {
       }
     });
 
-    // Tự động kích hoạt chế độ Gather · 聚 3D mới cho Đại Ca ở phiên v17
-    const migratedV17 = localStorage.getItem('accproxy_ambient_v17_gather');
-    let saved = localStorage.getItem('accproxy_ambient_mode');
-    if (!migratedV17) {
-      localStorage.setItem('accproxy_ambient_v17_gather', '1');
-      if (!saved || saved === 'lightning') {
-        saved = 'gather';
-        localStorage.setItem('accproxy_ambient_mode', 'gather');
-      }
-    }
-    const initialMode = saved !== null ? saved : 'gather';
-    this.setMode(initialMode, false);
+    const saved = localStorage.getItem('accproxy_ambient_mode') || 'gather';
+    this.setMode(saved, false);
   },
 
   bindPointerEvents() {
@@ -143,9 +136,8 @@ const AmbientEngine = {
       p.ny = (clientY / this.height) * 2 - 1;
       p.active = true;
 
-      // Lưu vệt khói (uBrush trail) khi di chuột đủ nhanh
       const speed = Math.hypot(p.vx, p.vy);
-      if (speed > 1.5) {
+      if (speed > 1.2) {
         p.trail.unshift({
           x: clientX,
           y: clientY,
@@ -167,13 +159,15 @@ const AmbientEngine = {
       }
     }, { passive: true });
 
-    // Click lên vùng trống để thắp Đèn Năng Lượng Trong Cát (Snare Lamp)
     window.addEventListener('mousedown', (e) => {
-      if (!this.isGatherMode()) return;
       const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
       if (['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'A', 'LABEL'].includes(tag)) return;
       if (e.target && e.target.closest && e.target.closest('button, a, input, select, textarea, #ambient-menu, .modal-backdrop')) return;
-      this.spawnGatherLamp(e.clientX, e.clientY);
+      if (this.isGatherMode()) {
+        this.spawnGatherLamp(e.clientX, e.clientY);
+      } else if (this.mode === 'lightning' || this.mode === 'storm') {
+        this.createRealisticLightningBolt(e.clientX);
+      }
     }, { passive: true });
   },
 
@@ -204,11 +198,14 @@ const AmbientEngine = {
     this.updateHeaderUI();
 
     this.particles = [];
-    this.ripples = [];
+    this.rain.drops = [];
+    this.rain.splashes = [];
+    this.rain.ripples = [];
     this.fireworks.rockets = [];
     this.fireworks.sparks = [];
     this.lightning.bolts = [];
-    this.lightning.screenFlash = 0;
+    this.lightning.sheetFlashes = [];
+    this.lightning.skyGlow = 0;
 
     if (this.ctx) {
       this.ctx.clearRect(0, 0, this.width, this.height);
@@ -226,11 +223,18 @@ const AmbientEngine = {
     if (this.isGatherMode()) {
       this.initGatherCloud();
       if (this.mode === 'gather_taiji') {
-        this.gather.shapeIndex = 1; // TAIJI · 陰陽
+        this.gather.shapeIndex = 1;
         this.gather.morphFrom = 1;
         this.gather.morphTo = 1;
         this.gather.morphProgress = 1.0;
       }
+    } else if (this.mode === 'rain' || this.mode === 'storm') {
+      this.initRealisticRain(this.mode === 'storm');
+      if (this.mode === 'storm') {
+        this.createRealisticLightningBolt();
+      }
+    } else if (this.mode === 'lightning') {
+      this.createRealisticLightningBolt();
     } else {
       this.spawnInitialParticles();
     }
@@ -247,12 +251,13 @@ const AmbientEngine = {
       gather:       { icon: '✨', label: 'Gather · 聚 3D' },
       gather_taiji: { icon: '☯️', label: 'Gather: Thái Cực' },
       gather_hud:   { icon: '🎯', label: 'Gather: HUD Radar' },
-      lightning:    { icon: '⚡', label: '5D: Sấm Sét' },
-      fireworks:    { icon: '🎆', label: '5D: Pháo Hoa' },
-      sakura:       { icon: '🌸', label: '5D: Hoa Đào' },
-      snow:         { icon: '❄️', label: '5D: Tuyết Rơi' },
-      rain:         { icon: '🌧️', label: '5D: Mưa Rơi' },
-      off:          { icon: '🚫', label: '5D: Đã Tắt' }
+      storm:        { icon: '⛈️', label: 'Giông Bão Thật' },
+      lightning:    { icon: '⚡', label: 'Sấm Sét Thật' },
+      rain:         { icon: '🌧️', label: 'Mưa Rào Thật' },
+      fireworks:    { icon: '🎆', label: 'Pháo Hoa' },
+      sakura:       { icon: '🌸', label: 'Hoa Đào' },
+      snow:         { icon: '❄️', label: 'Tuyết Rơi' },
+      off:          { icon: '🚫', label: 'Đã Tắt Nền' }
     }[this.mode] || { icon: '✨', label: 'Gather · 聚 3D' };
 
     if (iconEl) iconEl.innerText = meta.icon;
@@ -268,12 +273,7 @@ const AmbientEngine = {
   },
 
   // ==========================================================================
-  // GATHER · 聚 3D POINT-CLOUD GENERATOR (Ported from gather.be-of-dao.com)
-  // 4 Procedural 3D Forms:
-  //   0: DAO (D-Cylinder + Central Triangle + Right Circle)
-  //   1: TAIJI (Rotating 3D Yin-Yang Disc with Dual Eyes)
-  //   2: ORB (Volumetric Sphere with Fractal Noise Contours)
-  //   3: RIPPLE (Dual-Source Interference Wave Field)
+  // 1. GATHER · 聚 3D BACKGROUND POINT-CLOUD ENGINE (SILKY SUBSURFACE EDITION)
   // ==========================================================================
   hash11(n) {
     const x = Math.sin(n * 127.1 + 311.7) * 43758.5453123;
@@ -307,52 +307,48 @@ const AmbientEngine = {
   },
 
   sampleShapeDAO() {
-    // Biểu tượng DAO · 聚: Chữ D bên trái + Tam giác giữa + Hình tròn bên phải
     for (let guard = 0; guard < 200; guard++) {
-      const x = (Math.random() - 0.5) * 1.48;
-      const y = (Math.random() - 0.5) * 0.68;
+      const x = (Math.random() - 0.5) * 1.56;
+      const y = (Math.random() - 0.5) * 0.72;
       let hit = false;
       let edge = 0;
 
-      // 1. Left D-shape (-0.62 .. -0.26)
-      if (x >= -0.62 && x <= -0.24 && Math.abs(y) <= 0.24) {
-        if (x <= -0.46) {
+      if (x >= -0.64 && x <= -0.24 && Math.abs(y) <= 0.25) {
+        if (x <= -0.47) {
           hit = true;
-          edge = Math.min(Math.abs(x + 0.62), 0.24 - Math.abs(y)) / 0.08;
+          edge = Math.min(Math.abs(x + 0.64), 0.25 - Math.abs(y)) / 0.08;
         } else {
-          const dx = x + 0.46;
+          const dx = x + 0.47;
           const r = Math.hypot(dx, y);
-          if (r <= 0.24) {
+          if (r <= 0.25) {
             hit = true;
-            edge = (0.24 - r) / 0.08;
+            edge = (0.25 - r) / 0.08;
           }
         }
       }
 
-      // 2. Center Triangle (-0.20 .. +0.20)
-      if (!hit && y >= -0.23 && y <= 0.23) {
-        const t = (0.23 - y) / 0.46; // 0 at top, 1 at bottom
-        const halfW = 0.22 * t;
+      if (!hit && y >= -0.24 && y <= 0.24) {
+        const t = (0.24 - y) / 0.48;
+        const halfW = 0.23 * t;
         if (Math.abs(x) <= halfW) {
           hit = true;
-          edge = Math.min(halfW - Math.abs(x), y + 0.23) / 0.07;
+          edge = Math.min(halfW - Math.abs(x), y + 0.24) / 0.07;
         }
       }
 
-      // 3. Right Circle (+0.44, 0)
       if (!hit) {
-        const r = Math.hypot(x - 0.45, y);
-        if (r <= 0.235) {
+        const r = Math.hypot(x - 0.46, y);
+        if (r <= 0.245) {
           hit = true;
-          edge = (0.235 - r) / 0.08;
+          edge = (0.245 - r) / 0.08;
         }
       }
 
       if (hit) {
         const sh = Math.min(1, Math.max(0.15, edge));
-        const th = 0.03 + 0.14 * Math.pow(sh, 0.65);
+        const th = 0.035 + 0.14 * Math.pow(sh, 0.65);
         const z = (Math.random() - 0.5) * 2 * th + 0.025 * this.fbm2(x * 3.5, y * 3.5);
-        const lum = 0.48 + 0.48 * Math.pow(sh, 0.55);
+        const lum = 0.45 + 0.52 * Math.pow(sh, 0.55);
         return { x, y, z, lum };
       }
     }
@@ -360,8 +356,7 @@ const AmbientEngine = {
   },
 
   sampleShapeTAIJI() {
-    // Thái Cực Âm Dương 3D (TAIJI)
-    const R = 0.46;
+    const R = 0.48;
     for (let guard = 0; guard < 200; guard++) {
       const a = Math.random() * Math.PI * 2;
       const r = Math.sqrt(Math.random()) * R;
@@ -378,7 +373,6 @@ const AmbientEngine = {
       if (dTop < eyeR) yang = false;
       if (dBot < eyeR) yang = true;
 
-      // Nhấn mạnh mật độ hạt ở phía Dương và viền đĩa Âm Dương
       const rim = Math.exp(-Math.pow((R - r) / 0.032, 2));
       const eyeRim = Math.exp(-Math.pow((dTop - eyeR) / 0.02, 2)) + Math.exp(-Math.pow((dBot - eyeR) / 0.02, 2));
       const keepProb = yang ? 0.94 : Math.min(0.95, 0.32 + 0.65 * (rim + eyeRim));
@@ -386,35 +380,32 @@ const AmbientEngine = {
 
       const lum = yang
         ? Math.min(1, 0.62 + 0.35 * (1 - r / R) + 0.22 * rim)
-        : Math.min(1, 0.20 + 0.58 * rim + 0.45 * eyeRim);
-      const th = 0.025 + 0.075 * (1 - (r / R) * (r / R));
-      const z = (Math.random() - 0.5) * 2 * th + (yang ? 0.022 : -0.022);
+        : Math.min(1, 0.24 + 0.58 * rim + 0.45 * eyeRim);
+      const th = 0.028 + 0.075 * (1 - (r / R) * (r / R));
+      const z = (Math.random() - 0.5) * 2 * th + (yang ? 0.024 : -0.024);
       return { x, y, z, lum };
     }
     return { x: 0, y: 0, z: 0, lum: 0.8 };
   },
 
   sampleShapeORB() {
-    // Tinh Cầu Đa Chiều (ORB)
-    const R = 0.44;
+    const R = 0.46;
     const u = Math.random() * 2 - 1;
     const theta = Math.random() * Math.PI * 2;
     const s = Math.sqrt(Math.max(0, 1 - u * u));
-    // Tập trung hạt ở lớp vỏ cầu + lõi ánh sáng
-    const shellBias = Math.pow(Math.random(), 0.28);
+    const shellBias = Math.pow(Math.random(), 0.26);
     const rad = R * (0.25 + 0.75 * shellBias);
     const x = rad * s * Math.cos(theta);
     const y = rad * u;
     const z = rad * s * Math.sin(theta);
     const n = 0.5 + 0.5 * this.fbm2(x * 5.2 + 2.1, y * 5.2 - 1.4);
     const rim = Math.pow(shellBias, 1.4);
-    const lum = Math.min(1, 0.32 + 0.48 * n + 0.35 * rim);
+    const lum = Math.min(1, 0.35 + 0.48 * n + 0.35 * rim);
     return { x, y, z, lum };
   },
 
   sampleShapeRIPPLE() {
-    // Sóng Giao Thoa Đa Tâm (RIPPLE)
-    const R = 0.52;
+    const R = 0.54;
     for (let guard = 0; guard < 150; guard++) {
       const a = Math.random() * Math.PI * 2;
       const r = Math.sqrt(Math.random()) * R;
@@ -426,8 +417,8 @@ const AmbientEngine = {
       const crest = 0.5 + 0.5 * w;
       if (Math.random() > 0.22 + 0.78 * Math.pow(crest, 1.5)) continue;
       const fade = Math.max(0, 1 - (r / R) * 0.85);
-      const z = 0.065 * w * fade + (Math.random() - 0.5) * 0.025;
-      const lum = Math.min(1, (0.28 + 0.72 * Math.pow(crest, 1.3)) * (0.4 + 0.6 * fade));
+      const z = 0.07 * w * fade + (Math.random() - 0.5) * 0.025;
+      const lum = Math.min(1, (0.3 + 0.7 * Math.pow(crest, 1.3)) * (0.4 + 0.6 * fade));
       return { x, y, z, lum };
     }
     return { x: 0, y: 0, z: 0, lum: 0.6 };
@@ -436,7 +427,7 @@ const AmbientEngine = {
   initGatherCloud() {
     const g = this.gather;
     const isMobile = this.width < 768;
-    g.pointCount = isMobile ? 950 : 1750;
+    g.pointCount = isMobile ? 1150 : 2100;
 
     if (!g.initialized || g.points.length !== g.pointCount) {
       g.points = [];
@@ -445,13 +436,13 @@ const AmbientEngine = {
         const s1 = this.sampleShapeTAIJI();
         const s2 = this.sampleShapeORB();
         const s3 = this.sampleShapeRIPPLE();
+        const tint = Math.random();
         g.points.push({
           shapes: [s0, s1, s2, s3],
           seed: Math.random(),
-          size: Math.random() * 1.45 + 0.75,
-          // Wind drift state
+          size: Math.random() * 1.15 + 0.55,
+          tint, // 0..1 để pha màu vàng cát / ngọc bích / hổ phách nhẹ nhàng
           driftProgress: Math.random(),
-          // Screen-space cache for HUD & trails
           sx: 0,
           sy: 0,
           sz: 0,
@@ -460,9 +451,23 @@ const AmbientEngine = {
         });
       }
 
-      // Khởi tạo 8 hộp khóa mục tiêu HUD (TRACK boxes)
+      // Tạo các hạt bụi tinh vân lơ lửng khắp không gian nền (Deep Space Stardust)
+      g.ambientDust = [];
+      const dustCount = isMobile ? 65 : 130;
+      for (let i = 0; i < dustCount; i++) {
+        g.ambientDust.push({
+          x: Math.random() * this.width,
+          y: Math.random() * this.height,
+          vx: (Math.random() - 0.5) * 0.25,
+          vy: -Math.random() * 0.35 - 0.08,
+          r: Math.random() * 1.4 + 0.4,
+          alpha: Math.random() * 0.35 + 0.08,
+          phase: Math.random() * Math.PI * 2
+        });
+      }
+
       g.trackers = [];
-      const trackerCount = isMobile ? 5 : 8;
+      const trackerCount = isMobile ? 4 : 6;
       for (let i = 0; i < trackerCount; i++) {
         const ptIdx = Math.floor(Math.random() * g.pointCount);
         g.trackers.push({
@@ -476,8 +481,8 @@ const AmbientEngine = {
           sy: this.height / 2,
           visible: true,
           seekProgress: 1.0,
-          boxSize: 16 + (i % 3) * 4,
-          nextHopTime: performance.now() + 1200 + i * 650
+          boxSize: 14 + (i % 3) * 3,
+          nextHopTime: performance.now() + 1400 + i * 700
         });
       }
 
@@ -487,9 +492,9 @@ const AmbientEngine = {
     g.lastShapeSwitch = performance.now();
     g.lastAutoLamp = performance.now();
 
-    // Tạo sẵn 1 đèn năng lượng (Snare Lamp) ban đầu
     if (g.lamps.length === 0) {
-      this.spawnGatherLamp(this.width * 0.56, this.height * 0.46);
+      this.spawnGatherLamp(this.width * 0.32, this.height * 0.45);
+      this.spawnGatherLamp(this.width * 0.68, this.height * 0.55);
     }
   },
 
@@ -508,12 +513,12 @@ const AmbientEngine = {
     const pal = g.lampPalettes[g.lampPaletteIdx % g.lampPalettes.length];
     g.lampPaletteIdx = (g.lampPaletteIdx + 1) % g.lampPalettes.length;
 
-    const scale = Math.min(this.width, this.height) * 0.78;
+    const scale = Math.min(this.width, this.height) * 0.92;
     const cx = this.width * 0.5;
-    const cy = this.height * 0.5;
+    const cy = this.height * 0.52;
 
-    const wx = screenX !== undefined ? (screenX - cx) / scale : (Math.random() - 0.5) * 0.75;
-    const wy = screenY !== undefined ? (screenY - cy) / scale : (Math.random() - 0.5) * 0.45;
+    const wx = screenX !== undefined ? (screenX - cx) / scale : (Math.random() - 0.5) * 0.85;
+    const wy = screenY !== undefined ? (screenY - cy) / scale : (Math.random() - 0.5) * 0.48;
     const wz = (Math.random() - 0.5) * 0.22;
 
     g.lamps.push({
@@ -526,8 +531,8 @@ const AmbientEngine = {
       hex: pal.hex,
       name: pal.name,
       life: 0,
-      maxLife: 5.5, // seconds
-      radius: 0.34,
+      maxLife: 6.5,
+      radius: 0.38,
       phase: Math.random() * Math.PI * 2
     });
 
@@ -536,9 +541,6 @@ const AmbientEngine = {
     }
   },
 
-  // ==========================================================================
-  // RENDER GATHER · 聚 3D SCENE (SAND SWARM + SMOKE WAKE + LAMPS + HUD)
-  // ==========================================================================
   renderGather(now, dt) {
     const ctx = this.ctx;
     const g = this.gather;
@@ -547,11 +549,50 @@ const AmbientEngine = {
     const dtSec = dt * 0.001;
     const tSec = now * 0.001;
 
-    // 1. Tự động chuyển đổi hình khối 3D (DAO -> TAIJI -> ORB -> RIPPLE)
+    const cx = this.width * 0.5;
+    const cy = this.height * 0.52;
+    const scale = Math.min(this.width, this.height) * 0.94;
+    const fov = 1.65;
+
+    // 0. Vẽ Hào Quang Tinh Vân Nền Sâu (Deep Subsurface Nebula Halo)
+    ctx.save();
+    const bgGlow = ctx.createRadialGradient(cx, cy, 10, cx, cy, scale * 0.85);
+    if (this.mode === 'gather_taiji') {
+      bgGlow.addColorStop(0, 'rgba(16, 185, 129, 0.09)');
+      bgGlow.addColorStop(0.45, 'rgba(245, 158, 11, 0.05)');
+      bgGlow.addColorStop(1, 'rgba(7, 11, 20, 0)');
+    } else if (this.mode === 'gather_hud') {
+      bgGlow.addColorStop(0, 'rgba(6, 182, 212, 0.10)');
+      bgGlow.addColorStop(0.5, 'rgba(59, 130, 246, 0.05)');
+      bgGlow.addColorStop(1, 'rgba(7, 11, 20, 0)');
+    } else {
+      bgGlow.addColorStop(0, 'rgba(245, 158, 11, 0.085)');
+      bgGlow.addColorStop(0.45, 'rgba(56, 189, 248, 0.045)');
+      bgGlow.addColorStop(1, 'rgba(7, 11, 20, 0)');
+    }
+    ctx.fillStyle = bgGlow;
+    ctx.fillRect(0, 0, this.width, this.height);
+
+    // Vẽ bụi sao lơ lửng dưới nền
+    for (let i = 0; i < g.ambientDust.length; i++) {
+      const d = g.ambientDust[i];
+      d.x += d.vx;
+      d.y += d.vy;
+      if (d.y < -10) d.y = this.height + 10;
+      if (d.x < -10) d.x = this.width + 10;
+      if (d.x > this.width + 10) d.x = -10;
+      const pulse = 0.6 + 0.4 * Math.sin(tSec * 1.8 + d.phase);
+      ctx.fillStyle = `rgba(255, 232, 188, ${d.alpha * pulse})`;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // 1. Tự động chuyển đổi hình khối 3D
     if (this.mode === 'gather' && now - g.lastShapeSwitch > g.shapeHoldTime) {
       this.nextGatherShape();
-    } else if (this.mode === 'gather_taiji' && now - g.lastShapeSwitch > 10000) {
-      // Chuyển qua lại giữa TAIJI (1) và ORB (2)
+    } else if (this.mode === 'gather_taiji' && now - g.lastShapeSwitch > 10500) {
       g.morphFrom = g.shapeIndex;
       g.shapeIndex = g.shapeIndex === 1 ? 2 : 1;
       g.morphTo = g.shapeIndex;
@@ -563,42 +604,36 @@ const AmbientEngine = {
       g.morphProgress = Math.min(1.0, g.morphProgress + dtSec / g.morphDuration);
     }
 
-    // 2. Tự động thắp Đèn Năng Lượng Trong Cát (Snare Lamp) định kỳ
-    if (now - g.lastAutoLamp > 4200) {
+    // 2. Tự động thắp Đèn Năng Lượng Trong Cát
+    if (now - g.lastAutoLamp > 4000) {
       g.lastAutoLamp = now;
-      const angle = tSec * 0.9;
-      const sx = this.width * 0.5 + Math.cos(angle) * (this.width * 0.22);
-      const sy = this.height * 0.5 + Math.sin(angle * 1.3) * (this.height * 0.16);
+      const angle = tSec * 0.85;
+      const sx = cx + Math.cos(angle) * (this.width * 0.25);
+      const sy = cy + Math.sin(angle * 1.3) * (this.height * 0.18);
       this.spawnGatherLamp(sx, sy);
     }
 
-    // 3. Cập nhật góc xoay 3D (Yaw / Pitch) theo chuột + nhịp thở (uBreath)
+    // 3. Góc xoay 3D mượt mà
     const p = g.pointer;
-    const autoYaw = Math.sin(tSec * 0.35) * 0.32 + (this.mode === 'gather_taiji' ? Math.sin(tSec * 0.5) * 0.18 : 0);
-    const autoPitch = Math.cos(tSec * 0.27) * 0.16;
-    g.targetYaw = autoYaw + (p.active ? p.nx * 0.38 : 0);
-    g.targetPitch = autoPitch + (p.active ? -p.ny * 0.24 : 0);
-    g.yaw += (g.targetYaw - g.yaw) * 0.06;
-    g.pitch += (g.targetPitch - g.pitch) * 0.06;
+    const autoYaw = Math.sin(tSec * 0.32) * 0.34;
+    const autoPitch = Math.cos(tSec * 0.25) * 0.16;
+    g.targetYaw = autoYaw + (p.active ? p.nx * 0.34 : 0);
+    g.targetPitch = autoPitch + (p.active ? -p.ny * 0.22 : 0);
+    g.yaw += (g.targetYaw - g.yaw) * 0.055;
+    g.pitch += (g.targetPitch - g.pitch) * 0.055;
 
-    const breath = 1.0 + 0.035 * Math.sin(tSec * 1.65);
-    g.scanZ = Math.sin(tSec * 1.15) * 0.42; // Mặt phẳng quét chiều sâu (SCAN)
+    const breath = 1.0 + 0.032 * Math.sin(tSec * 1.5);
+    g.scanZ = Math.sin(tSec * 1.05) * 0.44;
 
-    // Cập nhật vệt khói chuột (uBrush decay)
     for (let i = p.trail.length - 1; i >= 0; i--) {
       p.trail[i].age += dtSec;
-      if (p.trail[i].age > 0.65) {
-        p.trail.splice(i, 1);
-      }
+      if (p.trail[i].age > 0.65) p.trail.splice(i, 1);
     }
 
-    // Cập nhật các Đèn Năng Lượng (Snare Lamps)
     for (let i = g.lamps.length - 1; i >= 0; i--) {
       const lamp = g.lamps[i];
       lamp.life += dtSec;
-      if (lamp.life >= lamp.maxLife) {
-        g.lamps.splice(i, 1);
-      }
+      if (lamp.life >= lamp.maxLife) g.lamps.splice(i, 1);
     }
 
     const cosY = Math.cos(g.yaw);
@@ -606,38 +641,30 @@ const AmbientEngine = {
     const cosP = Math.cos(g.pitch);
     const sinP = Math.sin(g.pitch);
 
-    const cx = this.width * 0.5;
-    const cy = this.height * 0.5;
-    const scale = Math.min(this.width, this.height) * 0.78;
-    const fov = 1.65;
-
-    // 4. Vẽ Khung Thước Không Gian 3D (MARKS) nếu ở chế độ Gather / HUD
     if (g.enableMarks || this.mode === 'gather_hud') {
       this.drawGatherMarksFrame(ctx, cx, cy, scale, cosY, sinY, cosP, sinP, fov);
     }
 
-    // Tham số hiệu ứng Gió Thổi Cát Bay (DRIFT)
     const windDirX = Math.cos(g.driftAngle);
     const windDirY = Math.sin(g.driftAngle);
-    const driftWave = Math.sin(tSec * 0.45) * 0.22 + 0.18;
+    const driftWave = Math.sin(tSec * 0.42) * 0.22 + 0.18;
 
-    // Góc tự xoay của đĩa Thái Cực Âm Dương
-    const taijiSpin = tSec * 0.48;
+    const taijiSpin = tSec * 0.46;
     const cosT = Math.cos(taijiSpin);
     const sinT = Math.sin(taijiSpin);
 
-    // Easing cho quá trình biến hình (flight morph)
     const rawF = g.morphProgress;
     const easeF = rawF < 0.5 ? 4 * rawF * rawF * rawF : 1 - Math.pow(-2 * rawF + 2, 3) / 2;
-    const hump = Math.sin(Math.PI * easeF); // Độ vọt cánh cung khi tan rã & tụ hợp
+    const hump = Math.sin(Math.PI * easeF);
 
-    // 5. Duyệt và vẽ từng hạt cát đa chiều (3D Sand Grains + Wind Trails + Snare Light Illumination)
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+
     for (let i = 0; i < g.points.length; i++) {
       const pt = g.points[i];
       const sA = pt.shapes[g.morphFrom];
       const sB = pt.shapes[g.morphTo];
 
-      // Nếu hình khối là TAIJI (index 1), xoay nhẹ quanh trục Z đúng chuẩn gather.be-of-dao.com
       let ax = sA.x, ay = sA.y, az = sA.z;
       if (g.morphFrom === 1) {
         ax = sA.x * cosT - sA.y * sinT;
@@ -649,41 +676,37 @@ const AmbientEngine = {
         by = sB.x * sinT + sB.y * cosT;
       }
 
-      // Nội suy vị trí + hiệu ứng tung cánh cung xoáy (SWARM + MELT flight)
       let x = ax + (bx - ax) * easeF;
       let y = ay + (by - ay) * easeF;
       let z = az + (bz - az) * easeF;
       let lum = sA.lum + (sB.lum - sA.lum) * easeF;
 
       if (hump > 0.001) {
-        const swirlAngle = pt.seed * Math.PI * 4 + tSec * 2.2;
-        const splash = hump * 0.24 * (0.4 + 0.6 * pt.seed);
+        const swirlAngle = pt.seed * Math.PI * 4 + tSec * 2.1;
+        const splash = hump * 0.22 * (0.4 + 0.6 * pt.seed);
         x += Math.cos(swirlAngle) * splash;
         y += Math.sin(swirlAngle) * splash;
         z += Math.sin(swirlAngle * 1.7) * splash * 0.85;
       }
 
-      // Nhịp thở sinh học (BREATH)
       x *= breath;
       y *= breath;
       z *= breath;
 
-      // Hiệu ứng Gió Cát Tan Rã & Bay Lượn (DRIFT + TRAILS)
       let driftAmount = 0;
       if (g.enableDrift && this.mode !== 'gather_hud') {
         const proj = x * windDirX + y * windDirY;
         if (proj > driftWave) {
           const over = Math.min(1, (proj - driftWave) / 0.42);
-          const cyc = (tSec * (0.28 + 0.25 * pt.seed) + pt.seed * 7.13) % 1;
+          const cyc = (tSec * (0.26 + 0.24 * pt.seed) + pt.seed * 7.13) % 1;
           driftAmount = over * Math.sin(cyc * Math.PI);
-          const gust = driftAmount * driftAmount * 0.55;
-          x += windDirX * gust + Math.sin(tSec * 2.4 + pt.seed * 12) * 0.08 * driftAmount;
-          y += windDirY * gust + Math.cos(tSec * 2.1 + pt.seed * 15) * 0.08 * driftAmount;
-          z += Math.sin(tSec * 1.9 + pt.seed * 9) * 0.12 * driftAmount;
+          const gust = driftAmount * driftAmount * 0.52;
+          x += windDirX * gust + Math.sin(tSec * 2.2 + pt.seed * 12) * 0.075 * driftAmount;
+          y += windDirY * gust + Math.cos(tSec * 2.0 + pt.seed * 15) * 0.075 * driftAmount;
+          z += Math.sin(tSec * 1.8 + pt.seed * 9) * 0.11 * driftAmount;
         }
       }
 
-      // Phép chiếu 3D (Yaw & Pitch Rotation -> Screen Space)
       const x1 = x * cosY + z * sinY;
       const z1 = -x * sinY + z * cosY;
       const y2 = y * cosP - z1 * sinP;
@@ -693,24 +716,21 @@ const AmbientEngine = {
       let sx = cx + x1 * scale * depth;
       let sy = cy + y2 * scale * depth;
 
-      // Tương tác "Bàn Tay Lướt Qua Khói Cát" (Pointer Smoke Wake - uBrush)
       if (p.trail.length > 0) {
         for (let b = 0; b < p.trail.length; b++) {
           const br = p.trail[b];
           const dx = sx - br.x;
           const dy = sy - br.y;
           const distSq = dx * dx + dy * dy;
-          const brushRadSq = 135 * 135;
+          const brushRadSq = 140 * 140;
           if (distSq < brushRadSq) {
             const falloff = (1 - distSq / brushRadSq) * Math.max(0, 1 - br.age / 0.65);
-            // Đẩy xoáy hạt cát theo chiều vuốt + lực xoáy vuông góc (vortex)
-            sx += (br.vx * 1.8 - dy * 0.14) * falloff;
-            sy += (br.vy * 1.8 + dx * 0.14) * falloff;
+            sx += (br.vx * 1.65 - dy * 0.12) * falloff;
+            sy += (br.vy * 1.65 + dx * 0.12) * falloff;
           }
         }
       }
 
-      // Lưu vết để vẽ tia cát bay (Sand Streaks - TRAILS)
       const prevSx = pt.sx || sx;
       const prevSy = pt.sy || sy;
       pt.prevSx = prevSx;
@@ -719,10 +739,10 @@ const AmbientEngine = {
       pt.sy = sy;
       pt.sz = z2;
 
-      // Tính toán ánh sáng từ các Đèn Năng Lượng (Snare Lamps - LIGHT)
-      let rCol = 236;
-      let gCol = 224;
-      let bCol = 202;
+      // Màu hạt cát vàng kim pha ngọc lục bảo sang trọng
+      let rCol = pt.tint > 0.7 ? 175 : 244;
+      let gCol = pt.tint > 0.7 ? 235 : 220;
+      let bCol = pt.tint > 0.7 ? 225 : 182;
       let extraGlow = 0;
 
       for (let l = 0; l < g.lamps.length; l++) {
@@ -732,7 +752,7 @@ const AmbientEngine = {
         const ldz = z - lamp.z;
         const ldSq = ldx * ldx + ldy * ldy + ldz * ldz;
         const env = Math.sin(Math.min(1, lamp.life / lamp.maxLife) * Math.PI);
-        const atten = (env * 0.045) / (ldSq + 0.018);
+        const atten = (env * 0.05) / (ldSq + 0.016);
         if (atten > 0.02) {
           const w = Math.min(1, atten);
           rCol = rCol + (lamp.r - rCol) * w;
@@ -742,40 +762,37 @@ const AmbientEngine = {
         }
       }
 
-      // Mặt phẳng quét chiều sâu (Depth Scan Wave - SCAN)
       if (g.enableScan) {
         const scanDist = Math.abs(z2 - g.scanZ);
-        if (scanDist < 0.055) {
-          const scanBoost = (1 - scanDist / 0.055) * 0.65;
-          rCol = Math.min(255, rCol + 40 * scanBoost);
-          gCol = Math.min(255, gCol + 55 * scanBoost);
-          bCol = Math.min(255, bCol + 80 * scanBoost);
+        if (scanDist < 0.05) {
+          const scanBoost = (1 - scanDist / 0.05) * 0.6;
+          rCol = Math.min(255, rCol + 35 * scanBoost);
+          gCol = Math.min(255, gCol + 60 * scanBoost);
+          bCol = Math.min(255, bCol + 85 * scanBoost);
           extraGlow = Math.max(extraGlow, scanBoost);
         }
       }
 
-      const alpha = Math.min(0.96, (0.22 + lum * 0.58 + extraGlow * 0.35) * (1 - driftAmount * 0.45) * Math.min(1.15, depth));
-      const radius = pt.size * depth * (1 + extraGlow * 0.45);
+      const alpha = Math.min(0.76, (0.16 + lum * 0.44 + extraGlow * 0.28) * (1 - driftAmount * 0.45) * Math.min(1.12, depth));
+      const radius = pt.size * depth * (1 + extraGlow * 0.35);
 
-      // Vẽ vệt đuôi hạt cát khi đang biến hình hoặc bị gió cuốn (TRAILS)
       const moveDistSq = (sx - prevSx) * (sx - prevSx) + (sy - prevSy) * (sy - prevSy);
-      if ((driftAmount > 0.08 || hump > 0.08 || moveDistSq > 14) && moveDistSq < 2500) {
-        ctx.strokeStyle = `rgba(${rCol | 0}, ${gCol | 0}, ${bCol | 0}, ${alpha * 0.42})`;
-        ctx.lineWidth = Math.max(0.6, radius * 0.65);
+      if ((driftAmount > 0.08 || hump > 0.08 || moveDistSq > 14) && moveDistSq < 2200) {
+        ctx.strokeStyle = `rgba(${rCol | 0}, ${gCol | 0}, ${bCol | 0}, ${alpha * 0.38})`;
+        ctx.lineWidth = Math.max(0.5, radius * 0.6);
         ctx.beginPath();
         ctx.moveTo(prevSx, prevSy);
         ctx.lineTo(sx, sy);
         ctx.stroke();
       }
 
-      // Vẽ hạt cát 3D
       ctx.fillStyle = `rgba(${rCol | 0}, ${gCol | 0}, ${bCol | 0}, ${alpha})`;
       ctx.beginPath();
       ctx.arc(sx, sy, radius, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // 6. Vẽ tâm các Đèn Năng Lượng Trong Cát (Volumetric Snare Lamp Cores & HUD Tags)
+    // Vẽ quầng sáng của các Đèn Năng Lượng Trong Cát
     for (let l = 0; l < g.lamps.length; l++) {
       const lamp = g.lamps[l];
       const lx1 = lamp.x * cosY + lamp.z * sinY;
@@ -789,40 +806,29 @@ const AmbientEngine = {
       lamp.sy = lsy;
 
       const env = Math.sin(Math.min(1, lamp.life / lamp.maxLife) * Math.PI);
-      const glowR = (38 + 12 * Math.sin(tSec * 4 + lamp.phase)) * env * lDepth;
+      const glowR = (48 + 14 * Math.sin(tSec * 3.5 + lamp.phase)) * env * lDepth;
 
       if (glowR > 2) {
         const grad = ctx.createRadialGradient(lsx, lsy, 1, lsx, lsy, glowR);
-        grad.addColorStop(0, `rgba(255, 255, 255, ${0.85 * env})`);
-        grad.addColorStop(0.25, `rgba(${lamp.r}, ${lamp.g}, ${lamp.b}, ${0.55 * env})`);
+        grad.addColorStop(0, `rgba(255, 255, 255, ${0.58 * env})`);
+        grad.addColorStop(0.28, `rgba(${lamp.r}, ${lamp.g}, ${lamp.b}, ${0.36 * env})`);
         grad.addColorStop(1, `rgba(${lamp.r}, ${lamp.g}, ${lamp.b}, 0)`);
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.arc(lsx, lsy, glowR, 0, Math.PI * 2);
         ctx.fill();
-
-        // Nhãn HUD nhỏ cạnh đèn năng lượng đúng chuẩn gather.be-of-dao.com
-        if (g.enableTrackers || this.mode === 'gather_hud') {
-          ctx.font = '600 9px "JetBrains Mono", monospace';
-          ctx.fillStyle = `rgba(${lamp.r}, ${lamp.g}, ${lamp.b}, ${0.78 * env})`;
-          ctx.fillText(`LIGHT ${lamp.name.toUpperCase()} ${lamp.x >= 0 ? '+' : ''}${lamp.x.toFixed(2)}`, lsx + 12, lsy - 8);
-        }
       }
     }
+    ctx.restore();
 
-    // 7. Vẽ Hệ Thống HUD Khóa Mục Tiêu & Đường Nối Chòm Sao (TRACK + LINKS)
     if (g.enableTrackers || this.mode === 'gather_hud') {
       this.renderGatherHUD(ctx, now, dtSec);
     }
-
-    // 8. Vẽ Huy Hiệu Trạng Thái Gather · 聚 Góc Dưới Bên Trái
-    this.renderGatherStatusBadge(ctx);
   },
 
   drawGatherMarksFrame(ctx, cx, cy, scale, cosY, sinY, cosP, sinP, fov) {
-    // Khung chữ nhật 3D bao quanh đám mây điểm + các vạch thước đo (MARKS)
-    const hw = 0.68;
-    const hh = 0.38;
+    const hw = 0.72;
+    const hh = 0.40;
     const corners3D = [
       { x: -hw, y: -hh, z: 0 },
       { x:  hw, y: -hh, z: 0 },
@@ -840,7 +846,7 @@ const AmbientEngine = {
     });
 
     ctx.save();
-    ctx.strokeStyle = 'rgba(232, 224, 210, 0.11)';
+    ctx.strokeStyle = 'rgba(232, 224, 210, 0.065)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(proj[0].x, proj[0].y);
@@ -850,18 +856,17 @@ const AmbientEngine = {
     ctx.closePath();
     ctx.stroke();
 
-    // Vẽ các dấu ngoặc vuông ở 4 góc khung 3D
-    const tick = 10;
-    ctx.strokeStyle = 'rgba(255, 233, 196, 0.32)';
+    const tick = 12;
+    ctx.strokeStyle = 'rgba(255, 228, 175, 0.22)';
     for (let i = 0; i < 4; i++) {
       const cur = proj[i];
       const prev = proj[(i + 3) % 4];
       const next = proj[(i + 1) % 4];
-      const dx1 = (prev.x - cur.x);
-      const dy1 = (prev.y - cur.y);
+      const dx1 = prev.x - cur.x;
+      const dy1 = prev.y - cur.y;
       const l1 = Math.hypot(dx1, dy1) || 1;
-      const dx2 = (next.x - cur.x);
-      const dy2 = (next.y - cur.y);
+      const dx2 = next.x - cur.x;
+      const dy2 = next.y - cur.y;
       const l2 = Math.hypot(dx2, dy2) || 1;
 
       ctx.beginPath();
@@ -877,18 +882,17 @@ const AmbientEngine = {
     const g = this.gather;
     const trackers = g.trackers;
 
-    // Cập nhật vị trí các hộp khóa mục tiêu (TRACK) nhảy giữa các hạt cát 3D
     for (let i = 0; i < trackers.length; i++) {
       const tr = trackers[i];
       if (now >= tr.nextHopTime) {
         tr.ptIdx = tr.targetPtIdx;
         tr.targetPtIdx = Math.floor(Math.random() * g.points.length);
         tr.seekProgress = 0.0;
-        tr.nextHopTime = now + 1800 + Math.random() * 2400;
+        tr.nextHopTime = now + 2200 + Math.random() * 2600;
       }
 
       if (tr.seekProgress < 1.0) {
-        tr.seekProgress = Math.min(1.0, tr.seekProgress + dtSec * 2.4);
+        tr.seekProgress = Math.min(1.0, tr.seekProgress + dtSec * 2.2);
       }
 
       const ptA = g.points[tr.ptIdx] || g.points[0];
@@ -906,9 +910,8 @@ const AmbientEngine = {
 
     ctx.save();
 
-    // 1. Vẽ Đường Nối Chòm Sao Mảnh (Constellation Hairline LINKS)
     if (g.enableLinks || this.mode === 'gather_hud') {
-      ctx.lineWidth = 0.85;
+      ctx.lineWidth = 0.75;
       for (let i = 0; i < trackers.length; i++) {
         for (let j = i + 1; j < trackers.length; j++) {
           const a = trackers[i];
@@ -916,7 +919,7 @@ const AmbientEngine = {
           const dist = Math.hypot(a.sx - b.sx, a.sy - b.sy);
           const maxDist = Math.min(this.width, this.height) * 0.36;
           if (dist < maxDist) {
-            const alpha = (1 - dist / maxDist) * 0.28;
+            const alpha = (1 - dist / maxDist) * 0.18;
             ctx.strokeStyle = `rgba(232, 224, 210, ${alpha})`;
             ctx.beginPath();
             ctx.moveTo(a.sx, a.sy);
@@ -924,89 +927,423 @@ const AmbientEngine = {
             ctx.stroke();
           }
         }
-
-        // Nối Tracker với Đèn Năng Lượng gần đó
-        for (let l = 0; l < g.lamps.length; l++) {
-          const lamp = g.lamps[l];
-          if (!lamp.sx) continue;
-          const dist = Math.hypot(trackers[i].sx - lamp.sx, trackers[i].sy - lamp.sy);
-          if (dist < 240) {
-            const alpha = (1 - dist / 240) * 0.35;
-            ctx.strokeStyle = `rgba(${lamp.r}, ${lamp.g}, ${lamp.b}, ${alpha})`;
-            ctx.beginPath();
-            ctx.moveTo(trackers[i].sx, trackers[i].sy);
-            ctx.lineTo(lamp.sx, lamp.sy);
-            ctx.stroke();
-          }
-        }
       }
     }
 
-    // 2. Vẽ Hộp Khóa Mục Tiêu Góc Vuông (Corner-Bracket Target Lock Boxes - TRACK)
-    ctx.font = '500 9px "JetBrains Mono", monospace';
+    ctx.font = '500 8.5px "JetBrains Mono", monospace';
     for (let i = 0; i < trackers.length; i++) {
       const tr = trackers[i];
       const isSeeking = tr.seekProgress < 0.92;
-      const half = (tr.boxSize * (isSeeking ? 1.25 : 1.0)) * 0.5;
-      const corner = Math.max(4, half * 0.48);
+      const half = (tr.boxSize * (isSeeking ? 1.2 : 1.0)) * 0.5;
+      const corner = Math.max(3.5, half * 0.46);
       const x = tr.sx;
       const y = tr.sy;
 
-      ctx.strokeStyle = isSeeking ? 'rgba(255, 171, 61, 0.65)' : 'rgba(235, 226, 210, 0.72)';
-      ctx.lineWidth = 1.0;
+      ctx.strokeStyle = isSeeking ? 'rgba(255, 176, 68, 0.45)' : 'rgba(235, 226, 210, 0.42)';
+      ctx.lineWidth = 0.9;
 
-      // 4 dấu ngoặc góc vuông (Corner Brackets)
       ctx.beginPath();
-      // Top-Left
       ctx.moveTo(x - half, y - half + corner);
       ctx.lineTo(x - half, y - half);
       ctx.lineTo(x - half + corner, y - half);
-      // Top-Right
+
       ctx.moveTo(x + half - corner, y - half);
       ctx.lineTo(x + half, y - half);
       ctx.lineTo(x + half, y - half + corner);
-      // Bottom-Right
+
       ctx.moveTo(x + half, y + half - corner);
       ctx.lineTo(x + half, y + half);
       ctx.lineTo(x + half - corner, y + half);
-      // Bottom-Left
+
       ctx.moveTo(x - half + corner, y + half);
       ctx.lineTo(x - half, y + half);
       ctx.lineTo(x - half, y + half - corner);
       ctx.stroke();
 
-      // Tâm chữ thập (+)
-      ctx.beginPath();
-      ctx.moveTo(x - 2.5, y);
-      ctx.lineTo(x + 2.5, y);
-      ctx.moveTo(x, y - 2.5);
-      ctx.lineTo(x, y + 2.5);
-      ctx.stroke();
-
-      // Thông số tọa độ 3D thời gian thực (01 +0.42 -0.18 | SEEK)
       const fmt = (v) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2);
-      const label = isSeeking
-        ? `${tr.id} SEEK`
-        : `${tr.id} ${fmt(tr.x)} ${fmt(tr.y)}`;
-      ctx.fillStyle = isSeeking ? 'rgba(255, 171, 61, 0.78)' : 'rgba(232, 224, 210, 0.68)';
+      const label = isSeeking ? `${tr.id} SEEK` : `${tr.id} ${fmt(tr.x)} ${fmt(tr.y)}`;
+      ctx.fillStyle = isSeeking ? 'rgba(255, 176, 68, 0.48)' : 'rgba(232, 224, 210, 0.38)';
       ctx.fillText(label, x + half + 5, y + 3);
     }
 
     ctx.restore();
   },
 
-  renderGatherStatusBadge(ctx) {
-    const g = this.gather;
-    const formName = g.shapeNames[g.shapeIndex] || 'DAO · 聚';
+  // ==========================================================================
+  // 2. SẤM SÉT NGOÀI ĐỜI THỰC (REAL-LIFE FRACTAL STEPPED-LEADER LIGHTNING)
+  // ==========================================================================
+  subdivideLightningSegment(x1, y1, x2, y2, displace, depth, outSegments, thickness, isMainChannel) {
+    if (depth <= 0 || displace < 1.8) {
+      outSegments.push({ x1, y1, x2, y2, thickness, isMainChannel });
+      return;
+    }
+
+    // Midpoint Displacement (Thuật toán vật lý mô phỏng tia sét đánh zíc-zắc ngoài đời)
+    const midX = (x1 + x2) * 0.5 + (Math.random() - 0.5) * displace;
+    const midY = (y1 + y2) * 0.5 + (Math.random() - 0.5) * (displace * 0.28);
+
+    this.subdivideLightningSegment(x1, y1, midX, midY, displace * 0.54, depth - 1, outSegments, thickness, isMainChannel);
+    this.subdivideLightningSegment(midX, midY, x2, y2, displace * 0.54, depth - 1, outSegments, thickness * 0.96, isMainChannel);
+
+    // Sinh nhánh phụ (Stepped Leaders) tỏa ra từ thân chính như rễ cây trên bầu trời
+    if (depth >= 2 && Math.random() < (isMainChannel ? 0.38 : 0.22)) {
+      const angle = Math.atan2(y2 - y1, x2 - x1) + (Math.random() > 0.5 ? 1 : -1) * (0.32 + Math.random() * 0.48);
+      const length = Math.hypot(x2 - x1, y2 - y1) * (0.55 + Math.random() * 0.35);
+      const bx2 = midX + Math.cos(angle) * length;
+      const by2 = midY + Math.sin(angle) * length;
+      this.subdivideLightningSegment(midX, midY, bx2, by2, displace * 0.45, depth - 1, outSegments, thickness * 0.48, false);
+    }
+  },
+
+  createRealisticLightningBolt(customX) {
+    const startX = customX !== undefined
+      ? customX
+      : this.width * (0.12 + Math.random() * 0.76);
+    const startY = -10;
+    const isCloudToGround = Math.random() > 0.22;
+    const endX = startX + (Math.random() - 0.5) * (this.width * 0.32);
+    const endY = isCloudToGround
+      ? this.height * (0.72 + Math.random() * 0.28)
+      : this.height * (0.25 + Math.random() * 0.25);
+
+    const segments = [];
+    const baseThickness = isCloudToGround ? (2.8 + Math.random() * 1.6) : (1.8 + Math.random() * 1.0);
+    const initialSpread = isCloudToGround ? 155 : 110;
+
+    this.subdivideLightningSegment(startX, startY, endX, endY, initialSpread, 6, segments, baseThickness, true);
+
+    // Tạo hiệu ứng chớp giật nhiều nhịp (Return Stroke Flicker Pattern ngoài đời)
+    const reStrikes = Math.floor(Math.random() * 3) + 2; // 2..4 lần giật sáng trên cùng rãnh plasma
+    this.lightning.bolts.push({
+      segments,
+      originX: startX,
+      originY: 0,
+      endX,
+      endY,
+      age: 0,
+      maxAge: 0.55 + reStrikes * 0.08,
+      reStrikes,
+      hueType: Math.random() > 0.25 ? 'electric_ice' : 'violet_plasma'
+    });
+
+    // Ánh chớp chiếu sáng tầng mây phía trên (In-cloud Sheet Lightning)
+    this.lightning.sheetFlashes.push({
+      x: startX,
+      y: this.height * (0.05 + Math.random() * 0.12),
+      radius: Math.max(this.width, this.height) * (0.45 + Math.random() * 0.25),
+      alpha: 0.42,
+      decay: 1.4
+    });
+
+    this.lightning.skyGlow = 0.32;
+    this.lightning.skyCenterX = startX / (this.width || 1);
+    this.lightning.skyCenterY = 0.08;
+  },
+
+  renderLightning(now, dt) {
+    const ctx = this.ctx;
+    const dtSec = dt * 0.001;
+    this.lightning.timer += dt;
+
+    if (this.lightning.timer > this.lightning.interval) {
+      this.lightning.timer = 0;
+      // Thỉnh thoảng đánh kép 2 tia liên tiếp như giông thật
+      this.createRealisticLightningBolt();
+      if (Math.random() < 0.35) {
+        setTimeout(() => {
+          if (this.mode === 'lightning' || this.mode === 'storm') {
+            this.createRealisticLightningBolt();
+          }
+        }, 120 + Math.random() * 180);
+      }
+      this.lightning.interval = 1600 + Math.random() * 2800;
+    }
+
+    // 1. Vẽ tầng mây giông phát sáng trên bầu trời (Cloud Anvil Illumination)
+    if (this.lightning.skyGlow > 0.002) {
+      const gx = this.width * this.lightning.skyCenterX;
+      const gy = this.height * this.lightning.skyCenterY;
+      const skyGrad = ctx.createRadialGradient(gx, gy, 10, gx, gy, Math.max(this.width, this.height) * 0.9);
+      skyGrad.addColorStop(0, `rgba(210, 232, 255, ${this.lightning.skyGlow * 0.55})`);
+      skyGrad.addColorStop(0.35, `rgba(148, 185, 255, ${this.lightning.skyGlow * 0.25})`);
+      skyGrad.addColorStop(0.75, `rgba(65, 88, 145, ${this.lightning.skyGlow * 0.08})`);
+      skyGrad.addColorStop(1, 'rgba(7, 11, 20, 0)');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, this.width, this.height);
+      this.lightning.skyGlow = Math.max(0, this.lightning.skyGlow - dtSec * 0.95);
+    }
+
+    // 2. Vẽ các quầng chớp âm ỉ trong mây (Sheet Lightning)
+    for (let i = this.lightning.sheetFlashes.length - 1; i >= 0; i--) {
+      const fl = this.lightning.sheetFlashes[i];
+      fl.alpha -= dtSec * fl.decay;
+      if (fl.alpha <= 0) {
+        this.lightning.sheetFlashes.splice(i, 1);
+        continue;
+      }
+      const g = ctx.createRadialGradient(fl.x, fl.y, 5, fl.x, fl.y, fl.radius);
+      g.addColorStop(0, `rgba(235, 245, 255, ${fl.alpha * 0.55})`);
+      g.addColorStop(0.4, `rgba(165, 205, 255, ${fl.alpha * 0.22})`);
+      g.addColorStop(1, 'rgba(15, 23, 42, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(fl.x, fl.y, fl.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 3. Vẽ từng tia sét phân nhánh với 3 lớp vật lý: Quầng khí quyển -> Vỏ hồ quang -> Lõi trắng 30,000K
+    for (let i = this.lightning.bolts.length - 1; i >= 0; i--) {
+      const bolt = this.lightning.bolts[i];
+      bolt.age += dtSec;
+      if (bolt.age >= bolt.maxAge) {
+        this.lightning.bolts.splice(i, 1);
+        continue;
+      }
+
+      const normAge = bolt.age / bolt.maxAge;
+      // Hàm nhấp nháy Return-Stroke (chớp lòe 2-3 nhịp rồi tắt dần như sét thật)
+      const pulse = Math.pow(Math.max(0, 1 - normAge), 1.35) *
+        (0.62 + 0.38 * Math.cos(bolt.age * 55 * (bolt.reStrikes * 0.5)));
+
+      if (pulse <= 0.02) continue;
+
+      const isIce = bolt.hueType === 'electric_ice';
+      const outerColor = isIce ? `rgba(96, 165, 250, ${pulse * 0.22})` : `rgba(167, 139, 250, ${pulse * 0.22})`;
+      const midColor = isIce ? `rgba(186, 230, 253, ${pulse * 0.62})` : `rgba(221, 214, 254, ${pulse * 0.62})`;
+      const coreColor = `rgba(255, 255, 255, ${Math.min(1, pulse * 1.15)})`;
+
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // Lớp 1: Quầng ion hóa khí quyển (Outer Atmospheric Plasma Bloom)
+      ctx.strokeStyle = outerColor;
+      for (let s = 0; s < bolt.segments.length; s++) {
+        const seg = bolt.segments[s];
+        if (!seg.isMainChannel && seg.thickness < 0.9) continue;
+        ctx.lineWidth = seg.thickness * 4.8 * pulse;
+        ctx.beginPath();
+        ctx.moveTo(seg.x1, seg.y1);
+        ctx.lineTo(seg.x2, seg.y2);
+        ctx.stroke();
+      }
+
+      // Lớp 2: Vỏ hồ quang điện (Mid Corona Channel)
+      ctx.strokeStyle = midColor;
+      for (let s = 0; s < bolt.segments.length; s++) {
+        const seg = bolt.segments[s];
+        ctx.lineWidth = seg.thickness * 2.1 * pulse;
+        ctx.beginPath();
+        ctx.moveTo(seg.x1, seg.y1);
+        ctx.lineTo(seg.x2, seg.y2);
+        ctx.stroke();
+      }
+
+      // Lớp 3: Lõi nhiệt độ cao trắng rực (Superheated Core)
+      ctx.strokeStyle = coreColor;
+      for (let s = 0; s < bolt.segments.length; s++) {
+        const seg = bolt.segments[s];
+        ctx.lineWidth = Math.max(0.55, seg.thickness * 0.85 * pulse);
+        ctx.beginPath();
+        ctx.moveTo(seg.x1, seg.y1);
+        ctx.lineTo(seg.x2, seg.y2);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+  },
+
+  // ==========================================================================
+  // 3. MƯA RÀO NGOÀI ĐỜI THỰC (3-LAYER DEPTH PARALLAX RAIN + SPLASH DROPLETS)
+  // ==========================================================================
+  initRealisticRain(isHeavyStorm = false) {
+    const r = this.rain;
+    r.drops = [];
+    r.splashes = [];
+    r.ripples = [];
+    r.mistClouds = [];
+
+    const isMobile = this.width < 768;
+    const baseCount = isMobile ? (isHeavyStorm ? 140 : 105) : (isHeavyStorm ? 280 : 210);
+
+    // 3 Lớp chiều sâu (0: Xa mờ, 1: Trung cảnh, 2: Cận cảnh sắc nét)
+    for (let i = 0; i < baseCount; i++) {
+      const layerRand = Math.random();
+      const layer = layerRand < 0.45 ? 0 : (layerRand < 0.82 ? 1 : 2);
+      r.drops.push(this.createRainDrop(layer, true, isHeavyStorm));
+    }
+
+    // Sương mù ẩm ướt trôi là là mặt đất khi mưa to
+    for (let i = 0; i < 5; i++) {
+      r.mistClouds.push({
+        x: Math.random() * this.width,
+        y: this.height * (0.75 + Math.random() * 0.22),
+        radius: this.width * (0.28 + Math.random() * 0.2),
+        vx: (Math.random() * 0.35 + 0.15) * (Math.random() > 0.5 ? 1 : -1),
+        alpha: 0.035 + Math.random() * 0.025
+      });
+    }
+  },
+
+  createRainDrop(layer = 1, randomY = false, isHeavyStorm = false) {
+    const speedBase = layer === 0 ? 15 : (layer === 1 ? 22 : 30);
+    const speedY = (speedBase + Math.random() * 6) * (isHeavyStorm ? 1.15 : 1.0);
+    const length = layer === 0 ? (18 + Math.random() * 10) : (layer === 1 ? (32 + Math.random() * 14) : (48 + Math.random() * 20));
+    const thickness = layer === 0 ? 0.75 : (layer === 1 ? 1.15 : 1.65);
+    const alpha = layer === 0 ? (0.14 + Math.random() * 0.08) : (layer === 1 ? (0.26 + Math.random() * 0.12) : (0.42 + Math.random() * 0.16));
+
+    return {
+      layer,
+      x: Math.random() * (this.width + 300) - 100,
+      y: randomY ? Math.random() * this.height : -length - Math.random() * 120,
+      length,
+      speedY,
+      thickness,
+      alpha
+    };
+  },
+
+  renderRain(dt, isStorm = false) {
+    const ctx = this.ctx;
+    const r = this.rain;
+    const dtScale = dt / 16.67;
+
+    if (r.drops.length === 0) {
+      this.initRealisticRain(isStorm);
+    }
+
+    // Cập nhật luồng gió tự nhiên (Wind Gusts)
+    r.windTimer += dt;
+    if (r.windTimer > 3500) {
+      r.windTimer = 0;
+      const baseWind = isStorm ? -0.22 : -0.12;
+      r.targetWindAngle = baseWind + (Math.random() - 0.5) * 0.10;
+    }
+    r.windAngle += (r.targetWindAngle - r.windAngle) * 0.02;
+
+    const sinW = Math.sin(r.windAngle);
+    const cosW = Math.cos(r.windAngle);
+
+    // 1. Vẽ lớp sương ẩm mặt đất (Atmospheric Rain Mist)
     ctx.save();
-    ctx.font = '600 10px "JetBrains Mono", monospace';
-    ctx.fillStyle = 'rgba(232, 224, 210, 0.42)';
-    ctx.fillText(`GATHER · 聚  [ ${formName} ]  •  LƯỚT CHUỘT: KHÓI CÁT  •  CLICK: ĐÈN NĂNG LƯỢNG`, 18, this.height - 14);
+    for (let i = 0; i < r.mistClouds.length; i++) {
+      const m = r.mistClouds[i];
+      m.x += m.vx * dtScale;
+      if (m.x - m.radius > this.width) m.x = -m.radius;
+      if (m.x + m.radius < 0) m.x = this.width + m.radius;
+
+      const grad = ctx.createRadialGradient(m.x, m.y, 10, m.x, m.y, m.radius);
+      grad.addColorStop(0, `rgba(186, 215, 245, ${m.alpha})`);
+      grad.addColorStop(1, 'rgba(7, 11, 20, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, this.height * 0.45, this.width, this.height * 0.55);
+    }
+
+    // 2. Vẽ các hạt mưa 3 lớp với hiệu ứng đầu giọt nước sáng và đuôi mờ dần (Motion-Blurred Rain Streaks)
+    ctx.lineCap = 'round';
+    for (let i = 0; i < r.drops.length; i++) {
+      const p = r.drops[i];
+      const vx = p.speedY * sinW;
+      const vy = p.speedY * cosW;
+
+      p.x += vx * dtScale;
+      p.y += vy * dtScale;
+
+      const tailX = p.x - sinW * p.length;
+      const tailY = p.y - cosW * p.length;
+
+      // Vẽ tia mưa có độ chuyển sắc (đầu giọt mưa bắt sáng, đuôi tan vào không khí)
+      const grad = ctx.createLinearGradient(tailX, tailY, p.x, p.y);
+      grad.addColorStop(0, 'rgba(186, 220, 255, 0)');
+      grad.addColorStop(0.65, `rgba(195, 225, 255, ${p.alpha * 0.65})`);
+      grad.addColorStop(1, `rgba(240, 249, 255, ${p.alpha})`);
+
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = p.thickness;
+      ctx.beginPath();
+      ctx.moveTo(tailX, tailY);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+
+      // Khi chạm mặt đất: sinh vòng sóng nước + hạt nước bắn tung tóe (Ground Splash Physics)
+      const groundY = this.height - (p.layer === 2 ? (4 + Math.random() * 14) : (14 + Math.random() * 28));
+      if (p.y >= groundY) {
+        if (p.layer >= 1 && Math.random() < 0.55) {
+          // Vòng gợn nước elip (Ripple)
+          if (r.ripples.length < 70) {
+            r.ripples.push({
+              x: p.x,
+              y: groundY,
+              rx: 1.5,
+              maxRx: (p.layer === 2 ? 18 : 11) + Math.random() * 10,
+              alpha: p.layer === 2 ? 0.42 : 0.26
+            });
+          }
+
+          // Hạt nước nhỏ bắn văng lên khi giọt mưa to đập xuống mặt đất (Crown Splash Droplets)
+          if (p.layer === 2 && r.splashes.length < 90) {
+            const dropCount = 2 + Math.floor(Math.random() * 2);
+            for (let k = 0; k < dropCount; k++) {
+              r.splashes.push({
+                x: p.x,
+                y: groundY,
+                vx: (Math.random() - 0.5) * 3.2,
+                vy: -(Math.random() * 2.6 + 1.4),
+                alpha: 0.55,
+                radius: Math.random() * 1.1 + 0.6
+              });
+            }
+          }
+        }
+
+        p.y = -p.length - Math.random() * 60;
+        p.x = Math.random() * (this.width + 320) - 80;
+      }
+    }
+
+    // 3. Cập nhật và vẽ các hạt nước bắn tung tóe (Splash Micro-Droplets)
+    for (let i = r.splashes.length - 1; i >= 0; i--) {
+      const sp = r.splashes[i];
+      sp.x += sp.vx * dtScale;
+      sp.y += sp.vy * dtScale;
+      sp.vy += 0.22 * dtScale; // Trọng lực kéo giọt nước bắn rơi xuống
+      sp.alpha -= 0.032 * dtScale;
+
+      if (sp.alpha <= 0) {
+        r.splashes.splice(i, 1);
+        continue;
+      }
+
+      ctx.fillStyle = `rgba(224, 242, 254, ${sp.alpha})`;
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y, sp.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 4. Cập nhật và vẽ vòng sóng nước loang trên mặt đất (Water Ripples)
+    for (let i = r.ripples.length - 1; i >= 0; i--) {
+      const rip = r.ripples[i];
+      rip.rx += 0.65 * dtScale;
+      rip.alpha -= 0.016 * dtScale;
+
+      if (rip.alpha <= 0 || rip.rx >= rip.maxRx) {
+        r.ripples.splice(i, 1);
+        continue;
+      }
+
+      ctx.strokeStyle = `rgba(186, 224, 255, ${rip.alpha})`;
+      ctx.lineWidth = 0.85;
+      ctx.beginPath();
+      ctx.ellipse(rip.x, rip.y, rip.rx, rip.rx * 0.24, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
     ctx.restore();
   },
 
   // ==========================================================================
-  // CÁC HIỆU ỨNG KHÍ QUYỂN 5D TRUYỀN THỐNG (SẤM SÉT, PHÁO HOA, HOA ĐÀO, TUYẾT, MƯA)
+  // 4. CÁC HIỆU ỨNG TRUYỀN THỐNG (PHÁO HOA, HOA ĐÀO, TUYẾT RƠI)
   // ==========================================================================
   spawnInitialParticles() {
     const count = this.getOptimalCount();
@@ -1017,46 +1354,34 @@ const AmbientEngine = {
           x: Math.random() * this.width,
           y: Math.random() * this.height,
           size: Math.random() * 8 + 6,
-          speedY: Math.random() * 1.5 + 0.8,
-          speedX: Math.random() * 1.5 - 0.5,
+          speedY: Math.random() * 1.4 + 0.7,
+          speedX: Math.random() * 1.4 - 0.5,
           angle: Math.random() * Math.PI * 2,
           angularSpeed: (Math.random() - 0.5) * 0.03,
           flip: Math.random() * Math.PI,
           flipSpeed: Math.random() * 0.04 + 0.01,
           color: Math.random() > 0.3 ? '#ffb7c5' : '#ff94aa',
-          opacity: Math.random() * 0.5 + 0.4
+          opacity: Math.random() * 0.45 + 0.3
         });
       }
     } else if (this.mode === 'snow') {
-      for (let i = 0; i < count * 1.4; i++) {
+      for (let i = 0; i < count * 1.5; i++) {
         this.particles.push({
           x: Math.random() * this.width,
           y: Math.random() * this.height,
-          radius: Math.random() * 3 + 1,
-          speedY: Math.random() * 1.2 + 0.5,
+          radius: Math.random() * 2.8 + 0.9,
+          speedY: Math.random() * 1.1 + 0.45,
           speedX: Math.random() * 0.6 - 0.3,
           sway: Math.random() * 0.02,
           swayOffset: Math.random() * Math.PI * 2,
-          opacity: Math.random() * 0.7 + 0.3
-        });
-      }
-    } else if (this.mode === 'rain') {
-      for (let i = 0; i < count * 1.8; i++) {
-        this.particles.push({
-          x: Math.random() * this.width,
-          y: Math.random() * this.height,
-          length: Math.random() * 18 + 12,
-          speedY: Math.random() * 10 + 14,
-          speedX: -2.5,
-          color: Math.random() > 0.2 ? 'rgba(56, 189, 248, 0.45)' : 'rgba(6, 182, 212, 0.6)',
-          width: Math.random() * 1.2 + 0.8
+          opacity: Math.random() * 0.55 + 0.25
         });
       }
     }
   },
 
   getOptimalCount() {
-    return this.width < 768 ? 28 : 55;
+    return this.width < 768 ? 30 : 60;
   },
 
   loop(now) {
@@ -1073,8 +1398,15 @@ const AmbientEngine = {
       case 'gather_hud':
         this.renderGather(now, dt);
         break;
+      case 'storm':
+        this.renderLightning(now, dt);
+        this.renderRain(dt, true);
+        break;
       case 'lightning':
         this.renderLightning(now, dt);
+        break;
+      case 'rain':
+        this.renderRain(dt, false);
         break;
       case 'fireworks':
         this.renderFireworks(now, dt);
@@ -1085,136 +1417,16 @@ const AmbientEngine = {
       case 'snow':
         this.renderSnow(dt);
         break;
-      case 'rain':
-        this.renderRain(dt);
-        break;
     }
 
     this.animId = requestAnimationFrame(this.loop);
   },
 
-  // ==================== 1. HIỆU ỨNG SẤM SÉT 5D (LIGHTNING) ====================
-  renderLightning(now, dt) {
-    const ctx = this.ctx;
-    this.lightning.timer += dt;
-
-    if (this.lightning.timer > this.lightning.interval) {
-      this.lightning.timer = 0;
-      this.lightning.interval = Math.random() * 2500 + 1500;
-      this.createLightningBolt();
-    }
-
-    if (this.lightning.screenFlash > 0) {
-      ctx.fillStyle = `rgba(186, 230, 253, ${this.lightning.screenFlash * 0.18})`;
-      ctx.fillRect(0, 0, this.width, this.height);
-      this.lightning.screenFlash = Math.max(0, this.lightning.screenFlash - dt * 0.0035);
-    }
-
-    for (let i = this.lightning.bolts.length - 1; i >= 0; i--) {
-      const bolt = this.lightning.bolts[i];
-      bolt.life -= dt * 0.003;
-
-      if (bolt.life <= 0) {
-        this.lightning.bolts.splice(i, 1);
-        continue;
-      }
-
-      ctx.save();
-      ctx.strokeStyle = bolt.color;
-      ctx.lineWidth = bolt.thickness * bolt.life;
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = bolt.glow;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'miter';
-
-      ctx.beginPath();
-      for (let j = 0; j < bolt.path.length; j++) {
-        const pt = bolt.path[j];
-        if (j === 0) ctx.moveTo(pt.x, pt.y);
-        else ctx.lineTo(pt.x, pt.y);
-      }
-      ctx.stroke();
-
-      if (bolt.branches) {
-        for (const branch of bolt.branches) {
-          ctx.beginPath();
-          ctx.lineWidth = (bolt.thickness * 0.5) * bolt.life;
-          for (let k = 0; k < branch.length; k++) {
-            const pt = branch[k];
-            if (k === 0) ctx.moveTo(pt.x, pt.y);
-            else ctx.lineTo(pt.x, pt.y);
-          }
-          ctx.stroke();
-        }
-      }
-
-      ctx.restore();
-    }
-  },
-
-  createLightningBolt() {
-    const startX = Math.random() * (this.width * 0.8) + (this.width * 0.1);
-    const startY = 0;
-    const endX = startX + (Math.random() * 300 - 150);
-    const endY = this.height * (Math.random() * 0.4 + 0.55);
-
-    const path = this.generateLightningPath(startX, startY, endX, endY, 6);
-    const branches = [];
-
-    const numBranches = Math.floor(Math.random() * 3) + 2;
-    for (let i = 0; i < numBranches; i++) {
-      const idx = Math.floor(Math.random() * (path.length - 4)) + 2;
-      const origin = path[idx];
-      const branchEndX = origin.x + (Math.random() * 200 - 100);
-      const branchEndY = origin.y + (Math.random() * 150 + 60);
-      branches.push(this.generateLightningPath(origin.x, origin.y, branchEndX, branchEndY, 3));
-    }
-
-    const isCyan = Math.random() > 0.3;
-    this.lightning.bolts.push({
-      path,
-      branches,
-      thickness: Math.random() * 3 + 2.5,
-      color: isCyan ? '#e0f2fe' : '#f5d0fe',
-      glow: isCyan ? '#0284c7' : '#c026d3',
-      life: 1.0
-    });
-
-    this.lightning.screenFlash = 1.0;
-
-    const mainApp = document.getElementById('main-app');
-    if (mainApp) {
-      mainApp.style.transform = `translate(${(Math.random() - 0.5) * 4}px, ${(Math.random() - 0.5) * 4}px)`;
-      setTimeout(() => {
-        mainApp.style.transform = 'translate(0, 0)';
-      }, 90);
-    }
-  },
-
-  generateLightningPath(x1, y1, x2, y2, segments) {
-    const path = [{ x: x1, y: y1 }];
-    const dx = (x2 - x1) / segments;
-    const dy = (y2 - y1) / segments;
-
-    for (let i = 1; i < segments; i++) {
-      const jitterX = (Math.random() - 0.5) * 45;
-      const jitterY = (Math.random() - 0.5) * 15;
-      path.push({
-        x: x1 + dx * i + jitterX,
-        y: y1 + dy * i + jitterY
-      });
-    }
-
-    path.push({ x: x2, y: y2 });
-    return path;
-  },
-
-  // ==================== 2. HIỆU ỨNG PHÁO HOA (FIREWORKS) ====================
   renderFireworks(now, dt) {
     const ctx = this.ctx;
     this.fireworks.timer += dt;
 
-    if (this.fireworks.timer > 700) {
+    if (this.fireworks.timer > 750) {
       this.fireworks.timer = 0;
       this.launchRocket();
     }
@@ -1230,7 +1442,7 @@ const AmbientEngine = {
       ctx.shadowBlur = 10;
       ctx.shadowColor = r.color;
       ctx.beginPath();
-      ctx.arc(r.x, r.y, 2.5, 0, Math.PI * 2);
+      ctx.arc(r.x, r.y, 2.2, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
@@ -1244,9 +1456,9 @@ const AmbientEngine = {
       const s = this.fireworks.sparks[i];
       s.x += s.vx;
       s.y += s.vy;
-      s.vy += 0.07;
-      s.vx *= 0.98;
-      s.alpha -= 0.015;
+      s.vy += 0.065;
+      s.vx *= 0.982;
+      s.alpha -= 0.014;
 
       if (s.alpha <= 0) {
         this.fireworks.sparks.splice(i, 1);
@@ -1254,7 +1466,7 @@ const AmbientEngine = {
       }
 
       ctx.save();
-      ctx.globalAlpha = Math.max(0, s.alpha);
+      ctx.globalAlpha = Math.max(0, s.alpha * 0.85);
       ctx.fillStyle = s.color;
       ctx.shadowBlur = 8;
       ctx.shadowColor = s.color;
@@ -1297,7 +1509,6 @@ const AmbientEngine = {
     }
   },
 
-  // ==================== 3. HIỆU ỨNG HOA ĐÀO RƠI (SAKURA) ====================
   renderSakura(dt) {
     const ctx = this.ctx;
 
@@ -1332,7 +1543,6 @@ const AmbientEngine = {
     }
   },
 
-  // ==================== 4. HIỆU ỨNG TUYẾT RƠI (SNOWFALL) ====================
   renderSnow(dt) {
     const ctx = this.ctx;
 
@@ -1349,65 +1559,12 @@ const AmbientEngine = {
       ctx.save();
       ctx.fillStyle = '#ffffff';
       ctx.globalAlpha = p.opacity;
-      ctx.shadowBlur = p.radius > 2 ? 8 : 0;
+      ctx.shadowBlur = p.radius > 2 ? 6 : 0;
       ctx.shadowColor = '#e0f2fe';
 
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
       ctx.fill();
-      ctx.restore();
-    }
-  },
-
-  // ==================== 5. HIỆU ỨNG MƯA RƠI CYBERPUNK (RAIN) ====================
-  renderRain(dt) {
-    const ctx = this.ctx;
-
-    for (const p of this.particles) {
-      p.y += p.speedY;
-      p.x += p.speedX;
-
-      if (p.y > this.height) {
-        if (Math.random() > 0.4) {
-          this.ripples.push({
-            x: p.x,
-            y: this.height - Math.random() * 15,
-            radius: 1,
-            maxRadius: Math.random() * 12 + 6,
-            alpha: 0.6
-          });
-        }
-        p.y = -p.length;
-        p.x = Math.random() * (this.width + 200);
-      }
-
-      ctx.save();
-      ctx.strokeStyle = p.color;
-      ctx.lineWidth = p.width;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
-      ctx.lineTo(p.x + p.speedX * (p.length / p.speedY), p.y + p.length);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    for (let i = this.ripples.length - 1; i >= 0; i--) {
-      const rip = this.ripples[i];
-      rip.radius += 0.6;
-      rip.alpha -= 0.025;
-
-      if (rip.alpha <= 0 || rip.radius >= rip.maxRadius) {
-        this.ripples.splice(i, 1);
-        continue;
-      }
-
-      ctx.save();
-      ctx.strokeStyle = `rgba(56, 189, 248, ${rip.alpha})`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.ellipse(rip.x, rip.y, rip.radius * 2, rip.radius * 0.6, 0, 0, Math.PI * 2);
-      ctx.stroke();
       ctx.restore();
     }
   }

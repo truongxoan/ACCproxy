@@ -525,9 +525,10 @@ const App = {
                   ${acc.platform}
                 </span>
                 <div>
-                  <div class="font-medium text-slate-200 text-sm flex items-center gap-1.5">
+                  <div class="font-medium text-slate-200 text-sm flex items-center gap-1.5 flex-wrap">
                     <span>${acc.account_name || 'Chưa đặt tên'}</span>
                     ${acc.last_country_code ? this.renderFlagBadge(acc.last_country_code, acc.last_country) : ''}
+                    ${Auth.currentUser?.role === 'admin' && acc.owner_username ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono" title="Chủ sở hữu tạo kênh">👤 ${this.escapeHtml(acc.owner_username)}</span>` : ''}
                   </div>
                   <div class="text-[11px] text-slate-500">${acc.login_url ? `<a href="${acc.login_url}" target="_blank" class="hover:underline hover:text-cyan-400">${new URL(acc.login_url).hostname}</a>` : 'Không có URL'}</div>
                 </div>
@@ -1840,9 +1841,10 @@ const App = {
         return `
           <tr class="border-b border-slate-800/40 hover:bg-slate-800/30 transition-colors">
             <td class="py-2.5 px-3 font-semibold text-slate-200">
-              <div class="flex items-center gap-1.5">
+              <div class="flex items-center gap-1.5 flex-wrap">
                 <span>${p.provider_name}</span>
                 ${p.country_code ? this.renderFlagBadge(p.country_code) : ''}
+                ${Auth.currentUser?.role === 'admin' && p.owner_username ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono">👤 ${this.escapeHtml(p.owner_username)}</span>` : ''}
               </div>
             </td>
             <td class="py-2.5 px-3">
@@ -3818,9 +3820,10 @@ const App = {
                 <div class="flex items-center gap-2 min-w-0">
                   <span class="w-9 h-9 rounded-xl ${meta.badge} border flex items-center justify-center text-lg shrink-0">${meta.icon}</span>
                   <div class="min-w-0">
-                    <div class="flex items-center gap-1.5">
+                    <div class="flex items-center gap-1.5 flex-wrap">
                       <span class="font-extrabold text-white truncate text-sm">${this.escapeHtml(item.label)}</span>
                       ${item.is_pinned ? '<span class="text-amber-400" title="Đã ghim lên đầu">⭐</span>' : ''}
+                      ${Auth.currentUser?.role === 'admin' && item.owner_username ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono">👤 ${this.escapeHtml(item.owner_username)}</span>` : ''}
                     </div>
                     <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.badge} border inline-block mt-0.5">${meta.name}</span>
                   </div>

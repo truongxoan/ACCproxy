@@ -82,12 +82,23 @@ async function checkProxyLive(proxy) {
  * @param {boolean} [sendAlerts=true]
  * @returns {Promise<{ total: number, alive: number, dead: number, results: Array<object> }>}
  */
-async function checkAllProxies(sendAlerts = true) {
-  const accounts = db.prepare(`
-    SELECT id, platform, account_name, username, proxy_protocol, proxy_host, proxy_port, proxy_user, proxy_pass_encrypted, last_country_code
-    FROM accounts
-    WHERE proxy_host IS NOT NULL AND proxy_host != ''
-  `).all();
+async function checkAllProxies(sendAlerts = true, userId = null) {
+  let accounts = [];
+  if (!userId) {
+    accounts = db.prepare(`
+      SELECT id, platform, account_name, username, proxy_protocol, proxy_host, proxy_port, proxy_user, proxy_pass_encrypted, last_country_code
+      FROM accounts
+      WHERE proxy_host IS NOT NULL AND proxy_host != ''
+    `).all();
+  } else {
+    accounts = db.prepare(`
+      SELECT DISTINCT a.id, a.platform, a.account_name, a.username, a.proxy_protocol, a.proxy_host, a.proxy_port, a.proxy_user, a.proxy_pass_encrypted, a.last_country_code
+      FROM accounts a
+      LEFT JOIN user_account_permissions p ON a.id = p.account_id AND p.user_id = ?
+      WHERE (a.owner_user_id = ? OR (p.user_id = ? AND p.can_view = 1))
+        AND a.proxy_host IS NOT NULL AND a.proxy_host != ''
+    `).all(userId, userId, userId);
+  }
 
   const results = [];
   let aliveCount = 0;

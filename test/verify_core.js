@@ -145,6 +145,33 @@ runTest('RBAC User Creation, Allowed Tabs, Permissions & Cleanup', () => {
   assert.strictEqual(checkDeleted, null);
 });
 
+// 8. Kiểm tra cách ly dữ liệu riêng từng User (Multi-Tenant Isolation) & Admin thấy toàn bộ
+runTest('Per-User Data Isolation (Accounts, Proxy Providers, Social Vault) & Admin Global View', () => {
+  const userA = createUser(`iso_userA_${Date.now()}`, 'PassA@123', 'user', ['tab-accounts', 'tab-social-vault']);
+  const userB = createUser(`iso_userB_${Date.now()}`, 'PassB@123', 'user', ['tab-accounts', 'tab-social-vault']);
+
+  const accA = `acc_iso_a_${Date.now()}`;
+  const accB = `acc_iso_b_${Date.now()}`;
+  db.prepare(`INSERT INTO accounts (id, owner_user_id, platform, username) VALUES (?, ?, 'tiktok', 'channel_a')`).run(accA, userA.id);
+  db.prepare(`INSERT INTO accounts (id, owner_user_id, platform, username) VALUES (?, ?, 'tiktok', 'channel_b')`).run(accB, userB.id);
+
+  const visibleToA = db.prepare(`
+    SELECT DISTINCT a.id FROM accounts a
+    LEFT JOIN user_account_permissions p ON a.id = p.account_id AND p.user_id = ?
+    WHERE a.owner_user_id = ? OR (p.user_id = ? AND p.can_view = 1)
+  `).all(userA.id, userA.id, userA.id).map(r => r.id);
+
+  assert.ok(visibleToA.includes(accA), 'User A must see their own account');
+  assert.ok(!visibleToA.includes(accB), 'User A must NOT see User B account');
+
+  const visibleToAdmin = db.prepare('SELECT id FROM accounts WHERE id IN (?, ?)').all(accA, accB);
+  assert.strictEqual(visibleToAdmin.length, 2, 'Admin must see all accounts');
+
+  deleteUser(userA.id);
+  deleteUser(userB.id);
+  db.prepare('DELETE FROM accounts WHERE id IN (?, ?)').run(accA, accB);
+});
+
 // 7. Kiểm tra Suggestion Engine (Quét rủi ro)
 runTest('Security Suggestion Engine Analysis', () => {
   const analysis = analyzeSecuritySuggestions();

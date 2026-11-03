@@ -113,7 +113,15 @@ function canAccessAccount(action = 'view') {
       return next();
     }
 
-    // Nếu là User thường:
+    // Nếu là User thường: Chủ sở hữu tài khoản có toàn quyền trên dữ liệu của chính mình
+    const acc = db.prepare('SELECT id, owner_user_id FROM accounts WHERE id = ?').get(accountId);
+    if (!acc) {
+      return res.status(404).json({ success: false, message: 'Tài khoản không tồn tại' });
+    }
+    if (acc.owner_user_id && acc.owner_user_id === req.user.id) {
+      return next();
+    }
+
     const perm = db.prepare(`
       SELECT can_view, can_launch, can_reveal_password
       FROM user_account_permissions
@@ -142,14 +150,10 @@ function canAccessAccount(action = 'view') {
     }
 
     if (['edit', 'delete'].includes(action)) {
-      // Chỉ Admin hoặc chủ sở hữu tài khoản mới có quyền sửa/xóa
-      const acc = db.prepare('SELECT owner_user_id FROM accounts WHERE id = ?').get(accountId);
-      if (!acc || acc.owner_user_id !== req.user.id) {
-        return res.status(403).json({
-          success: false,
-          message: 'Chỉ Quản trị viên hoặc người tạo tài khoản mới có quyền chỉnh sửa/xóa!'
-        });
-      }
+      return res.status(403).json({
+        success: false,
+        message: 'Chỉ Quản trị viên hoặc người tạo tài khoản mới có quyền chỉnh sửa/xóa!'
+      });
     }
 
     next();

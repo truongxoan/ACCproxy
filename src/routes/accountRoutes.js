@@ -32,12 +32,16 @@ router.get('/', (req, res) => {
       `).all();
     } else {
       accounts = db.prepare(`
-        SELECT a.*, p.can_launch, p.can_reveal_password
+        SELECT DISTINCT a.*,
+          u.username as owner_username,
+          CASE WHEN a.owner_user_id = ? THEN 1 ELSE COALESCE(p.can_launch, 0) END as can_launch,
+          CASE WHEN a.owner_user_id = ? THEN 1 ELSE COALESCE(p.can_reveal_password, 0) END as can_reveal_password
         FROM accounts a
-        JOIN user_account_permissions p ON a.id = p.account_id
-        WHERE p.user_id = ? AND p.can_view = 1
+        LEFT JOIN users u ON a.owner_user_id = u.id
+        LEFT JOIN user_account_permissions p ON a.id = p.account_id AND p.user_id = ?
+        WHERE a.owner_user_id = ? OR (p.user_id = ? AND p.can_view = 1)
         ORDER BY a.created_at DESC
-      `).all(req.user.id);
+      `).all(req.user.id, req.user.id, req.user.id, req.user.id, req.user.id);
     }
 
     // Gắn thêm mã 2FA realtime và trạng thái Browser
@@ -52,6 +56,9 @@ router.get('/', (req, res) => {
 
       return {
         id: acc.id,
+        owner_user_id: acc.owner_user_id,
+        owner_username: acc.owner_username || null,
+        is_owner: req.user.role === ROLES.ADMIN || acc.owner_user_id === req.user.id,
         platform: acc.platform,
         login_url: acc.login_url,
         account_name: acc.account_name,
@@ -73,8 +80,8 @@ router.get('/', (req, res) => {
         user_agent: acc.user_agent,
         notes: acc.notes,
         is_running: isProfileRunning(acc.id),
-        can_launch: req.user.role === ROLES.ADMIN ? 1 : (acc.can_launch || 0),
-        can_reveal_password: req.user.role === ROLES.ADMIN ? 1 : (acc.can_reveal_password || 0),
+        can_launch: req.user.role === ROLES.ADMIN || acc.owner_user_id === req.user.id ? 1 : (acc.can_launch || 0),
+        can_reveal_password: req.user.role === ROLES.ADMIN || acc.owner_user_id === req.user.id ? 1 : (acc.can_reveal_password || 0),
         created_at: acc.created_at,
         updated_at: acc.updated_at
       };
@@ -383,11 +390,12 @@ router.get('/totp/batch', (req, res) => {
       rows = db.prepare('SELECT id, totp_secret_encrypted FROM accounts WHERE totp_secret_encrypted IS NOT NULL').all();
     } else {
       rows = db.prepare(`
-        SELECT a.id, a.totp_secret_encrypted
+        SELECT DISTINCT a.id, a.totp_secret_encrypted
         FROM accounts a
-        JOIN user_account_permissions p ON a.id = p.account_id
-        WHERE p.user_id = ? AND p.can_view = 1 AND a.totp_secret_encrypted IS NOT NULL
-      `).all(req.user.id);
+        LEFT JOIN user_account_permissions p ON a.id = p.account_id AND p.user_id = ?
+        WHERE (a.owner_user_id = ? OR (p.user_id = ? AND p.can_view = 1))
+          AND a.totp_secret_encrypted IS NOT NULL
+      `).all(req.user.id, req.user.id, req.user.id);
     }
 
     const decryptedList = rows.map((r) => ({

@@ -26,11 +26,23 @@ router.use((req, res, next) => {
  */
 router.get('/', (req, res) => {
   try {
-    const rows = db.prepare(`
-      SELECT *
-      FROM social_vault
-      ORDER BY is_pinned DESC, updated_at DESC
-    `).all();
+    let rows = [];
+    if (req.user && req.user.role === 'admin') {
+      rows = db.prepare(`
+        SELECT s.*, u.username as owner_username
+        FROM social_vault s
+        LEFT JOIN users u ON s.owner_user_id = u.id
+        ORDER BY s.is_pinned DESC, s.updated_at DESC
+      `).all();
+    } else {
+      rows = db.prepare(`
+        SELECT s.*, u.username as owner_username
+        FROM social_vault s
+        LEFT JOIN users u ON s.owner_user_id = u.id
+        WHERE s.owner_user_id = ?
+        ORDER BY s.is_pinned DESC, s.updated_at DESC
+      `).all(req.user.id);
+    }
 
     const items = rows.map((row) => {
       let totpCode = null;
@@ -48,6 +60,8 @@ router.get('/', (req, res) => {
 
       return {
         id: row.id,
+        owner_user_id: row.owner_user_id,
+        owner_username: row.owner_username || null,
         platform: row.platform || 'other',
         label: row.label,
         username: row.username,
@@ -85,6 +99,9 @@ router.get('/:id/reveal', (req, res) => {
     const row = db.prepare('SELECT * FROM social_vault WHERE id = ?').get(req.params.id);
     if (!row) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản trong sổ tay' });
+    }
+    if (req.user.role !== 'admin' && row.owner_user_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Bạn chỉ được phép xem dữ liệu Sổ Tay MXH của riêng bạn!' });
     }
 
     const password = row.password_encrypted ? decrypt(row.password_encrypted) : '';
@@ -199,6 +216,9 @@ router.put('/:id', (req, res) => {
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Tài khoản không tồn tại' });
     }
+    if (req.user.role !== 'admin' && existing.owner_user_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền chỉnh sửa tài khoản Sổ Tay của người khác!' });
+    }
 
     const {
       platform,
@@ -272,9 +292,12 @@ router.put('/:id', (req, res) => {
  */
 router.patch('/:id/pin', (req, res) => {
   try {
-    const existing = db.prepare('SELECT id, label, is_pinned FROM social_vault WHERE id = ?').get(req.params.id);
+    const existing = db.prepare('SELECT id, owner_user_id, label, is_pinned FROM social_vault WHERE id = ?').get(req.params.id);
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Tài khoản không tồn tại' });
+    }
+    if (req.user.role !== 'admin' && existing.owner_user_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác trên dữ liệu của người khác!' });
     }
 
     const nextPin = existing.is_pinned === 1 ? 0 : 1;
@@ -296,9 +319,12 @@ router.patch('/:id/pin', (req, res) => {
  */
 router.delete('/:id', (req, res) => {
   try {
-    const existing = db.prepare('SELECT id, label, platform FROM social_vault WHERE id = ?').get(req.params.id);
+    const existing = db.prepare('SELECT id, owner_user_id, label, platform FROM social_vault WHERE id = ?').get(req.params.id);
     if (!existing) {
       return res.status(404).json({ success: false, message: 'Tài khoản không tồn tại' });
+    }
+    if (req.user.role !== 'admin' && existing.owner_user_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền xóa tài khoản Sổ Tay của người khác!' });
     }
 
     db.prepare('DELETE FROM social_vault WHERE id = ?').run(existing.id);

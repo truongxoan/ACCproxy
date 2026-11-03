@@ -186,6 +186,12 @@ try {
   // Cột đã tồn tại
 }
 
+try {
+  db.exec('ALTER TABLE proxy_providers ADD COLUMN owner_user_id TEXT');
+} catch (e) {
+  // Cột đã tồn tại
+}
+
 // Tự động đồng bộ Super Admin chỉ huy tối cao: TX (và xóa bỏ tài khoản admin mặc định cũ)
 const txUser = db.prepare("SELECT * FROM users WHERE username = 'TX'").get();
 const legacyAdmin = db.prepare("SELECT * FROM users WHERE username = 'admin'").get();

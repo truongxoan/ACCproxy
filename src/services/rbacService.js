@@ -50,7 +50,13 @@ function formatUserRow(row) {
 function getAllUsers() {
   const stmt = db.prepare(`
     SELECT id, username, role, status, allowed_tabs, last_login, created_at, updated_at,
-    (SELECT COUNT(*) FROM user_account_permissions WHERE user_id = users.id) as assigned_accounts_count
+    (
+      SELECT COUNT(DISTINCT a.id)
+      FROM accounts a
+      LEFT JOIN user_account_permissions p ON a.id = p.account_id AND p.user_id = users.id
+      WHERE a.owner_user_id = users.id OR (p.user_id = users.id AND p.can_view = 1)
+    ) as assigned_accounts_count,
+    (SELECT COUNT(*) FROM accounts WHERE owner_user_id = users.id) as owned_accounts_count
     FROM users
     ORDER BY CASE WHEN role = 'admin' THEN 0 ELSE 1 END, created_at DESC
   `);
@@ -271,6 +277,12 @@ function syncUserPermissions(userId, permissions = [], grantedBy = 'admin', allo
       if (accId && p.can_view) {
         grantPermission(userId, accId, p, grantedBy);
       }
+    }
+
+    // Bảo toàn quyền toàn diện của User trên các tài khoản/kênh do chính User đó tự tạo
+    const ownedAccounts = db.prepare('SELECT id FROM accounts WHERE owner_user_id = ?').all(userId);
+    for (const ownAcc of ownedAccounts) {
+      grantPermission(userId, ownAcc.id, { can_view: 1, can_launch: 1, can_reveal_password: 1 }, 'owner');
     }
 
     if (allowedTabs !== null && allowedTabs !== undefined) {

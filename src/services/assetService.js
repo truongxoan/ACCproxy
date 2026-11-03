@@ -90,7 +90,7 @@ function saveAsset({ originalName, base64Data, title, associatedAccountId, assoc
 /**
  * Lấy danh sách tư liệu kèm thông tin kênh & lịch đăng liên kết
  */
-function getAssets({ fileType, search, accountId, scheduleId, limit = 100, offset = 0 } = {}) {
+function getAssets({ fileType, search, accountId, scheduleId, viewerUserId = null, isAdmin = true, limit = 100, offset = 0 } = {}) {
   let query = `
     SELECT 
       v.*,
@@ -107,6 +107,18 @@ function getAssets({ fileType, search, accountId, scheduleId, limit = 100, offse
     WHERE 1=1
   `;
   const params = [];
+
+  if (!isAdmin && viewerUserId) {
+    query += ` AND (
+      v.owner_user_id = ?
+      OR a.owner_user_id = ?
+      OR EXISTS (
+        SELECT 1 FROM user_account_permissions p
+        WHERE p.user_id = ? AND p.account_id = v.associated_account_id AND p.can_view = 1
+      )
+    )`;
+    params.push(viewerUserId, viewerUserId, viewerUserId);
+  }
 
   if (fileType && fileType !== 'all') {
     if (fileType === 'images') {

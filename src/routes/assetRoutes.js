@@ -27,6 +27,8 @@ router.get('/', (req, res) => {
       search,
       accountId: account_id,
       scheduleId: schedule_id,
+      viewerUserId: req.user?.id || null,
+      isAdmin: req.user?.role === 'admin',
       limit: parseInt(limit, 10) || 100,
       offset: parseInt(offset, 10) || 0
     });

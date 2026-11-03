@@ -113,3 +113,13 @@
     - Loại bỏ hoàn toàn `window.prompt()` / `window.confirm()` vốn bị trình duyệt nhúng/WebView chặn.
     - Thay bằng Modal Cyber-Glass chuyên nghiệp (`App.openCreateUserModal()`, `App.submitCreateUser()`), cho phép Admin vừa tạo User mới (kèm nút Tạo Mật Khẩu Ngẫu Nhiên 1 chạm), vừa tích chọn trực tiếp **Danh Sách Các Mục Được Phép Nhìn Thấy (`allowed_tabs`)** và **Danh Sách Kênh Cụ Thể Được Phép Truy Cập (`user_account_permissions`)** ngay trong 1 bước.
     - Khi User thường đăng nhập, `AuthClient.applyRoleAndTabPermissions()` tự động ẩn sạch mọi Tab, mục Menu, thẻ KPI và chặn API đối với các khu vực không được Admin cấp quyền nhìn thấy.
+- **Cách Ly Dữ Liệu Riêng Từng User (Multi-Tenant Isolation) & Đại Tu Hiệu Ứng Nền 3D + Sấm Sét / Mưa Chân Thực (`ambientEngine.js` v18.0 - 2026-11-03):**
+  - **1. Cách Ly Dữ Liệu Riêng Từng Tài Khoản User (`owner_user_id` Isolation) & Admin Thấy Toàn Bộ:**
+    - Mỗi User có không gian dữ liệu riêng biệt cho **Kênh & Proxy (`accounts`)**, **Kho Key Web Bán Proxy (`proxy_providers`)**, **Sổ Tay Mật Khẩu MXH (`social_vault`)**, **Lịch Up Video (`content_schedules`)** và **Kho Kịch Bản (`vault_assets`)**.
+    - User chỉ nhìn thấy và thao tác trên dữ liệu do chính mình tạo ra (hoặc kênh được Admin gán quyền). Khi Admin chỉnh sửa phân quyền, các kênh do chính User tự tạo luôn được bảo toàn quyền sở hữu.
+    - Super Admin (`TX`) nhìn thấy toàn bộ dữ liệu của mọi User kèm huy hiệu `👤 <username>` chỉ rõ chủ sở hữu từng mục.
+  - **2. Ẩn Toàn Bộ Theme 3D Xuống Nền (`z-0`) & Tối Ưu Thẩm Mỹ (`Gather · 聚 3D` Subsurface Edition):**
+    - Hạ `#ambient-canvas` từ `z-20` xuống `z-0` và đặt `#main-app` ở `relative z-10`, kết hợp mặt kính mờ `.glass-panel` (`rgba(11, 17, 32, 0.56)` + `backdrop-filter: blur(14px) saturate(145%)`), giúp các hạt cát 3D và hiệu ứng thời tiết chỉ lấp lánh bên dưới lớp kính nền, không bao giờ đè lên chữ hay nút bấm.
+  - **3. Sấm Sét & Mưa Rào Chân Thực Ngoài Đời (`storm`, `lightning`, `rain`):**
+    - **Sấm Sét Thực Tế:** Thuật toán đệ quy `Midpoint Displacement` tạo tia sét zíc-zắc phân nhánh tự nhiên (`Stepped Leaders`), 3 lớp phát sáng plasma (Quầng ion hóa khí quyển + Vỏ hồ quang + Lõi trắng nhiệt độ cao), nhấp nháy nhiều nhịp (`Return-Stroke Re-ignition Flicker`) và chiếu sáng tầng mây giông (`Cloud Anvil & In-Cloud Sheet Lightning`) mà không làm rung lắc giao diện.
+    - **Mưa Rào Thực Tế & Giông Bão (`storm`):** Mưa 3 lớp chiều sâu (`3-Layer Depth Parallax`), gió tạt tự nhiên (`Wind Gusts`), lớp sương mù mặt đất (`Atmospheric Mist`), hạt nước bắn tung tóe (`Crown Splash Micro-Droplets`) và vòng sóng nước loang elip khi chạm đất.

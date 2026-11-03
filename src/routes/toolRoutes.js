@@ -234,7 +234,8 @@ router.post('/hardware/test-failsafe', async (req, res) => {
  */
 router.post('/proxies/check-all', async (req, res) => {
   try {
-    const result = await checkAllProxies(true);
+    const ownerFilter = req.user.role === 'admin' ? null : req.user.id;
+    const result = await checkAllProxies(true, ownerFilter);
     logAudit(req, 'CHECK_ALL_PROXIES', 'system', null, { total: result.total, alive: result.alive, dead: result.dead });
     return res.json({
       success: true,
@@ -366,10 +367,15 @@ router.get('/piik-streams', async (req, res) => {
   try {
     const activeIds = getActiveAccountIds();
     const streams = [];
+    const isAdmin = req.user && req.user.role === 'admin';
 
     for (const accId of activeIds) {
-      const acc = db.prepare('SELECT id, platform, account_name, username, proxy_host, proxy_port, last_country, last_country_code FROM accounts WHERE id = ?').get(accId);
+      const acc = db.prepare('SELECT id, owner_user_id, platform, account_name, username, proxy_host, proxy_port, last_country, last_country_code FROM accounts WHERE id = ?').get(accId);
       if (acc) {
+        if (!isAdmin && acc.owner_user_id !== req.user.id) {
+          const perm = db.prepare('SELECT can_view FROM user_account_permissions WHERE user_id = ? AND account_id = ?').get(req.user.id, acc.id);
+          if (!perm || !perm.can_view) continue;
+        }
         const preview = await captureScreenshot(accId);
         streams.push({
           accountId: acc.id,

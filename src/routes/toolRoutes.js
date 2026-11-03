@@ -229,6 +229,51 @@ router.post('/hardware/test-failsafe', async (req, res) => {
 });
 
 /**
+ * POST /api/tools/system/restart
+ * Khởi động lại dịch vụ Server thủ công (Admin Only)
+ */
+router.post('/system/restart', async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Chỉ Super Admin mới có quyền khởi động lại Server!' });
+  }
+  try {
+    logAudit(req, 'MANUAL_SERVER_RESTART', 'system', null, { triggeredBy: req.user.username });
+    res.json({
+      success: true,
+      message: 'Lệnh khởi động lại Server đã được gửi! Server sẽ nạp lại sau 2 giây.'
+    });
+    setTimeout(() => {
+      executeServerRestart();
+    }, 1500);
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/tools/system/pm2-resurrect
+ * Nạp lại toàn bộ tiến trình ngầm PM2 (accproxy + tunnel) thủ công (Admin Only)
+ */
+router.post('/system/pm2-resurrect', async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Chỉ Super Admin mới có quyền điều khiển tiến trình ngầm!' });
+  }
+  try {
+    const { exec } = require('child_process');
+    exec('pm2 resurrect && pm2 restart all && pm2 save', (err, stdout, stderr) => {
+      // Background execution
+    });
+    logAudit(req, 'MANUAL_PM2_RESURRECT', 'system', null, { triggeredBy: req.user.username });
+    return res.json({
+      success: true,
+      message: 'Đã gửi lệnh hồi sinh và khởi động lại toàn bộ tiến trình PM2 (Server + Cloudflare Tunnel)!'
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
  * POST /api/tools/proxies/check-all
  * Quét toàn bộ Proxy của các kênh, cập nhật latency và tự đổi proxy nếu chết
  */

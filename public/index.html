@@ -146,6 +146,11 @@
             <span class="hidden sm:inline">Backup</span>
           </button>
 
+          <!-- Server Restart / Reset Button (Admin Only) -->
+          <button id="btn-server-restart" onclick="App.manualRestartServer()" class="p-1.5 md:p-2 rounded-xl bg-slate-800/80 hover:bg-rose-950/70 text-rose-300 hover:text-rose-200 border border-slate-700/60 hover:border-rose-500/50 transition-all admin-only" title="Khởi động lại / Reset Máy Chủ ngay lập tức">
+            ⚡
+          </button>
+
           <!-- Refresh Button -->
           <button id="btn-refresh" class="p-1.5 md:p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 transition-colors" title="Đồng bộ toàn hệ thống">
             🔄
@@ -2443,10 +2448,16 @@
       </div>
 
       <div class="flex items-center justify-between pt-2 border-t border-slate-800">
-        <button type="button" onclick="App.checkThermalNow()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold flex items-center gap-1">
-          <span>🔄</span>
-          <span>Làm Mới</span>
-        </button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="App.checkThermalNow()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold flex items-center gap-1">
+            <span>🔄</span>
+            <span>Làm Mới</span>
+          </button>
+          <button type="button" onclick="App.manualRestartServer()" class="px-3 py-1.5 rounded-lg bg-rose-950/70 hover:bg-rose-900 text-rose-300 font-bold border border-rose-500/40 flex items-center gap-1" title="Khởi động lại tiến trình server">
+            <span>⚡</span>
+            <span>Khởi Động Lại Server</span>
+          </button>
+        </div>
         <div class="flex items-center gap-2">
           <button type="button" onclick="App.closeHardwareModal()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300">
             Đóng

@@ -4178,6 +4178,25 @@ const App = {
     if (input) {
       input.type = input.type === 'password' ? 'text' : 'password';
     }
+  },
+
+  /**
+   * Khởi động lại Server thủ công (Admin Only)
+   */
+  async manualRestartServer() {
+    if (!confirm('Đại Ca có chắc muốn khởi động lại Server ngay lập tức không?\nQuá trình khởi động mất khoảng 2-3 giây.')) {
+      return;
+    }
+    try {
+      Toast.info('Đang gửi lệnh khởi động lại Server...');
+      const res = await API.post('/tools/system/restart');
+      Toast.success(res.message || 'Lệnh khởi động lại đã được gửi!');
+      setTimeout(() => {
+        window.location.reload();
+      }, 3500);
+    } catch (err) {
+      Toast.error(`Lỗi gửi lệnh restart: ${err.message}`);
+    }
   }
 };
 

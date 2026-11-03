@@ -43,9 +43,11 @@ function getDatabaseStats() {
   const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
   const schedCount = db.prepare('SELECT COUNT(*) as count FROM content_schedules').get().count;
   const assetCount = db.prepare('SELECT COUNT(*) as count FROM vault_assets').get().count;
+  const socialCount = db.prepare('SELECT COUNT(*) as count FROM social_vault').get().count;
 
   return {
     accounts: accCount,
+    socialVault: socialCount,
     proxies: proxyCount,
     users: userCount,
     schedules: schedCount,

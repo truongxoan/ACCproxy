@@ -152,6 +152,25 @@ db.exec(`
     FOREIGN KEY(associated_schedule_id) REFERENCES content_schedules(id) ON DELETE SET NULL,
     FOREIGN KEY(owner_user_id) REFERENCES users(id) ON DELETE SET NULL
   );
+
+  CREATE TABLE IF NOT EXISTS social_vault (
+    id TEXT PRIMARY KEY,
+    owner_user_id TEXT,
+    platform TEXT NOT NULL,
+    label TEXT NOT NULL,
+    username TEXT NOT NULL,
+    password_encrypted TEXT,
+    totp_secret_encrypted TEXT,
+    recovery_phone TEXT,
+    recovery_email TEXT,
+    backup_codes_encrypted TEXT,
+    profile_url TEXT,
+    notes TEXT,
+    is_pinned INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(owner_user_id) REFERENCES users(id) ON DELETE SET NULL
+  );
 `);
 
 // Migration an toàn bổ sung cột nếu bảng đã tồn tại từ trước

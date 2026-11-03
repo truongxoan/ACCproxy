@@ -152,6 +152,11 @@
           <span>🛠️</span>
           <span>Trạm Vũ Khí</span>
         </button>
+        <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-social-vault">
+          <span>🔐</span>
+          <span>Sổ Tay MXH</span>
+          <span id="header-social-vault-badge" class="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-mono">0</span>
+        </button>
         <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-phone">
           <span>📱</span>
           <span>Live Điện Thoại</span>
@@ -1406,9 +1411,243 @@
                 <span>Thư Viện</span>
               </button>
             </div>
+
+            <!-- Nút Mở Cài Đặt Bật Quyền Chạm Cảm Ứng Xiaomi HyperOS -->
+            <div class="pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+              <span class="text-[11px] text-amber-300">
+                💡 <b>Xiaomi HyperOS:</b> Nút <b>Home, Âm lượng, Mở App, Kéo Thanh Thông Báo</b> chạy trực tiếp không cần quyền phụ. Để <b>Chạm/Vuốt/Back</b>, bật thêm <i>"Gỡ lỗi USB (Cài đặt bảo mật)"</i> trên máy:
+              </span>
+              <button type="button" onclick="App.launchPhoneApp('dev_options')" class="px-3 py-1.5 rounded-xl bg-amber-600/25 hover:bg-amber-600/40 text-amber-200 border border-amber-500/40 font-bold shrink-0">
+                🔓 Mở Tùy Chọn Nhà Phát Triển Trên Máy
+              </button>
+            </div>
           </div>
 
         </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 7: SỔ TAY MẬT KHẨU & TÀI KHOẢN MẠNG XÃ HỘI CÁ NHÂN ==================== -->
+    <div id="tab-social-vault" class="tab-pane hidden flex flex-col gap-4">
+      <!-- Top Header Banner -->
+      <div class="glass-panel p-4 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-950/35 via-slate-900/90 to-purple-950/30 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/10">
+            🔐
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base font-extrabold text-white">Két Sắt Mật Khẩu & Tài Khoản Mạng Xã Hội Cá Nhân</h2>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                AES-256-GCM ENCRYPTED
+              </span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Lưu trữ toàn bộ nick Facebook, Zalo, TikTok, Gmail, Ngân Hàng, Tên Miền, Apple ID... Quên lúc nào vào bấm 1 chạm lấy ngay!
+            </p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="App.toggleSocialBulkModal()" class="px-3.5 py-2 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 text-xs font-bold flex items-center gap-1.5 transition-all">
+            <span>📋</span>
+            <span>Nhập Nhanh Nhiều Nick</span>
+          </button>
+          <button type="button" onclick="App.exportSocialVaultTxt()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all">
+            <span>📥</span>
+            <span>Xuất File (.TXT)</span>
+          </button>
+          <button type="button" onclick="App.triggerTelegramBackup()" class="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 text-xs font-extrabold shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition-all">
+            <span>🚀</span>
+            <span>Sao Lưu Về Telegram</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Khung Nhập Nhanh Hàng Loạt (Ẩn mặc định) -->
+      <div id="social-bulk-box" class="hidden glass-panel p-4 rounded-2xl border border-purple-500/30 flex flex-col gap-3 text-xs">
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-purple-300">📋 Nhập Nhanh Hàng Loạt Tài Khoản Mạng Xã Hội (Mỗi dòng 1 nick):</span>
+          <button type="button" onclick="App.toggleSocialBulkModal()" class="text-slate-400 hover:text-white">✕ Đóng</button>
+        </div>
+        <div class="text-[11px] text-slate-400">
+          Định dạng hỗ trợ: <code class="text-cyan-300">Tài khoản | Mật khẩu | Mã 2FA | Ghi chú</code> hoặc <code class="text-amber-300">facebook | Nick FB Chính | 0988xxx | MatKhau123 | JBSWY3DPEHPK3PXP | Ghi chú</code>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <select id="sv-bulk-platform" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 sm:w-52">
+            <option value="facebook">📘 Facebook</option>
+            <option value="zalo">💬 Zalo</option>
+            <option value="tiktok">🎵 TikTok</option>
+            <option value="google">📧 Google / Gmail</option>
+            <option value="instagram">📸 Instagram / Threads</option>
+            <option value="telegram">✈️ Telegram</option>
+            <option value="youtube">▶️ YouTube</option>
+            <option value="x">🐦 X (Twitter)</option>
+            <option value="shopee">🛒 Shopee / TikTok Shop</option>
+            <option value="cloudflare">🌐 Tên Miền / Cloudflare / Tenten</option>
+            <option value="github">🤖 GitHub / ChatGPT / AI</option>
+            <option value="bank">🏦 Ngân Hàng / Ví Điện Tử</option>
+            <option value="apple">🍎 Apple ID / iCloud</option>
+            <option value="other">🔑 Khác</option>
+          </select>
+          <button type="button" onclick="App.submitSocialBulkImport()" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold">
+            ⚡ Nhập Tất Cả Vào Két Sắt
+          </button>
+        </div>
+        <textarea id="sv-bulk-textarea" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-200 font-mono text-xs" placeholder="0988123456 | MatKhauFB@2026 | JBSWY3DPEHPK3PXP | Nick FB chính của Đại Ca&#10;daicatu@gmail.com | GmailPass#99 | | Email khôi phục công việc"></textarea>
+      </div>
+
+      <!-- Main 2-Column Layout: Left = Form Điền Tài Khoản (4/12), Right = Danh Sách Thẻ Mật Khẩu (8/12) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+
+        <!-- CỘT TRÁI (4/12): BIỂU MẪU ĐIỀN & LƯU TÀI KHOẢN MXH -->
+        <div class="lg:col-span-4 glass-panel p-4 rounded-2xl border border-amber-500/25 flex flex-col gap-3">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <h3 class="text-sm font-bold text-amber-300 flex items-center gap-2" id="sv-form-title">
+              <span>➕</span>
+              <span>Điền Tài Khoản Mạng Xã Hội Mới</span>
+            </h3>
+            <button type="button" id="btn-sv-cancel-edit" onclick="App.resetSocialVaultForm()" class="hidden text-[11px] text-rose-400 hover:underline">
+              ✕ Hủy sửa
+            </button>
+          </div>
+
+          <form id="social-vault-form" onsubmit="App.submitSocialVaultForm(event)" class="flex flex-col gap-2.5 text-xs">
+            <input type="hidden" id="sv-edit-id" value="">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Mạng Xã Hội / Dịch Vụ</label>
+                <select id="sv-platform" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-slate-200 font-semibold focus:border-amber-500 focus:outline-none">
+                  <option value="facebook">📘 Facebook</option>
+                  <option value="zalo">💬 Zalo</option>
+                  <option value="tiktok">🎵 TikTok</option>
+                  <option value="google">📧 Google / Gmail</option>
+                  <option value="instagram">📸 Instagram / Threads</option>
+                  <option value="telegram">✈️ Telegram</option>
+                  <option value="youtube">▶️ YouTube</option>
+                  <option value="x">🐦 X (Twitter)</option>
+                  <option value="shopee">🛒 Shopee / TikTok Shop</option>
+                  <option value="cloudflare">🌐 Tên Miền / Cloudflare</option>
+                  <option value="github">🤖 GitHub / ChatGPT / AI</option>
+                  <option value="bank">🏦 Ngân Hàng / Ví</option>
+                  <option value="apple">🍎 Apple ID / iCloud</option>
+                  <option value="other">🔑 Khác</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Tên Gợi Nhớ (Nhãn)</label>
+                <input type="text" id="sv-label" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-amber-500 focus:outline-none" placeholder="VD: FB Chính Đại Ca">
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Tài Khoản / SĐT / Email Đăng Nhập <span class="text-rose-400">*</span></label>
+              <input type="text" id="sv-username" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 font-mono focus:border-amber-500 focus:outline-none" placeholder="0988xxxxxx hoặc email@gmail.com hoặc UID">
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="font-semibold text-slate-300">Mật Khẩu Đăng Nhập</label>
+                <div class="flex items-center gap-2 text-[11px]">
+                  <button type="button" onclick="App.generateRandomSocialPassword()" class="text-cyan-400 hover:text-cyan-300 font-semibold">🎲 Tạo Pass Mạnh</button>
+                  <button type="button" onclick="App.toggleSvPasswordInput()" class="text-amber-400 hover:text-amber-300 font-semibold">👁️ Hiện/Ẩn</button>
+                </div>
+              </div>
+              <input type="text" id="sv-password" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-amber-200 font-mono focus:border-amber-500 focus:outline-none" placeholder="Nhập mật khẩu cần lưu...">
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Mã Khóa 2FA (TOTP Secret - Tự sinh 6 số)</label>
+              <input type="text" id="sv-totp" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-emerald-300 font-mono focus:border-amber-500 focus:outline-none" placeholder="VD: JBSWY3DPEHPK3PXP (nếu có)">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">SĐT Khôi Phục</label>
+                <input type="text" id="sv-phone" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-slate-200 font-mono" placeholder="09xxxxxxxx">
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Email Khôi Phục</label>
+                <input type="text" id="sv-email" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-slate-200 font-mono" placeholder="backup@gmail.com">
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Mã Dự Phòng / Mã PIN / Pass Cấp 2</label>
+              <input type="text" id="sv-backup-codes" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-slate-200 font-mono" placeholder="Mã khôi phục 8 số, PIN Zalo, Pass 2...">
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Link Trang Cá Nhân / Link Web</label>
+              <input type="text" id="sv-url" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-slate-200 font-mono" placeholder="https://facebook.com/...">
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Ghi Chú Bí Mật (Ngày sinh, Câu hỏi bảo mật...)</label>
+              <textarea id="sv-notes" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-200" placeholder="Ghi chú thêm để không bao giờ quên..."></textarea>
+            </div>
+
+            <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950/60 border border-slate-800 cursor-pointer">
+              <input type="checkbox" id="sv-pinned" class="w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700">
+              <span class="text-amber-300 font-bold text-[11px]">⭐ Ghim tài khoản quan trọng lên đầu danh sách</span>
+            </label>
+
+            <button type="submit" id="btn-sv-submit" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5 transition-all">
+              <span>💾</span>
+              <span id="btn-sv-submit-label">Lưu Vào Két Sắt Mật Khẩu</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- CỘT PHẢI (8/12): DANH SÁCH & TÌM KIẾM TÀI KHOẢN MXH -->
+        <div class="lg:col-span-8 flex flex-col gap-3">
+          <!-- Thanh Bộ Lọc Mạng Xã Hội & Tìm Kiếm -->
+          <div class="glass-panel p-3.5 rounded-2xl flex flex-col gap-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex flex-wrap items-center gap-1.5 text-xs" id="sv-filter-bar">
+                <button type="button" onclick="App.setSocialVaultFilter('all')" class="sv-filter-btn active px-3 py-1.5 rounded-xl font-bold bg-amber-500 text-slate-950 transition-all" data-svf="all">
+                  Tất Cả (<span id="sv-count-all">0</span>)
+                </button>
+                <button type="button" onclick="App.setSocialVaultFilter('pinned')" class="sv-filter-btn px-2.5 py-1.5 rounded-xl font-semibold bg-slate-800/90 hover:bg-slate-700 text-amber-300 transition-all" data-svf="pinned">
+                  ⭐ Đã Ghim
+                </button>
+                <button type="button" onclick="App.setSocialVaultFilter('facebook')" class="sv-filter-btn px-2.5 py-1.5 rounded-xl font-semibold bg-slate-800/90 hover:bg-slate-700 text-slate-300 transition-all" data-svf="facebook">
+                  📘 Facebook
+                </button>
+                <button type="button" onclick="App.setSocialVaultFilter('zalo')" class="sv-filter-btn px-2.5 py-1.5 rounded-xl font-semibold bg-slate-800/90 hover:bg-slate-700 text-slate-300 transition-all" data-svf="zalo">
+                  💬 Zalo
+                </button>
+                <button type="button" onclick="App.setSocialVaultFilter('tiktok')" class="sv-filter-btn px-2.5 py-1.5 rounded-xl font-semibold bg-slate-800/90 hover:bg-slate-700 text-slate-300 transition-all" data-svf="tiktok">
+                  🎵 TikTok
+                </button>
+                <button type="button" onclick="App.setSocialVaultFilter('google')" class="sv-filter-btn px-2.5 py-1.5 rounded-xl font-semibold bg-slate-800/90 hover:bg-slate-700 text-slate-300 transition-all" data-svf="google">
+                  📧 Gmail
+                </button>
+                <button type="button" onclick="App.setSocialVaultFilter('telegram')" class="sv-filter-btn px-2.5 py-1.5 rounded-xl font-semibold bg-slate-800/90 hover:bg-slate-700 text-slate-300 transition-all" data-svf="telegram">
+                  ✈️ Telegram
+                </button>
+                <button type="button" onclick="App.setSocialVaultFilter('cloudflare')" class="sv-filter-btn px-2.5 py-1.5 rounded-xl font-semibold bg-slate-800/90 hover:bg-slate-700 text-slate-300 transition-all" data-svf="cloudflare">
+                  🌐 Tên Miền/Web
+                </button>
+                <button type="button" onclick="App.setSocialVaultFilter('bank')" class="sv-filter-btn px-2.5 py-1.5 rounded-xl font-semibold bg-slate-800/90 hover:bg-slate-700 text-slate-300 transition-all" data-svf="bank">
+                  🏦 Ngân Hàng
+                </button>
+              </div>
+
+              <div class="relative w-full sm:w-64 shrink-0">
+                <input type="text" id="sv-search-input" oninput="App.handleSocialVaultSearch(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500" placeholder="Tìm tên nick, SĐT, email, ghi chú...">
+                <span class="absolute left-2.5 top-2 text-xs text-slate-500">🔍</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lưới Thẻ Tài Khoản Mạng Xã Hội -->
+          <div id="social-vault-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
       </div>
     </div>
   </main>

@@ -4,6 +4,8 @@ const { getAutoBackupConfig, updateAutoBackupConfig } = require('../src/services
 const { generateViralContent } = require('../src/services/aiContentService');
 const { checkProxyLive } = require('../src/services/proxyHealthService');
 const { getPhoneStatus, QUICK_APPS, SAFE_KEYCODES } = require('../src/services/phoneControlService');
+const db = require('../src/config/db');
+const { encrypt, decrypt } = require('../src/services/cryptoService');
 
 async function runTests() {
   console.log('================================================================');
@@ -62,8 +64,20 @@ async function runTests() {
   assert(typeof phoneStatus.connected === 'boolean', 'Trạng thái kết nối phải là boolean');
   console.log(`  [PASS] Phone Bridge: connected=${phoneStatus.connected} | mode=${phoneStatus.mode} | size=${phoneStatus.width}x${phoneStatus.height}`);
 
+  // Test 7: Social & Personal Credential Vault (AES-256-GCM)
+  console.log('▶ Test #7: Kiểm tra Két Sắt Mật Khẩu Mạng Xã Hội (social_vault)...');
+  const testId = 'test-social-vault-id';
+  db.prepare(`
+    INSERT OR REPLACE INTO social_vault (id, platform, label, username, password_encrypted, totp_secret_encrypted, is_pinned)
+    VALUES (?, 'facebook', 'FB Chính Test', '0988999999', ?, ?, 1)
+  `).run(testId, encrypt('SieuMatKhau@2026'), encrypt('JBSWY3DPEHPK3PXP'));
+  const savedRow = db.prepare('SELECT * FROM social_vault WHERE id = ?').get(testId);
+  assert(savedRow && decrypt(savedRow.password_encrypted) === 'SieuMatKhau@2026', 'Giải mã mật khẩu MXH phải khớp 100%');
+  db.prepare('DELETE FROM social_vault WHERE id = ?').run(testId);
+  console.log('  [PASS] Két Sắt Mật Khẩu MXH lưu trữ & giải mã AES-256-GCM chuẩn xác 100%');
+
   console.log('================================================================');
-  console.log('⭐ TẤT CẢ 6/6 TESTS VŨ KHÍ MỚI ĐÃ ĐẠT CHUẨN XANH MƯỢT (100% OK)');
+  console.log('⭐ TẤT CẢ 7/7 TESTS VŨ KHÍ MỚI ĐÃ ĐẠT CHUẨN XANH MƯỢT (100% OK)');
   console.log('================================================================');
 }
 

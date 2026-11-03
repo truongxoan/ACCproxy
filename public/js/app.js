@@ -24,6 +24,10 @@ const App = {
   phoneFrameBusy: false,
   phoneScreenWidth: 1080,
   phoneScreenHeight: 2400,
+  socialVaultItems: [],
+  socialVaultFilter: 'all',
+  socialVaultSearch: '',
+  revealedSocialSecrets: {},
 
   async init() {
     this.bindEvents();
@@ -33,6 +37,7 @@ const App = {
       await this.loadSuggestions();
       await this.loadSchedules();
       await this.loadAssets();
+      await this.loadSocialVault();
       await this.loadHardwareMetrics();
       this.startTotpClock();
       setInterval(() => this.loadHardwareMetrics(), 15000);
@@ -86,6 +91,8 @@ const App = {
 
         if (targetTab === 'tab-piik') {
           this.refreshPiikStreams();
+        } else if (targetTab === 'tab-social-vault') {
+          this.loadSocialVault();
         } else if (targetTab === 'tab-phone') {
           this.loadPhoneStatus();
           this.startPhoneLiveStream();
@@ -114,6 +121,7 @@ const App = {
       await this.loadSuggestions();
       await this.loadSchedules();
       await this.loadAssets();
+      await this.loadSocialVault();
       this.startTotpClock();
     });
 
@@ -3468,6 +3476,419 @@ const App = {
       setTimeout(() => this.refreshPhoneFrame(true), 650);
     } catch (err) {
       Toast.error(`Không mở được ứng dụng [${app}]: ${err.message}`);
+    }
+  },
+
+  // ==================== KÉT SẮT MẬT KHẨU & TÀI KHOẢN MẠNG XÃ HỘI CÁ NHÂN ====================
+  getSocialPlatformMeta(platform) {
+    const map = {
+      facebook: { icon: '📘', name: 'Facebook', badge: 'bg-blue-600/20 text-blue-300 border-blue-500/30' },
+      zalo: { icon: '💬', name: 'Zalo', badge: 'bg-cyan-600/20 text-cyan-300 border-cyan-500/30' },
+      tiktok: { icon: '🎵', name: 'TikTok', badge: 'bg-pink-600/20 text-pink-300 border-pink-500/30' },
+      google: { icon: '📧', name: 'Google / Gmail', badge: 'bg-rose-600/20 text-rose-300 border-rose-500/30' },
+      instagram: { icon: '📸', name: 'Instagram / Threads', badge: 'bg-fuchsia-600/20 text-fuchsia-300 border-fuchsia-500/30' },
+      telegram: { icon: '✈️', name: 'Telegram', badge: 'bg-sky-600/20 text-sky-300 border-sky-500/30' },
+      youtube: { icon: '▶️', name: 'YouTube', badge: 'bg-red-600/20 text-red-300 border-red-500/30' },
+      x: { icon: '🐦', name: 'X (Twitter)', badge: 'bg-zinc-700/40 text-zinc-200 border-zinc-500/30' },
+      shopee: { icon: '🛒', name: 'Shopee / TikTok Shop', badge: 'bg-orange-600/20 text-orange-300 border-orange-500/30' },
+      cloudflare: { icon: '🌐', name: 'Tên Miền / Cloudflare', badge: 'bg-amber-600/20 text-amber-300 border-amber-500/30' },
+      github: { icon: '🤖', name: 'GitHub / AI', badge: 'bg-purple-600/20 text-purple-300 border-purple-500/30' },
+      bank: { icon: '🏦', name: 'Ngân Hàng / Ví', badge: 'bg-emerald-600/20 text-emerald-300 border-emerald-500/30' },
+      apple: { icon: '🍎', name: 'Apple ID / iCloud', badge: 'bg-slate-600/30 text-slate-200 border-slate-500/30' },
+      other: { icon: '🔑', name: 'Khác', badge: 'bg-teal-600/20 text-teal-300 border-teal-500/30' }
+    };
+    return map[platform] || map.other;
+  },
+
+  async loadSocialVault() {
+    try {
+      const res = await API.get('/social-vault');
+      if (res && res.success) {
+        this.socialVaultItems = res.items || [];
+        const headerBadge = document.getElementById('header-social-vault-badge');
+        const countAll = document.getElementById('sv-count-all');
+        if (headerBadge) headerBadge.innerText = this.socialVaultItems.length;
+        if (countAll) countAll.innerText = this.socialVaultItems.length;
+        this.renderSocialVault();
+      }
+    } catch (e) {}
+  },
+
+  setSocialVaultFilter(filter) {
+    this.socialVaultFilter = filter;
+    document.querySelectorAll('.sv-filter-btn').forEach((btn) => {
+      if (btn.dataset.svf === filter) {
+        btn.classList.add('active', 'bg-amber-500', 'text-slate-950', 'font-bold');
+        btn.classList.remove('bg-slate-800/90', 'text-slate-300', 'text-amber-300');
+      } else {
+        btn.classList.remove('active', 'bg-amber-500', 'text-slate-950', 'font-bold');
+        btn.classList.add('bg-slate-800/90', btn.dataset.svf === 'pinned' ? 'text-amber-300' : 'text-slate-300');
+      }
+    });
+    this.renderSocialVault();
+  },
+
+  handleSocialVaultSearch(query) {
+    this.socialVaultSearch = String(query || '').trim().toLowerCase();
+    this.renderSocialVault();
+  },
+
+  renderSocialVault() {
+    const grid = document.getElementById('social-vault-grid');
+    if (!grid) return;
+
+    const filtered = this.socialVaultItems.filter((item) => {
+      if (this.socialVaultFilter === 'pinned' && !item.is_pinned) return false;
+      if (this.socialVaultFilter !== 'all' && this.socialVaultFilter !== 'pinned' && item.platform !== this.socialVaultFilter) {
+        return false;
+      }
+
+      if (this.socialVaultSearch) {
+        const q = this.socialVaultSearch;
+        const matchLabel = (item.label || '').toLowerCase().includes(q);
+        const matchUser = (item.username || '').toLowerCase().includes(q);
+        const matchPhone = (item.recovery_phone || '').toLowerCase().includes(q);
+        const matchEmail = (item.recovery_email || '').toLowerCase().includes(q);
+        const matchNotes = (item.notes || '').toLowerCase().includes(q);
+        if (!matchLabel && !matchUser && !matchPhone && !matchEmail && !matchNotes) return false;
+      }
+
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `
+        <div class="col-span-full glass-panel p-10 rounded-2xl text-center text-slate-400 flex flex-col items-center gap-2">
+          <div class="text-4xl">🔐</div>
+          <div class="text-sm font-bold text-slate-200">Chưa có tài khoản nào trong mục này</div>
+          <div class="text-xs text-slate-500">Đại Ca điền tài khoản ở biểu mẫu bên trái để lưu vào két sắt mã hóa AES-256-GCM nhé!</div>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = filtered
+      .map((item) => {
+        const meta = this.getSocialPlatformMeta(item.platform);
+        const revealed = this.revealedSocialSecrets[item.id];
+        const passText = revealed ? (revealed.password || '(Chưa đặt mật khẩu)') : '••••••••••••';
+
+        return `
+          <div class="glass-panel p-4 rounded-2xl border ${item.is_pinned ? 'border-amber-500/45 bg-amber-950/15' : 'border-slate-800'} flex flex-col justify-between gap-3 text-xs">
+            <div class="flex flex-col gap-2.5">
+              <!-- Header Row -->
+              <div class="flex items-start justify-between gap-2 pb-2 border-b border-slate-800/80">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="w-9 h-9 rounded-xl ${meta.badge} border flex items-center justify-center text-lg shrink-0">${meta.icon}</span>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-1.5">
+                      <span class="font-extrabold text-white truncate text-sm">${this.escapeHtml(item.label)}</span>
+                      ${item.is_pinned ? '<span class="text-amber-400" title="Đã ghim lên đầu">⭐</span>' : ''}
+                    </div>
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.badge} border inline-block mt-0.5">${meta.name}</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-1 shrink-0">
+                  <button type="button" onclick="App.togglePinSocialVault('${item.id}')" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 ${item.is_pinned ? 'text-amber-400' : 'text-slate-500'}" title="Ghim lên đầu">
+                    ⭐
+                  </button>
+                  <button type="button" onclick="App.editSocialVaultItem('${item.id}')" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-cyan-400" title="Sửa thông tin">
+                    ✏️
+                  </button>
+                  <button type="button" onclick="App.deleteSocialVaultItem('${item.id}')" class="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 text-rose-400" title="Xóa">
+                    🗑️
+                  </button>
+                </div>
+              </div>
+
+              <!-- Tài khoản / Username -->
+              <div class="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-950/70 border border-slate-800/90">
+                <div class="min-w-0">
+                  <div class="text-[10px] text-slate-400">Tài khoản / SĐT / Email:</div>
+                  <div class="font-mono font-bold text-cyan-300 truncate">${this.escapeHtml(item.username)}</div>
+                </div>
+                <button type="button" onclick="App.copyText('${this.escapeHtml(item.username)}', 'Đã copy Tài khoản!')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px] shrink-0">
+                  📋 Copy
+                </button>
+              </div>
+
+              <!-- Mật khẩu -->
+              <div class="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-950/70 border border-slate-800/90">
+                <div class="min-w-0">
+                  <div class="text-[10px] text-slate-400">Mật khẩu:</div>
+                  <div class="font-mono font-bold ${revealed ? 'text-amber-300 select-all' : 'text-slate-500'} truncate">${this.escapeHtml(passText)}</div>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                  <button type="button" onclick="App.revealSocialVaultSecret('${item.id}')" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold text-[11px]">
+                    ${revealed ? '🙈 Ẩn' : '👁️ Xem'}
+                  </button>
+                  <button type="button" onclick="App.copySocialVaultPassword('${item.id}')" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-[11px]">
+                    🔑 Copy Pass
+                  </button>
+                </div>
+              </div>
+
+              <!-- Mã 2FA 6 số (nếu có) -->
+              ${item.totp_code ? `
+                <div class="flex items-center justify-between gap-2 p-2 rounded-xl bg-emerald-950/30 border border-emerald-500/30">
+                  <div>
+                    <div class="text-[10px] text-emerald-300/80">Mã 2FA TOTP Hiện Tại (${item.totp_remaining || 30}s):</div>
+                    <div class="font-mono text-sm font-black text-emerald-300 tracking-widest">${item.totp_code}</div>
+                  </div>
+                  <button type="button" onclick="App.copyText('${item.totp_code}', 'Đã copy mã 2FA 6 số!')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px]">
+                    📋 Copy 2FA
+                  </button>
+                </div>
+              ` : ''}
+
+              <!-- Thông tin khôi phục & Ghi chú -->
+              ${(item.recovery_phone || item.recovery_email || item.notes || (revealed && revealed.backup_codes)) ? `
+                <div class="p-2 rounded-xl bg-slate-900/50 border border-slate-800/60 text-[11px] text-slate-300 flex flex-col gap-1">
+                  ${item.recovery_phone ? `<div>📱 <b>SĐT Khôi phục:</b> <span class="font-mono text-slate-200">${this.escapeHtml(item.recovery_phone)}</span></div>` : ''}
+                  ${item.recovery_email ? `<div>📧 <b>Mail Khôi phục:</b> <span class="font-mono text-slate-200">${this.escapeHtml(item.recovery_email)}</span></div>` : ''}
+                  ${revealed && revealed.backup_codes ? `<div>🛡️ <b>Mã dự phòng / PIN:</b> <span class="font-mono text-amber-200">${this.escapeHtml(revealed.backup_codes)}</span></div>` : ''}
+                  ${item.notes ? `<div class="text-slate-400">📝 ${this.escapeHtml(item.notes)}</div>` : ''}
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Footer Link -->
+            ${item.profile_url ? `
+              <div class="pt-1 border-t border-slate-800/60 flex items-center justify-between text-[11px]">
+                <a href="${this.escapeHtml(item.profile_url)}" target="_blank" class="text-cyan-400 hover:underline truncate">↗ ${this.escapeHtml(item.profile_url)}</a>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      })
+      .join('');
+  },
+
+  async revealSocialVaultSecret(id) {
+    if (this.revealedSocialSecrets[id]) {
+      delete this.revealedSocialSecrets[id];
+      this.renderSocialVault();
+      return;
+    }
+    try {
+      const res = await API.get(`/social-vault/${id}/reveal`);
+      if (res && res.success) {
+        this.revealedSocialSecrets[id] = res;
+        this.renderSocialVault();
+      }
+    } catch (err) {
+      Toast.error(`Lỗi giải mã mật khẩu: ${err.message}`);
+    }
+  },
+
+  async copySocialVaultPassword(id) {
+    try {
+      let secret = this.revealedSocialSecrets[id];
+      if (!secret) {
+        const res = await API.get(`/social-vault/${id}/reveal`);
+        if (res && res.success) {
+          secret = res;
+          this.revealedSocialSecrets[id] = res;
+        }
+      }
+      if (secret && secret.password) {
+        this.copyText(secret.password, `Đã copy mật khẩu của [${secret.label}]!`);
+      } else {
+        Toast.error('Tài khoản này chưa lưu mật khẩu!');
+      }
+    } catch (err) {
+      Toast.error(`Lỗi lấy mật khẩu: ${err.message}`);
+    }
+  },
+
+  async submitSocialVaultForm(e) {
+    e.preventDefault();
+    const editId = document.getElementById('sv-edit-id')?.value || '';
+    const payload = {
+      platform: document.getElementById('sv-platform')?.value || 'facebook',
+      label: document.getElementById('sv-label')?.value || '',
+      username: document.getElementById('sv-username')?.value || '',
+      password: document.getElementById('sv-password')?.value || '',
+      totp_secret: document.getElementById('sv-totp')?.value || '',
+      recovery_phone: document.getElementById('sv-phone')?.value || '',
+      recovery_email: document.getElementById('sv-email')?.value || '',
+      backup_codes: document.getElementById('sv-backup-codes')?.value || '',
+      profile_url: document.getElementById('sv-url')?.value || '',
+      notes: document.getElementById('sv-notes')?.value || '',
+      is_pinned: !!document.getElementById('sv-pinned')?.checked
+    };
+
+    try {
+      if (editId) {
+        const res = await API.put(`/social-vault/${editId}`, payload);
+        Toast.success(res.message || 'Đã cập nhật tài khoản!');
+        delete this.revealedSocialSecrets[editId];
+      } else {
+        const res = await API.post('/social-vault', payload);
+        Toast.success(res.message || 'Đã lưu vào Két Sắt Mật Khẩu MXH!');
+      }
+      this.resetSocialVaultForm();
+      await this.loadSocialVault();
+    } catch (err) {
+      Toast.error(`Lỗi lưu tài khoản: ${err.message}`);
+    }
+  },
+
+  async editSocialVaultItem(id) {
+    try {
+      const res = await API.get(`/social-vault/${id}/reveal`);
+      if (!res || !res.success) return;
+
+      document.getElementById('sv-edit-id').value = res.id;
+      document.getElementById('sv-platform').value = res.platform || 'facebook';
+      document.getElementById('sv-label').value = res.label || '';
+      document.getElementById('sv-username').value = res.username || '';
+      document.getElementById('sv-password').value = res.password || '';
+      document.getElementById('sv-totp').value = res.totp_secret || '';
+      document.getElementById('sv-phone').value = res.recovery_phone || '';
+      document.getElementById('sv-email').value = res.recovery_email || '';
+      document.getElementById('sv-backup-codes').value = res.backup_codes || '';
+      document.getElementById('sv-url').value = res.profile_url || '';
+      document.getElementById('sv-notes').value = res.notes || '';
+      document.getElementById('sv-pinned').checked = !!res.is_pinned;
+
+      const title = document.getElementById('sv-form-title');
+      const cancelBtn = document.getElementById('btn-sv-cancel-edit');
+      const submitLabel = document.getElementById('btn-sv-submit-label');
+      if (title) title.innerHTML = '<span>✏️</span><span>Chỉnh Sửa Tài Khoản MXH</span>';
+      if (cancelBtn) cancelBtn.classList.remove('hidden');
+      if (submitLabel) submitLabel.innerText = 'Cập Nhật Tài Khoản';
+
+      Toast.info(`Đang chỉnh sửa [${res.label}]`);
+    } catch (err) {
+      Toast.error(`Lỗi tải thông tin tài khoản: ${err.message}`);
+    }
+  },
+
+  resetSocialVaultForm() {
+    document.getElementById('social-vault-form')?.reset();
+    const editId = document.getElementById('sv-edit-id');
+    if (editId) editId.value = '';
+    const title = document.getElementById('sv-form-title');
+    const cancelBtn = document.getElementById('btn-sv-cancel-edit');
+    const submitLabel = document.getElementById('btn-sv-submit-label');
+    if (title) title.innerHTML = '<span>➕</span><span>Điền Tài Khoản Mạng Xã Hội Mới</span>';
+    if (cancelBtn) cancelBtn.classList.add('hidden');
+    if (submitLabel) submitLabel.innerText = 'Lưu Vào Két Sắt Mật Khẩu';
+  },
+
+  async togglePinSocialVault(id) {
+    try {
+      const res = await API.patch(`/social-vault/${id}/pin`);
+      if (res && res.success) {
+        Toast.info(res.message);
+        await this.loadSocialVault();
+      }
+    } catch (err) {
+      Toast.error(err.message);
+    }
+  },
+
+  async deleteSocialVaultItem(id) {
+    const item = this.socialVaultItems.find((i) => i.id === id);
+    if (!confirm(`Đại Ca có chắc muốn xóa tài khoản [${item ? item.label : id}] khỏi Sổ Tay Mật Khẩu không?`)) {
+      return;
+    }
+    try {
+      const res = await API.delete(`/social-vault/${id}`);
+      Toast.success(res.message || 'Đã xóa tài khoản!');
+      await this.loadSocialVault();
+    } catch (err) {
+      Toast.error(err.message);
+    }
+  },
+
+  toggleSocialBulkModal() {
+    const box = document.getElementById('social-bulk-box');
+    if (box) box.classList.toggle('hidden');
+  },
+
+  async submitSocialBulkImport() {
+    const rawText = document.getElementById('sv-bulk-textarea')?.value || '';
+    const defaultPlatform = document.getElementById('sv-bulk-platform')?.value || 'facebook';
+    if (!rawText.trim()) {
+      Toast.error('Vui lòng dán danh sách tài khoản cần nhập!');
+      return;
+    }
+    try {
+      const res = await API.post('/social-vault/bulk-import', { rawText, defaultPlatform });
+      if (res && res.success) {
+        Toast.success(res.message);
+        document.getElementById('sv-bulk-textarea').value = '';
+        this.toggleSocialBulkModal();
+        await this.loadSocialVault();
+      }
+    } catch (err) {
+      Toast.error(`Lỗi nhập hàng loạt: ${err.message}`);
+    }
+  },
+
+  async exportSocialVaultTxt() {
+    if (this.socialVaultItems.length === 0) {
+      Toast.error('Chưa có tài khoản nào trong Sổ Tay để xuất file!');
+      return;
+    }
+    Toast.info('Đang giải mã và tạo file sao lưu văn bản...');
+    try {
+      const lines = [
+        '====================================================================',
+        `SỔ TAY MẬT KHẨU & TÀI KHOẢN MXH - ACCPROXY (${new Date().toLocaleString('vi-VN')})`,
+        '====================================================================',
+        ''
+      ];
+      for (const item of this.socialVaultItems) {
+        const rev = await API.get(`/social-vault/${item.id}/reveal`);
+        lines.push(`[${(item.platform || '').toUpperCase()}] ${item.label}`);
+        lines.push(`  • Tài khoản : ${item.username}`);
+        lines.push(`  • Mật khẩu  : ${rev.password || ''}`);
+        if (rev.totp_secret) lines.push(`  • 2FA Secret: ${rev.totp_secret}`);
+        if (rev.recovery_phone) lines.push(`  • SĐT KP    : ${rev.recovery_phone}`);
+        if (rev.recovery_email) lines.push(`  • Email KP  : ${rev.recovery_email}`);
+        if (rev.backup_codes) lines.push(`  • Mã dự phòng: ${rev.backup_codes}`);
+        if (rev.profile_url) lines.push(`  • Link      : ${rev.profile_url}`);
+        if (rev.notes) lines.push(`  • Ghi chú   : ${rev.notes}`);
+        lines.push('--------------------------------------------------------------------');
+      }
+
+      const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `SoTay_MatKhau_MXH_${new Date().toISOString().slice(0, 10)}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      Toast.success('Đã tải xuống file Sổ Tay Mật Khẩu (.TXT)!');
+    } catch (err) {
+      Toast.error(`Lỗi xuất file: ${err.message}`);
+    }
+  },
+
+  generateRandomSocialPassword() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*';
+    let pass = '';
+    for (let i = 0; i < 16; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const input = document.getElementById('sv-password');
+    if (input) {
+      input.type = 'text';
+      input.value = pass;
+      Toast.info('Đã tạo mật khẩu ngẫu nhiên 16 ký tự siêu mạnh!');
+    }
+  },
+
+  toggleSvPasswordInput() {
+    const input = document.getElementById('sv-password');
+    if (input) {
+      input.type = input.type === 'password' ? 'text' : 'password';
     }
   }
 };

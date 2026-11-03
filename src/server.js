@@ -25,6 +25,7 @@ const toolRoutes = require('./routes/toolRoutes');
 const providerRoutes = require('./routes/providerRoutes');
 const assetRoutes = require('./routes/assetRoutes');
 const knowledgeRoutes = require('./routes/knowledgeRoutes');
+const socialVaultRoutes = require('./routes/socialVaultRoutes');
 
 const app = express();
 
@@ -74,6 +75,7 @@ app.use('/api/tools', toolRoutes);
 app.use('/api/providers', providerRoutes);
 app.use('/api/assets', assetRoutes);
 app.use('/api/knowledge', knowledgeRoutes);
+app.use('/api/social-vault', socialVaultRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

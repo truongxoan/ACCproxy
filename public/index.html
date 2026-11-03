@@ -152,6 +152,11 @@
           <span>🛠️</span>
           <span>Trạm Vũ Khí</span>
         </button>
+        <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-phone">
+          <span>📱</span>
+          <span>Live Điện Thoại</span>
+          <span class="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono animate-pulse">LIVE</span>
+        </button>
         <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-knowledge">
           <span>🧠</span>
           <span>Tri Thức AI</span>
@@ -1086,16 +1091,16 @@
           </div>
         </div>
 
-        <!-- 4 TRỤ CỘT CÔNG NGHỆ CHIẾN LƯỢC (ACCORDION GỌN GÀNG) -->
-        <details class="group bg-slate-950/60 rounded-xl border border-violet-500/20 p-3 transition-all">
+        <!-- 5 TRỤ CỘT CÔNG NGHỆ CHIẾN LƯỢC & SKILL REA (ACCORDION GỌN GÀNG) -->
+        <details open class="group bg-slate-950/60 rounded-xl border border-violet-500/20 p-3 transition-all">
           <summary class="cursor-pointer list-none flex items-center justify-between text-xs font-bold text-violet-200 select-none">
             <span class="flex items-center gap-1.5">
               <span>⚡</span>
-              <span>Xem Tóm Tắt 4 Trụ Cột Công Nghệ Chiến Lược Của Nhóm (Executive Digest)</span>
+              <span>5 Trụ Cột Công Nghệ Chiến Lược & Skill Reverse Engineer Anything (REA v1.0)</span>
             </span>
-            <span class="text-[10px] px-2.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 font-mono">Bấm để mở rộng ▾</span>
+            <span class="text-[10px] px-2.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 font-mono">Đóng / Mở ▾</span>
           </summary>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mt-3 pt-3 border-t border-slate-800/80" id="kn-pillars-container"></div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-3 pt-3 border-t border-slate-800/80" id="kn-pillars-container"></div>
         </details>
       </div>
 
@@ -1143,6 +1148,266 @@
               Trang Sau →
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 6: ĐIỀU KHIỂN & LIVE MÀN HÌNH ĐIỆN THOẠI REDMI K50G ==================== -->
+    <div id="tab-phone" class="tab-pane hidden flex flex-col gap-4">
+      <!-- Top Control Header Bar -->
+      <div class="glass-panel p-4 rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/35 via-slate-900/90 to-cyan-950/30 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/10">
+            📱
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base font-extrabold text-white">Trung Tâm Điều Khiển & Live Màn Hình Điện Thoại</h2>
+              <span id="phone-conn-badge" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                🟢 SẴN SÀNG
+              </span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Chạm trực tiếp lên màn hình để Click • Nhấn giữ kéo chuột để Vuốt/Cuộn trang • Điều khiển từ xa thời gian thực qua ADB Bridge
+            </p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" id="btn-phone-stream-toggle" onclick="App.togglePhoneLiveStream()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/25 flex items-center gap-1.5 transition-all">
+            <span id="phone-stream-icon">⏸️</span>
+            <span id="phone-stream-label">Đang Live (Tạm dừng)</span>
+          </button>
+          <button type="button" onclick="App.refreshPhoneFrame(true)" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold border border-slate-700 flex items-center gap-1">
+            <span>📸</span>
+            <span>Làm Mới Ngay</span>
+          </button>
+          <select id="phone-fps-select" onchange="App.setPhoneStreamInterval(this.value)" class="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200 font-mono">
+            <option value="650">Tốc độ: Siêu Mượt (0.6s)</option>
+            <option value="1000" selected>Tốc độ: Chuẩn (1.0s)</option>
+            <option value="2000">Tốc độ: Tiết Kiệm (2.0s)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Main 2-Column Layout: Left = Live Phone Bezel, Right = Remote Command Deck -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+
+        <!-- CỘT TRÁI (5/12): MÀN HÌNH ĐIỆN THOẠI TƯƠNG TÁC TRỰC TIẾP -->
+        <div class="lg:col-span-5 glass-panel p-4 rounded-2xl border border-cyan-500/30 flex flex-col items-center gap-3">
+          <!-- Thông số khung hình -->
+          <div class="w-full flex items-center justify-between text-[11px] font-mono text-slate-400 px-1">
+            <span id="phone-model-label" class="text-cyan-300 font-bold">📱 Redmi K50G (1080×2400)</span>
+            <span id="phone-latency-label" class="text-emerald-400">⚡ Sẵn sàng tương tác</span>
+          </div>
+
+          <!-- Khung Bezel Điện Thoại -->
+          <div class="relative w-full max-w-[330px] aspect-[9/20] rounded-[28px] p-2 bg-slate-950 border-2 border-slate-700/90 shadow-2xl flex flex-col overflow-hidden select-none">
+            <!-- Tai thỏ / Camera đục lỗ -->
+            <div class="w-3.5 h-3.5 rounded-full bg-black border border-slate-800 mx-auto mb-1 shrink-0"></div>
+
+            <!-- Vùng hiển thị màn hình + Lớp bắt sự kiện chạm/vuốt -->
+            <div id="phone-viewport" class="relative flex-1 w-full bg-slate-900 rounded-2xl overflow-hidden cursor-pointer flex items-center justify-center">
+              <img id="phone-live-img" alt="Live Phone Screen" draggable="false" class="w-full h-full object-contain select-none pointer-events-none" src="" />
+              <!-- Hiệu ứng chấm chạm (Tap Ripple) -->
+              <div id="phone-tap-ripple" class="hidden absolute w-8 h-8 -ml-4 -mt-4 rounded-full border-2 border-cyan-400 bg-cyan-400/30 pointer-events-none animate-ping"></div>
+              <!-- Trạng thái chờ khung hình đầu tiên -->
+              <div id="phone-empty-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/85 text-center p-4 gap-2">
+                <div class="text-4xl animate-bounce">📱</div>
+                <div class="text-xs font-bold text-cyan-300">Đang kết nối màn hình Redmi K50G...</div>
+                <div class="text-[11px] text-slate-400">Chạm hoặc bấm "Làm Mới Ngay" để tải hình ảnh trực tiếp</div>
+              </div>
+            </div>
+
+            <!-- 3 Phím Điều Hướng Android Vật Lý Dưới Đáy Máy -->
+            <div class="grid grid-cols-3 gap-2 pt-2 px-2 shrink-0">
+              <button type="button" onclick="App.sendPhoneKey('BACK')" class="py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-slate-200 text-xs font-bold border border-slate-800 flex items-center justify-center gap-1 transition-all" title="Quay lại (Back)">
+                <span>◁</span>
+                <span class="text-[11px]">Back</span>
+              </button>
+              <button type="button" onclick="App.sendPhoneKey('HOME')" class="py-1.5 rounded-xl bg-slate-900 hover:bg-cyan-950/60 active:scale-95 text-cyan-300 text-xs font-bold border border-cyan-500/30 flex items-center justify-center gap-1 transition-all" title="Màn hình chính (Home)">
+                <span>◉</span>
+                <span class="text-[11px]">Home</span>
+              </button>
+              <button type="button" onclick="App.sendPhoneKey('APP_SWITCH')" class="py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-slate-200 text-xs font-bold border border-slate-800 flex items-center justify-center gap-1 transition-all" title="Đa nhiệm (Recents)">
+                <span>▢</span>
+                <span class="text-[11px]">Đa Nhiệm</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="text-[11px] text-slate-400 text-center">
+            💡 <strong class="text-slate-200">Mẹo:</strong> Click chuột trái để <span class="text-cyan-300">Chạm (Tap)</span> • Nhấn giữ và kéo chuột trên màn hình để <span class="text-emerald-300">Vuốt (Swipe)</span>
+          </div>
+        </div>
+
+        <!-- CỘT PHẢI (7/12): BẢNG ĐIỀU KHIỂN TỪ XA ĐA NĂNG (REMOTE COMMAND DECK) -->
+        <div class="lg:col-span-7 flex flex-col gap-4">
+
+          <!-- CARD 1: CỬ CHỈ VUỐT NHANH & PHÍM CỨNG VẬT LÝ -->
+          <div class="glass-panel p-4 rounded-2xl border border-emerald-500/20 flex flex-col gap-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 class="text-sm font-bold text-emerald-300 flex items-center gap-2">
+                <span>🕹️</span>
+                <span>Phím Cứng Vật Lý & Cử Chỉ Vuốt Nhanh 1 Chạm</span>
+              </h3>
+              <span class="text-[10px] font-mono text-slate-400" id="phone-last-action">Chưa có thao tác</span>
+            </div>
+
+            <!-- Hàng 1: Nguồn, Mở khóa & Vuốt 4 hướng -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <button type="button" onclick="App.sendPhoneKey('WAKEUP')" class="p-2.5 rounded-xl bg-emerald-950/50 hover:bg-emerald-900/70 text-emerald-200 border border-emerald-500/30 font-semibold flex items-center justify-center gap-1.5 transition-all">
+                <span>☀️</span>
+                <span>Bật Màn Hình</span>
+              </button>
+              <button type="button" onclick="App.quickPhoneSwipe('unlock')" class="p-2.5 rounded-xl bg-cyan-950/50 hover:bg-cyan-900/70 text-cyan-200 border border-cyan-500/30 font-semibold flex items-center justify-center gap-1.5 transition-all">
+                <span>🔓</span>
+                <span>Vuốt Mở Khóa</span>
+              </button>
+              <button type="button" onclick="App.sendPhoneKey('SLEEP')" class="p-2.5 rounded-xl bg-rose-950/50 hover:bg-rose-900/70 text-rose-200 border border-rose-500/30 font-semibold flex items-center justify-center gap-1.5 transition-all">
+                <span>🌙</span>
+                <span>Tắt Màn Hình</span>
+              </button>
+              <button type="button" onclick="App.sendPhoneKey('POWER')" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold flex items-center justify-center gap-1.5 transition-all">
+                <span>⚡</span>
+                <span>Nút Nguồn</span>
+              </button>
+            </div>
+
+            <!-- Hàng 2: Lướt Video / Cuộn Trang 4 Hướng -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <button type="button" onclick="App.quickPhoneSwipe('up')" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-slate-700 font-semibold flex items-center justify-center gap-1">
+                <span>⬆️</span>
+                <span>Vuốt Lên (Lướt Tiếp)</span>
+              </button>
+              <button type="button" onclick="App.quickPhoneSwipe('down')" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-slate-700 font-semibold flex items-center justify-center gap-1">
+                <span>⬇️</span>
+                <span>Vuốt Xuống</span>
+              </button>
+              <button type="button" onclick="App.quickPhoneSwipe('left')" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 font-semibold flex items-center justify-center gap-1">
+                <span>⬅️</span>
+                <span>Vuốt Sang Trái</span>
+              </button>
+              <button type="button" onclick="App.quickPhoneSwipe('right')" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 font-semibold flex items-center justify-center gap-1">
+                <span>➡️</span>
+                <span>Vuốt Sang Phải</span>
+              </button>
+            </div>
+
+            <!-- Hàng 3: Âm lượng & Thanh trạng thái -->
+            <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 text-[11px]">
+              <button type="button" onclick="App.sendPhoneKey('VOLUME_UP')" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-semibold">
+                🔊 Tăng Âm
+              </button>
+              <button type="button" onclick="App.sendPhoneKey('VOLUME_DOWN')" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-semibold">
+                🔉 Giảm Âm
+              </button>
+              <button type="button" onclick="App.sendPhoneKey('MUTE')" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-semibold">
+                🔇 Tắt Tiếng
+              </button>
+              <button type="button" onclick="App.sendPhoneKey('NOTIFICATION_SHADE')" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 border border-slate-800 font-semibold">
+                📥 Thông Báo
+              </button>
+              <button type="button" onclick="App.sendPhoneKey('QUICK_SETTINGS')" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-purple-300 border border-slate-800 font-semibold">
+                🎛️ Cài Đặt Nhanh
+              </button>
+              <button type="button" onclick="App.sendPhoneKey('COLLAPSE_SHADE')" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 font-semibold">
+                🔼 Đóng Thanh
+              </button>
+            </div>
+          </div>
+
+          <!-- CARD 2: BÀN PHÍM NHẬP LIỆU TỪ XA & BẮN LINK URL -->
+          <div class="glass-panel p-4 rounded-2xl border border-cyan-500/20 flex flex-col gap-3">
+            <h3 class="text-sm font-bold text-cyan-300 flex items-center gap-2 pb-2 border-b border-slate-800">
+              <span>⌨️</span>
+              <span>Bàn Phím Nhập Chữ Từ Xa & Bắn Link Trực Tiếp Vào Điện Thoại</span>
+            </h3>
+
+            <!-- Gửi văn bản -->
+            <div class="flex flex-col sm:flex-row gap-2 text-xs">
+              <input type="text" id="phone-remote-text" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500" placeholder="Nhập chữ hoặc mật khẩu cần gõ vào ô đang chọn trên điện thoại...">
+              <button type="button" onclick="App.sendPhoneText()" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold shrink-0">
+                ⌨️ Gõ Vào Máy
+              </button>
+            </div>
+
+            <!-- Phím bàn phím nhanh -->
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              <button type="button" onclick="App.sendPhoneKey('ENTER')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 font-semibold border border-slate-700">
+                ⏎ Enter (Gửi / Tìm kiếm)
+              </button>
+              <button type="button" onclick="App.sendPhoneKey('DEL')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 font-semibold border border-slate-700">
+                ⌫ Xóa Lùi (Backspace)
+              </button>
+              <button type="button" onclick="App.sendPhoneKey('SPACE')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold border border-slate-700">
+                ␣ Phím Cách
+              </button>
+              <button type="button" onclick="App.sendPhoneKey('TAB')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold border border-slate-700">
+                ⇥ Chuyển Ô (Tab)
+              </button>
+            </div>
+
+            <!-- Mở URL nhanh trên điện thoại -->
+            <div class="flex flex-col sm:flex-row gap-2 text-xs pt-2 border-t border-slate-800/80">
+              <input type="text" id="phone-remote-url" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 font-mono placeholder-slate-500 focus:outline-none focus:border-purple-500" placeholder="https://www.tiktok.com/... hoặc đường link bất kỳ">
+              <button type="button" onclick="App.openPhoneRemoteUrl()" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold shrink-0">
+                🌐 Mở Link Trên Máy
+              </button>
+            </div>
+          </div>
+
+          <!-- CARD 3: KHỞI CHẠY NHANH ỨNG DỤNG 1 CHẠM (1-CLICK APP LAUNCHER) -->
+          <div class="glass-panel p-4 rounded-2xl border border-purple-500/20 flex flex-col gap-3">
+            <h3 class="text-sm font-bold text-purple-300 flex items-center gap-2 pb-2 border-b border-slate-800">
+              <span>🚀</span>
+              <span>Mở Nhanh Ứng Dụng Trên Redmi K50G (1-Click App Launcher)</span>
+            </h3>
+
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+              <button type="button" onclick="App.launchPhoneApp('tiktok')" class="p-2.5 rounded-xl bg-slate-900 hover:bg-pink-950/60 text-pink-300 border border-pink-500/30 font-bold flex flex-col items-center gap-1 transition-all">
+                <span class="text-lg">🎵</span>
+                <span>TikTok</span>
+              </button>
+              <button type="button" onclick="App.launchPhoneApp('facebook')" class="p-2.5 rounded-xl bg-slate-900 hover:bg-blue-950/60 text-blue-300 border border-blue-500/30 font-bold flex flex-col items-center gap-1 transition-all">
+                <span class="text-lg">📘</span>
+                <span>Facebook</span>
+              </button>
+              <button type="button" onclick="App.launchPhoneApp('chrome')" class="p-2.5 rounded-xl bg-slate-900 hover:bg-amber-950/60 text-amber-300 border border-amber-500/30 font-bold flex flex-col items-center gap-1 transition-all">
+                <span class="text-lg">🌐</span>
+                <span>Chrome</span>
+              </button>
+              <button type="button" onclick="App.launchPhoneApp('youtube')" class="p-2.5 rounded-xl bg-slate-900 hover:bg-rose-950/60 text-rose-300 border border-rose-500/30 font-bold flex flex-col items-center gap-1 transition-all">
+                <span class="text-lg">▶️</span>
+                <span>YouTube</span>
+              </button>
+              <button type="button" onclick="App.launchPhoneApp('zalo')" class="p-2.5 rounded-xl bg-slate-900 hover:bg-cyan-950/60 text-cyan-300 border border-cyan-500/30 font-bold flex flex-col items-center gap-1 transition-all">
+                <span class="text-lg">💬</span>
+                <span>Zalo</span>
+              </button>
+              <button type="button" onclick="App.launchPhoneApp('telegram')" class="p-2.5 rounded-xl bg-slate-900 hover:bg-sky-950/60 text-sky-300 border border-sky-500/30 font-bold flex flex-col items-center gap-1 transition-all">
+                <span class="text-lg">✈️</span>
+                <span>Telegram</span>
+              </button>
+              <button type="button" onclick="App.launchPhoneApp('termux')" class="p-2.5 rounded-xl bg-slate-900 hover:bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 font-bold flex flex-col items-center gap-1 transition-all">
+                <span class="text-lg">💻</span>
+                <span>Termux</span>
+              </button>
+              <button type="button" onclick="App.launchPhoneApp('settings')" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold flex flex-col items-center gap-1 transition-all">
+                <span class="text-lg">⚙️</span>
+                <span>Cài Đặt</span>
+              </button>
+              <button type="button" onclick="App.launchPhoneApp('camera')" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold flex flex-col items-center gap-1 transition-all">
+                <span class="text-lg">📷</span>
+                <span>Máy Ảnh</span>
+              </button>
+              <button type="button" onclick="App.launchPhoneApp('gallery')" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold flex flex-col items-center gap-1 transition-all">
+                <span class="text-lg">🖼️</span>
+                <span>Thư Viện</span>
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

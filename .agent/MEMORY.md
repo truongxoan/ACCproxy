@@ -89,3 +89,9 @@
     - **Thanh Lọc Nhóm Công Cụ Thông Minh (`filterToolCategory`)** trong tab `Kho Công Cụ & 2FA`: Phân chia 9 vũ khí thành 3 cụm Bento rõ ràng (`🎬 Video & AI (4)`, `🌐 Mạng & Proxy (2)`, `🛡️ Máy Chủ & Backup (3)`), bấm 1 chạm lọc ngay nhóm cần dùng không phải cuộn trang dài.
     - **Thu Gọn 4 Trụ Cột Chiến Lược (`<details>` Accordion)** trong tab `Tri Thức AI Nhóm` để bảng tìm kiếm và lưới 360+ Repo hiển thị ngay lập tức trong tầm mắt.
   - Đã đồng bộ trực tiếp lên máy chủ điện thoại Redmi K50G (`run-as com.termux git pull` + `pm2 restart all`) và phát sóng trực tiếp trên `https://acc.txlab.io.vn`.
+- **Nạp Skill `reverse-engineer-anything` (REA v1.0) & Trung Tâm Điều Khiển Live Màn Hình Điện Thoại Redmi K50G (2026-11-03):**
+  - **1. Skill Dịch Ngược Toàn Năng (`reverse-engineer-anything`):**
+    - Đã nạp vào cả Global Antigravity (`C:\Users\Tx\.gemini\config\skills\reverse-engineer-anything\SKILL.md`), Workspace (`.agent\skills\reverse-engineer-anything\SKILL.md`) và tích hợp thành Trụ Cột Chiến Lược số 5 trong `src/services/knowledgeService.js`.
+  - **2. Trung Tâm Điều Khiển & Live Màn Hình Điện Thoại (`src/services/phoneControlService.js` & Tab `📱 Live Điện Thoại`):**
+    - Cài đặt `android-tools` (`adb`) trực tiếp trong Termux ARM64 trên Redmi K50G, đồng bộ khóa RSA ủy quyền (`adbkey`) và kích hoạt **Loopback ADB (`127.0.0.1:5555`)** để máy chủ tự chụp màn hình và điều khiển chính chiếc điện thoại Redmi K50G ngay cả khi rút cáp USB.
+    - Hỗ trợ xem Live Stream màn hình (`1080x2400`), Click chuột để Chạm (Tap), Nhấn giữ kéo chuột để Vuốt (Swipe), Phím điều hướng (Back/Home/Recents), Bật/Tắt/Vuốt mở khóa màn hình, Bàn phím gõ chữ từ xa, Bắn link URL trực tiếp và Mở nhanh 10 ứng dụng (TikTok, Facebook, Chrome, YouTube, Zalo, Telegram, Termux, Cài đặt, Máy ảnh, Thư viện).

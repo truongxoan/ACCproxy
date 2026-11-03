@@ -85,6 +85,15 @@ function getKnowledgeSummary() {
         description: 'Các giải pháp biến điện thoại Android, mini PC và VPS thành máy chủ đám mây cá nhân an toàn qua Cloudflare Tunnels mà không cần mở port.',
         keyTools: ['Cloudflare Tunnel (cloudflared)', 'Docker', 'Termux ARM64', 'PM2 Process Sentinel', 'SQLite WAL'],
         application: 'Vận hành hệ sinh thái AccProxy Sovereign 24/7 trên điện thoại bỏ túi, làm chủ toàn bộ dữ liệu, bảo mật tài khoản 100%.'
+      },
+      {
+        id: 'reverse-engineer-anything',
+        icon: '🧬',
+        title: 'Reverse Engineer Anything (REA) — Dịch Ngược & Tái Thiết Clean-Room',
+        badge: 'NEW SKILL v1.0',
+        description: 'Playbook tác chiến toàn diện để dịch ngược (Disassemble/Decompile), bắt gói tin API ngầm, tái biên dịch tĩnh (Static Recompilation) và viết lại hệ thống đóng sang mã nguồn mở sạch (Clean-Room).',
+        keyTools: ['GhidraMCP / ida-pro-mcp', 'Frida / x64dbg', 'mitmproxy2swagger', 'JADX / Apktool / ImHex', 'Open ReverseLab / reverify'],
+        application: 'Giải phẫu giao thức API ẩn (Private REST/WebSocket), dịch ngược APK/Binary, bypass SSL Pinning nghiên cứu bảo mật và unshackle thiết bị IoT/Android.'
       }
     ]
   };

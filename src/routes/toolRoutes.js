@@ -13,6 +13,16 @@ const { scrapeAndSanitizeVideo } = require('../services/videoDownloaderService')
 const { sanitizeVideoBuffer } = require('../services/videoSanitizerService');
 const { HOOK_CATEGORIES, getAllHooks } = require('../services/hookVaultService');
 const { getActiveAccountIds, captureScreenshot } = require('../services/browserService');
+const {
+  capturePhoneScreen,
+  getPhoneStatus,
+  sendTap,
+  sendSwipe,
+  sendKeyEvent,
+  sendTextInput,
+  launchPhoneApp,
+  openPhoneUrl
+} = require('../services/phoneControlService');
 const db = require('../config/db');
 
 const router = express.Router();
@@ -381,6 +391,148 @@ router.get('/piik-streams', async (req, res) => {
       count: streams.length,
       streams
     });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /api/tools/phone/status
+ * Lấy trạng thái kết nối ADB, độ phân giải & danh sách ứng dụng nhanh của điện thoại
+ */
+router.get('/phone/status', async (req, res) => {
+  try {
+    const status = await getPhoneStatus();
+    return res.json(status);
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /api/tools/phone/screen
+ * Chụp màn hình trực tiếp từ điện thoại Redmi K50G (trả về JSON kèm Base64 PNG & kích thước)
+ */
+router.get('/phone/screen', async (req, res) => {
+  try {
+    const force = req.query.force === '1';
+    const frame = await capturePhoneScreen(force);
+    return res.json({
+      success: true,
+      width: frame.width,
+      height: frame.height,
+      timestamp: frame.timestamp,
+      cached: frame.cached,
+      image: `data:image/png;base64,${frame.buffer.toString('base64')}`
+    });
+  } catch (error) {
+    return res.status(503).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/tools/phone/screen.png
+ * Trả về luồng nhị phân PNG trực tiếp của màn hình điện thoại (Zero Base64 Overhead)
+ */
+router.get('/phone/screen.png', async (req, res) => {
+  try {
+    const force = req.query.force === '1';
+    const frame = await capturePhoneScreen(force);
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('X-Screen-Width', String(frame.width));
+    res.setHeader('X-Screen-Height', String(frame.height));
+    res.setHeader('X-Frame-Timestamp', String(frame.timestamp));
+    return res.send(frame.buffer);
+  } catch (error) {
+    return res.status(503).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/tools/phone/tap
+ * Chạm vào tọa độ (x, y) trên màn hình điện thoại
+ */
+router.post('/phone/tap', async (req, res) => {
+  try {
+    const { x, y } = req.body || {};
+    const result = await sendTap(x, y);
+    return res.json(result);
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/tools/phone/swipe
+ * Vuốt màn hình từ (x1, y1) sang (x2, y2) trong durationMs
+ */
+router.post('/phone/swipe', async (req, res) => {
+  try {
+    const { x1, y1, x2, y2, durationMs } = req.body || {};
+    const result = await sendSwipe(x1, y1, x2, y2, durationMs);
+    return res.json(result);
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/tools/phone/key
+ * Gửi phím điều hướng / phím cứng (HOME, BACK, APP_SWITCH, POWER, WAKEUP, VOLUME_UP...)
+ */
+router.post('/phone/key', async (req, res) => {
+  try {
+    const { key } = req.body || {};
+    const result = await sendKeyEvent(key);
+    return res.json(result);
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/tools/phone/text
+ * Gửi chuỗi văn bản vào ô đang nhập trên điện thoại
+ */
+router.post('/phone/text', async (req, res) => {
+  try {
+    const { text } = req.body || {};
+    const result = await sendTextInput(text);
+    return res.json(result);
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/tools/phone/app
+ * Mở nhanh ứng dụng trên điện thoại (tiktok, facebook, chrome, youtube, zalo, telegram, termux, settings...)
+ */
+router.post('/phone/app', async (req, res) => {
+  try {
+    const { app } = req.body || {};
+    const result = await launchPhoneApp(app);
+    logAudit(req, 'PHONE_LAUNCH_APP', 'phone', null, result);
+    return res.json(result);
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/tools/phone/url
+ * Mở đường link URL trực tiếp trên trình duyệt của điện thoại
+ */
+router.post('/phone/url', async (req, res) => {
+  try {
+    const { url } = req.body || {};
+    const result = await openPhoneUrl(url);
+    logAudit(req, 'PHONE_OPEN_URL', 'phone', null, result);
+    return res.json(result);
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }

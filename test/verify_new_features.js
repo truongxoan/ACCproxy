@@ -33,8 +33,8 @@ async function testNewFeatures() {
   const summary = getKnowledgeSummary();
   assert(summary.success === true, 'Summary phải success');
   assert(summary.stats.totalRepos >= 300, 'Repos phải >= 300');
-  assert(summary.pillars.length === 4, 'Phải có 4 trụ cột công nghệ');
-  console.log(`  [PASS] Knowledge Summary: ${summary.stats.totalRepos} repos, ${summary.stats.totalHubItems} hub items, 4 trụ cột chiến lược`);
+  assert(summary.pillars.length >= 5, 'Phải có ít nhất 5 trụ cột công nghệ');
+  console.log(`  [PASS] Knowledge Summary: ${summary.stats.totalRepos} repos, ${summary.stats.totalHubItems} hub items, ${summary.pillars.length} trụ cột chiến lược`);
 
   // 5. Kiểm tra Repos Query & Filtering
   console.log('▶ Test #5: Truy vấn Repositories & Bộ lọc...');

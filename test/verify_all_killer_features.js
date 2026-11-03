@@ -3,6 +3,7 @@ const { getHardwareMetrics, getThermalConfig, updateThermalConfig, checkThermalS
 const { getAutoBackupConfig, updateAutoBackupConfig } = require('../src/services/autoBackupScheduler');
 const { generateViralContent } = require('../src/services/aiContentService');
 const { checkProxyLive } = require('../src/services/proxyHealthService');
+const { getPhoneStatus, QUICK_APPS, SAFE_KEYCODES } = require('../src/services/phoneControlService');
 
 async function runTests() {
   console.log('================================================================');
@@ -53,8 +54,16 @@ async function runTests() {
   assert.strictEqual(deadProxy.isAlive, false, 'Proxy ảo phải được phát hiện là chết');
   console.log(`  [PASS] Phát hiện proxy hỏng chính xác: ${deadProxy.error}`);
 
+  // Test 6: Phone Remote Control & Live Screen Bridge
+  console.log('▶ Test #6: Kiểm tra cầu nối điều khiển & Live màn hình điện thoại...');
+  assert(Object.keys(QUICK_APPS).length >= 10, 'Phải có ít nhất 10 ứng dụng mở nhanh');
+  assert(SAFE_KEYCODES.HOME === '3' && SAFE_KEYCODES.BACK === '4', 'Mã phím điều hướng phải chuẩn');
+  const phoneStatus = await getPhoneStatus();
+  assert(typeof phoneStatus.connected === 'boolean', 'Trạng thái kết nối phải là boolean');
+  console.log(`  [PASS] Phone Bridge: connected=${phoneStatus.connected} | mode=${phoneStatus.mode} | size=${phoneStatus.width}x${phoneStatus.height}`);
+
   console.log('================================================================');
-  console.log('⭐ TẤT CẢ 5/5 TESTS VŨ KHÍ MỚI ĐÃ ĐẠT CHUẨN XANH MƯỢT (100% OK)');
+  console.log('⭐ TẤT CẢ 6/6 TESTS VŨ KHÍ MỚI ĐÃ ĐẠT CHUẨN XANH MƯỢT (100% OK)');
   console.log('================================================================');
 }
 

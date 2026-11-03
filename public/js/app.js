@@ -18,6 +18,12 @@ const App = {
   knowledgeSearch: '',
   knowledgePage: 1,
   knowledgeTotalPages: 1,
+  phoneStreamTimer: null,
+  phoneStreamActive: false,
+  phoneStreamIntervalMs: 1000,
+  phoneFrameBusy: false,
+  phoneScreenWidth: 1080,
+  phoneScreenHeight: 2400,
 
   async init() {
     this.bindEvents();
@@ -74,8 +80,15 @@ const App = {
         document.querySelectorAll('.tab-pane').forEach((pane) => pane.classList.add('hidden'));
         document.getElementById(targetTab)?.classList.remove('hidden');
 
+        if (targetTab !== 'tab-phone' && this.phoneStreamActive) {
+          this.stopPhoneLiveStream();
+        }
+
         if (targetTab === 'tab-piik') {
           this.refreshPiikStreams();
+        } else if (targetTab === 'tab-phone') {
+          this.loadPhoneStatus();
+          this.startPhoneLiveStream();
         } else if (targetTab === 'tab-assets') {
           this.loadAssets();
         } else if (targetTab === 'tab-tools') {
@@ -137,6 +150,7 @@ const App = {
     }
 
     // Form đăng nhập
+    this.initPhoneViewportEvents();
     document.getElementById('login-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const u = document.getElementById('login-username').value;
@@ -3178,6 +3192,282 @@ const App = {
       if (statusBox) statusBox.innerHTML = `<span class="text-rose-400">Lỗi: ${err.message}</span>`;
     } finally {
       if (btn) btn.disabled = false;
+    }
+  },
+
+  // ==================== ĐIỀU KHIỂN & LIVE MÀN HÌNH ĐIỆN THOẠI REDMI K50G ====================
+  async loadPhoneStatus() {
+    try {
+      const res = await API.get('/tools/phone/status');
+      const badge = document.getElementById('phone-conn-badge');
+      const modelLabel = document.getElementById('phone-model-label');
+      if (res && res.connected) {
+        this.phoneScreenWidth = res.width || 1080;
+        this.phoneScreenHeight = res.height || 2400;
+        if (badge) {
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+          badge.innerText = `🟢 ONLINE (${res.mode === 'TERMUX_LOOPBACK_ADB' ? 'LOCAL ADB' : 'USB ADB'})`;
+        }
+        if (modelLabel) {
+          modelLabel.innerText = `📱 ${res.model || 'Redmi K50G'} (${this.phoneScreenWidth}×${this.phoneScreenHeight})`;
+        }
+      } else if (badge) {
+        badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+        badge.innerText = '🔴 MẤT KẾT NỐI ADB';
+      }
+    } catch (e) {}
+  },
+
+  startPhoneLiveStream() {
+    this.stopPhoneLiveStream();
+    this.phoneStreamActive = true;
+    this.updatePhoneStreamButtonUI();
+    this.refreshPhoneFrame(false);
+    this.phoneStreamTimer = setInterval(() => {
+      if (this.phoneStreamActive && !document.hidden) {
+        this.refreshPhoneFrame(false);
+      }
+    }, this.phoneStreamIntervalMs);
+  },
+
+  stopPhoneLiveStream() {
+    this.phoneStreamActive = false;
+    if (this.phoneStreamTimer) {
+      clearInterval(this.phoneStreamTimer);
+      this.phoneStreamTimer = null;
+    }
+    this.updatePhoneStreamButtonUI();
+  },
+
+  togglePhoneLiveStream() {
+    if (this.phoneStreamActive) {
+      this.stopPhoneLiveStream();
+      Toast.info('Đã tạm dừng luồng Live màn hình điện thoại.');
+    } else {
+      this.startPhoneLiveStream();
+      Toast.success('Đã bật luồng Live màn hình điện thoại!');
+    }
+  },
+
+  setPhoneStreamInterval(ms) {
+    this.phoneStreamIntervalMs = Math.max(400, parseInt(ms, 10) || 1000);
+    if (this.phoneStreamActive) {
+      this.startPhoneLiveStream();
+    }
+  },
+
+  updatePhoneStreamButtonUI() {
+    const btn = document.getElementById('btn-phone-stream-toggle');
+    const icon = document.getElementById('phone-stream-icon');
+    const label = document.getElementById('phone-stream-label');
+    if (!btn || !icon || !label) return;
+
+    if (this.phoneStreamActive) {
+      btn.className = 'px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/25 flex items-center gap-1.5 transition-all';
+      icon.innerText = '⏸️';
+      label.innerText = 'Đang Live (Bấm để dừng)';
+    } else {
+      btn.className = 'px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-lg shadow-amber-500/25 flex items-center gap-1.5 transition-all';
+      icon.innerText = '▶️';
+      label.innerText = 'Tiếp Tục Live';
+    }
+  },
+
+  async refreshPhoneFrame(force = false) {
+    if (this.phoneFrameBusy && !force) return;
+    this.phoneFrameBusy = true;
+    const t0 = performance.now();
+
+    try {
+      const res = await API.get(`/tools/phone/screen${force ? '?force=1' : ''}`);
+      if (res && res.success && res.image) {
+        const img = document.getElementById('phone-live-img');
+        const emptyOverlay = document.getElementById('phone-empty-overlay');
+        const latencyLabel = document.getElementById('phone-latency-label');
+        const modelLabel = document.getElementById('phone-model-label');
+
+        if (res.width && res.height) {
+          this.phoneScreenWidth = res.width;
+          this.phoneScreenHeight = res.height;
+          if (modelLabel) {
+            modelLabel.innerText = `📱 Redmi K50G (${this.phoneScreenWidth}×${this.phoneScreenHeight})`;
+          }
+        }
+
+        if (img) img.src = res.image;
+        if (emptyOverlay) emptyOverlay.classList.add('hidden');
+        if (latencyLabel) {
+          const dt = Math.round(performance.now() - t0);
+          latencyLabel.innerText = `⚡ ${dt}ms • Live OK`;
+        }
+      }
+    } catch (err) {
+      const latencyLabel = document.getElementById('phone-latency-label');
+      if (latencyLabel) {
+        latencyLabel.innerText = `⚠️ Đang chờ phản hồi ADB...`;
+      }
+    } finally {
+      this.phoneFrameBusy = false;
+    }
+  },
+
+  initPhoneViewportEvents() {
+    const viewport = document.getElementById('phone-viewport');
+    if (!viewport) return;
+
+    let pointerDown = false;
+    let startClientX = 0;
+    let startClientY = 0;
+    let startTime = 0;
+
+    const mapClientToPhoneCoords = (clientX, clientY) => {
+      const rect = viewport.getBoundingClientRect();
+      const relX = Math.max(0, Math.min(1, (clientX - rect.left) / Math.max(1, rect.width)));
+      const relY = Math.max(0, Math.min(1, (clientY - rect.top) / Math.max(1, rect.height)));
+      return {
+        x: Math.round(relX * this.phoneScreenWidth),
+        y: Math.round(relY * this.phoneScreenHeight),
+        localX: clientX - rect.left,
+        localY: clientY - rect.top
+      };
+    };
+
+    const showTapRipple = (localX, localY) => {
+      const ripple = document.getElementById('phone-tap-ripple');
+      if (!ripple) return;
+      ripple.style.left = `${localX}px`;
+      ripple.style.top = `${localY}px`;
+      ripple.classList.remove('hidden');
+      setTimeout(() => ripple.classList.add('hidden'), 420);
+    };
+
+    viewport.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      pointerDown = true;
+      startClientX = e.clientX;
+      startClientY = e.clientY;
+      startTime = Date.now();
+    });
+
+    viewport.addEventListener('pointerup', async (e) => {
+      if (!pointerDown) return;
+      pointerDown = false;
+
+      const dx = e.clientX - startClientX;
+      const dy = e.clientY - startClientY;
+      const dist = Math.hypot(dx, dy);
+      const elapsed = Math.max(120, Math.min(1200, Date.now() - startTime));
+
+      const pStart = mapClientToPhoneCoords(startClientX, startClientY);
+      const pEnd = mapClientToPhoneCoords(e.clientX, e.clientY);
+
+      if (dist < 16) {
+        showTapRipple(pEnd.localX, pEnd.localY);
+        await this.sendPhoneTap(pEnd.x, pEnd.y);
+      } else {
+        await this.sendPhoneSwipe(pStart.x, pStart.y, pEnd.x, pEnd.y, elapsed);
+      }
+    });
+  },
+
+  setPhoneActionLog(text) {
+    const el = document.getElementById('phone-last-action');
+    if (el) el.innerText = text;
+  },
+
+  async sendPhoneTap(x, y) {
+    this.setPhoneActionLog(`Chạm (${x}, ${y})`);
+    try {
+      await API.post('/tools/phone/tap', { x, y });
+      setTimeout(() => this.refreshPhoneFrame(true), 220);
+    } catch (err) {
+      Toast.error(`Lỗi chạm màn hình: ${err.message}`);
+    }
+  },
+
+  async sendPhoneSwipe(x1, y1, x2, y2, durationMs = 280) {
+    this.setPhoneActionLog(`Vuốt (${x1},${y1}) → (${x2},${y2})`);
+    try {
+      await API.post('/tools/phone/swipe', { x1, y1, x2, y2, durationMs });
+      setTimeout(() => this.refreshPhoneFrame(true), 280);
+    } catch (err) {
+      Toast.error(`Lỗi vuốt màn hình: ${err.message}`);
+    }
+  },
+
+  async quickPhoneSwipe(direction) {
+    const w = this.phoneScreenWidth || 1080;
+    const h = this.phoneScreenHeight || 2400;
+    const cx = Math.round(w * 0.5);
+    const cy = Math.round(h * 0.5);
+
+    if (direction === 'unlock') {
+      await this.sendPhoneKey('WAKEUP');
+      await this.sendPhoneSwipe(cx, Math.round(h * 0.82), cx, Math.round(h * 0.22), 260);
+    } else if (direction === 'up') {
+      await this.sendPhoneSwipe(cx, Math.round(h * 0.75), cx, Math.round(h * 0.22), 260);
+    } else if (direction === 'down') {
+      await this.sendPhoneSwipe(cx, Math.round(h * 0.25), cx, Math.round(h * 0.78), 260);
+    } else if (direction === 'left') {
+      await this.sendPhoneSwipe(Math.round(w * 0.82), cy, Math.round(w * 0.18), cy, 260);
+    } else if (direction === 'right') {
+      await this.sendPhoneSwipe(Math.round(w * 0.18), cy, Math.round(w * 0.82), cy, 260);
+    }
+  },
+
+  async sendPhoneKey(key) {
+    this.setPhoneActionLog(`Phím [${key}]`);
+    try {
+      await API.post('/tools/phone/key', { key });
+      setTimeout(() => this.refreshPhoneFrame(true), 250);
+    } catch (err) {
+      Toast.error(`Lỗi gửi phím [${key}]: ${err.message}`);
+    }
+  },
+
+  async sendPhoneText() {
+    const input = document.getElementById('phone-remote-text');
+    const text = input?.value || '';
+    if (!text) {
+      Toast.error('Vui lòng nhập nội dung chữ cần gõ vào điện thoại!');
+      return;
+    }
+    this.setPhoneActionLog(`Gõ chữ (${text.length} ký tự)`);
+    try {
+      await API.post('/tools/phone/text', { text });
+      input.value = '';
+      Toast.success('Đã gõ văn bản vào điện thoại!');
+      setTimeout(() => this.refreshPhoneFrame(true), 250);
+    } catch (err) {
+      Toast.error(`Lỗi gõ văn bản: ${err.message}`);
+    }
+  },
+
+  async openPhoneRemoteUrl() {
+    const input = document.getElementById('phone-remote-url');
+    const url = input?.value?.trim() || '';
+    if (!url) {
+      Toast.error('Vui lòng nhập đường link http:// hoặc https://!');
+      return;
+    }
+    this.setPhoneActionLog(`Mở URL: ${url}`);
+    try {
+      await API.post('/tools/phone/url', { url });
+      Toast.success('Đã mở đường link trực tiếp trên điện thoại!');
+      setTimeout(() => this.refreshPhoneFrame(true), 600);
+    } catch (err) {
+      Toast.error(`Lỗi mở link: ${err.message}`);
+    }
+  },
+
+  async launchPhoneApp(app) {
+    this.setPhoneActionLog(`Mở App: ${app.toUpperCase()}`);
+    try {
+      const res = await API.post('/tools/phone/app', { app });
+      Toast.success(`Đã mở ứng dụng [${res.app || app}] trên điện thoại!`);
+      setTimeout(() => this.refreshPhoneFrame(true), 650);
+    } catch (err) {
+      Toast.error(`Không mở được ứng dụng [${app}]: ${err.message}`);
     }
   }
 };

@@ -5,6 +5,11 @@ const { authenticateToken } = require('../middleware/auth');
 const { logAudit } = require('../middleware/auditLogger');
 const { getTelegramConfig, saveTelegramConfig, sendTelegramMessage, sendVideoPostingAlert } = require('../services/telegramService');
 const { createDatabaseBackup, sendBackupToTelegram, listBackups, getDatabaseStats } = require('../services/backupService');
+const { getAutoBackupConfig, updateAutoBackupConfig } = require('../services/autoBackupScheduler');
+const { getHardwareMetrics, getThermalConfig, updateThermalConfig, checkThermalSentinel, executeServerRestart, executeServerShutdown } = require('../services/hardwareSentinelService');
+const { checkAllProxies, checkProxyLive } = require('../services/proxyHealthService');
+const { generateViralContent } = require('../services/aiContentService');
+const { scrapeAndSanitizeVideo } = require('../services/videoDownloaderService');
 const { sanitizeVideoBuffer } = require('../services/videoSanitizerService');
 const { HOOK_CATEGORIES, getAllHooks } = require('../services/hookVaultService');
 const { getActiveAccountIds, captureScreenshot } = require('../services/browserService');
@@ -137,6 +142,139 @@ router.get('/backup/stats', (req, res) => {
 });
 
 /**
+ * GET /api/tools/auto-backup
+ * Lấy cấu hình tự động sao lưu định kỳ
+ */
+router.get('/auto-backup', (req, res) => {
+  return res.json({
+    success: true,
+    ...getAutoBackupConfig()
+  });
+});
+
+/**
+ * POST /api/tools/auto-backup
+ * Cập nhật cấu hình tự động sao lưu định kỳ
+ */
+router.post('/auto-backup', (req, res) => {
+  try {
+    const { enabled, frequencyHours } = req.body;
+    updateAutoBackupConfig(!!enabled, frequencyHours || 12);
+    logAudit(req, 'UPDATE_AUTO_BACKUP_CONFIG', 'system', null, { enabled, frequencyHours });
+    return res.json({ success: true, message: 'Đã cập nhật lịch tự động sao lưu thành công!' });
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /api/tools/hardware/metrics
+ * Lấy thông số phần cứng & nhiệt độ thực tế từ điện thoại Redmi K50G
+ */
+router.get('/hardware/metrics', (req, res) => {
+  try {
+    const metrics = getHardwareMetrics();
+    const config = getThermalConfig();
+    return res.json({
+      success: true,
+      metrics,
+      config
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/tools/hardware/config
+ * Cập nhật ngưỡng nhiệt độ cảnh báo & kích hoạt tự động Failsafe
+ */
+router.post('/hardware/config', (req, res) => {
+  try {
+    const { warningTemp, criticalTemp, autoActionEnabled } = req.body;
+    updateThermalConfig(warningTemp, criticalTemp, autoActionEnabled);
+    logAudit(req, 'UPDATE_THERMAL_CONFIG', 'system', null, { warningTemp, criticalTemp, autoActionEnabled });
+    return res.json({ success: true, message: 'Đã lưu cấu hình ngưỡng nhiệt độ thành công!' });
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/tools/hardware/test-failsafe
+ * Kích hoạt kiểm tra radar nhiệt độ ngay lập tức
+ */
+router.post('/hardware/test-failsafe', async (req, res) => {
+  try {
+    const result = await checkThermalSentinel();
+    logAudit(req, 'TEST_THERMAL_FAILSAFE', 'system', null, result);
+    return res.json({
+      success: true,
+      message: 'Đã thực hiện kiểm tra radar nhiệt độ thành công!',
+      result
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/tools/proxies/check-all
+ * Quét toàn bộ Proxy của các kênh, cập nhật latency và tự đổi proxy nếu chết
+ */
+router.post('/proxies/check-all', async (req, res) => {
+  try {
+    const result = await checkAllProxies(true);
+    logAudit(req, 'CHECK_ALL_PROXIES', 'system', null, { total: result.total, alive: result.alive, dead: result.dead });
+    return res.json({
+      success: true,
+      message: `Đã quét xong ${result.total} proxy (${result.alive} sống, ${result.dead} chết)!`,
+      ...result
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/tools/ai/generate-content
+ * AI sinh 3 góc Hook 3s + Kịch bản 60s + 10 Hashtag chuẩn SEO
+ */
+router.post('/ai/generate-content', (req, res) => {
+  try {
+    const { topic, platform, tone } = req.body;
+    const content = generateViralContent(topic, platform, tone);
+    logAudit(req, 'GENERATE_AI_CONTENT', 'tool', null, { topic, platform });
+    return res.json(content);
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/tools/video/download-clean
+ * Cào video TikTok/Douyin/Reels sạch watermark & tự động tẩy rửa hash MD5
+ */
+router.post('/video/download-clean', async (req, res) => {
+  try {
+    const { videoUrl, customTitle } = req.body;
+    if (!videoUrl) {
+      return res.status(400).json({ success: false, message: 'Thiếu đường link video!' });
+    }
+
+    const result = await scrapeAndSanitizeVideo(videoUrl, customTitle, req.user?.id);
+    logAudit(req, 'SCRAPE_CLEAN_VIDEO', 'tool', result.assetId, {
+      title: result.title,
+      fileSize: result.fileSize
+    });
+
+    return res.json(result);
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
  * POST /api/tools/telegram/alert/:scheduleId
  * Gửi thông báo khẩn cấp cho một lịch đăng video cụ thể
  */
@@ -174,7 +312,6 @@ router.post('/sanitize-video', (req, res) => {
       return res.status(400).json({ success: false, message: 'Thiếu dữ liệu video base64' });
     }
 
-    // Bỏ phần header data:video/mp4;base64, nếu có
     const cleanBase64 = base64Data.replace(/^data:.*?;base64,/, '');
     const buffer = Buffer.from(cleanBase64, 'base64');
 

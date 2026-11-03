@@ -27,7 +27,9 @@ const App = {
       await this.loadSuggestions();
       await this.loadSchedules();
       await this.loadAssets();
+      await this.loadHardwareMetrics();
       this.startTotpClock();
+      setInterval(() => this.loadHardwareMetrics(), 15000);
     }
   },
 
@@ -50,6 +52,9 @@ const App = {
           this.loadTelegramConfig();
           this.loadHooks();
           this.loadProviders();
+          this.loadThermalConfig();
+          this.loadAutoBackupConfig();
+          this.loadHardwareMetrics();
         } else if (targetTab === 'tab-knowledge') {
           this.loadKnowledgeSummary();
           this.loadKnowledgeItems();
@@ -202,6 +207,30 @@ const App = {
       const token = document.getElementById('backup-tg-token')?.value || '';
       const chatId = document.getElementById('backup-tg-chat-id')?.value || '';
       await this.triggerTelegramBackup(token, chatId);
+    });
+
+    // Form cấu hình ngưỡng nhiệt độ
+    document.getElementById('thermal-config-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await this.saveThermalConfig();
+    });
+
+    // Form AI Tạo Kịch Bản & Hook
+    document.getElementById('ai-generator-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await this.generateAiContent();
+    });
+
+    // Form Cào Video Không Logo
+    document.getElementById('scrape-video-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await this.scrapeCleanVideo();
+    });
+
+    // Form Lịch Tự Động Sao Lưu
+    document.getElementById('auto-backup-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await this.saveAutoBackupConfig();
     });
   },
 
@@ -2801,6 +2830,316 @@ const App = {
       Toast.error(`Lỗi đồng bộ: ${err.message}`);
     } finally {
       if (spinner) spinner.classList.remove('animate-spin');
+      if (btn) btn.disabled = false;
+    }
+  },
+
+  // ==================== RADAR PHẦN CỨNG & BẢO VỆ QUÁ NHIỆT 2 TẦNG ====================
+  async loadHardwareMetrics() {
+    try {
+      const res = await API.get('/tools/hardware/metrics');
+      if (!res || !res.success) return;
+
+      const m = res.metrics;
+      const c = res.config;
+
+      // Update Header HUD pill
+      const hudTemp = document.getElementById('hud-temp-val');
+      const hudBat = document.getElementById('hud-bat-val');
+      if (hudTemp) {
+        hudTemp.textContent = `${m.maxTemp}°C`;
+        if (m.maxTemp >= c.criticalTemp) {
+          hudTemp.className = 'font-bold text-rose-500 animate-pulse';
+        } else if (m.maxTemp >= c.warningTemp) {
+          hudTemp.className = 'font-bold text-amber-400';
+        } else {
+          hudTemp.className = 'font-bold text-emerald-400';
+        }
+      }
+      if (hudBat) {
+        hudBat.textContent = `${m.batteryLevel}%`;
+      }
+
+      // Update Tab Tools gauges
+      const cpuTempEl = document.getElementById('hw-cpu-temp');
+      const batTempEl = document.getElementById('hw-battery-temp');
+      const batLvlEl = document.getElementById('hw-battery-lvl');
+      const ramUsageEl = document.getElementById('hw-ram-usage');
+      const ramFreeEl = document.getElementById('hw-ram-free');
+
+      if (cpuTempEl) cpuTempEl.textContent = `${m.cpuTemp}°C`;
+      if (batTempEl) batTempEl.textContent = `${m.batteryTemp}°C`;
+      if (batLvlEl) batLvlEl.textContent = `Pin ${m.batteryLevel}%`;
+      if (ramUsageEl) ramUsageEl.textContent = `${m.memUsagePercent}%`;
+      if (ramFreeEl) ramFreeEl.textContent = `${m.freeMemMb} MB trống`;
+
+      // Update Modal gauges
+      const modCpu = document.getElementById('modal-cpu-temp');
+      const modBat = document.getElementById('modal-battery-temp');
+      const modBatLvl = document.getElementById('modal-battery-lvl');
+      const modRam = document.getElementById('modal-ram-usage');
+      const modRamDetail = document.getElementById('modal-ram-detail');
+      const modUptime = document.getElementById('modal-uptime');
+
+      if (modCpu) modCpu.textContent = `${m.cpuTemp}°C`;
+      if (modBat) modBat.textContent = `${m.batteryTemp}°C`;
+      if (modBatLvl) modBatLvl.textContent = `Pin ${m.batteryLevel}%`;
+      if (modRam) modRam.textContent = `${m.memUsagePercent}%`;
+      if (modRamDetail) modRamDetail.textContent = `${m.totalMemMb - m.freeMemMb} / ${m.totalMemMb} MB`;
+      if (modUptime) modUptime.textContent = `${m.uptimeHours}h`;
+
+      // Update Thermal Status Card
+      const statusTitle = document.getElementById('thermal-status-title');
+      const statusDesc = document.getElementById('thermal-status-desc');
+      const statusBadge = document.getElementById('thermal-failsafe-badge');
+      const statusIcon = document.getElementById('thermal-status-icon');
+
+      if (statusTitle && statusBadge) {
+        if (m.maxTemp >= c.criticalTemp) {
+          statusTitle.textContent = `🚨 BÁO ĐỘNG QUÁ NHIỆT (${m.maxTemp}°C)`;
+          statusDesc.textContent = `Nhiệt độ đã vượt mức cho phép ${c.criticalTemp}°C! Tự động Reboot (Lần 1) hoặc Tắt hẳn (Lần 2).`;
+          statusBadge.textContent = 'NGUY HIỂM';
+          statusBadge.className = 'px-2 py-0.5 rounded text-[10px] font-mono bg-rose-500/20 text-rose-300 font-bold animate-pulse';
+          if (statusIcon) statusIcon.textContent = '🔥';
+        } else if (m.maxTemp >= c.warningTemp) {
+          statusTitle.textContent = `⚠️ Cảnh Báo Nóng Máy (${m.maxTemp}°C)`;
+          statusDesc.textContent = `Nhiệt độ đang tăng cao. Vui lòng kiểm tra quạt tản nhiệt hoặc giảm tải.`;
+          statusBadge.textContent = 'CẢNH BÁO';
+          statusBadge.className = 'px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 font-bold';
+          if (statusIcon) statusIcon.textContent = '⚠️';
+        } else {
+          statusTitle.textContent = `Nhiệt Độ Bình Thường (${m.maxTemp}°C)`;
+          statusDesc.textContent = `Hệ thống đang hoạt động dưới ngưỡng cảnh báo an toàn.`;
+          statusBadge.textContent = 'AN TOÀN';
+          statusBadge.className = 'px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-300 font-bold';
+          if (statusIcon) statusIcon.textContent = '🟢';
+        }
+      }
+    } catch (e) {}
+  },
+
+  openHardwareModal() {
+    const modal = document.getElementById('hardware-modal');
+    if (modal) modal.classList.remove('hidden');
+    this.loadHardwareMetrics();
+  },
+
+  closeHardwareModal() {
+    const modal = document.getElementById('hardware-modal');
+    if (modal) modal.classList.add('hidden');
+  },
+
+  async loadThermalConfig() {
+    try {
+      const res = await API.get('/tools/hardware/metrics');
+      if (res && res.success && res.config) {
+        const warnInput = document.getElementById('cfg-warn-temp');
+        const critInput = document.getElementById('cfg-crit-temp');
+        const autoCheck = document.getElementById('cfg-thermal-auto');
+        if (warnInput) warnInput.value = res.config.warningTemp;
+        if (critInput) critInput.value = res.config.criticalTemp;
+        if (autoCheck) autoCheck.checked = res.config.autoActionEnabled;
+      }
+    } catch (e) {}
+  },
+
+  async saveThermalConfig() {
+    const warningTemp = parseFloat(document.getElementById('cfg-warn-temp')?.value) || 42.0;
+    const criticalTemp = parseFloat(document.getElementById('cfg-crit-temp')?.value) || 46.0;
+    const autoActionEnabled = document.getElementById('cfg-thermal-auto')?.checked ?? true;
+
+    try {
+      const res = await API.post('/tools/hardware/config', {
+        warningTemp,
+        criticalTemp,
+        autoActionEnabled
+      });
+      Toast.success(res.message);
+      await this.loadHardwareMetrics();
+    } catch (err) {
+      Toast.error(`Lỗi: ${err.message}`);
+    }
+  },
+
+  async checkThermalNow() {
+    Toast.info('Đang đo nhiệt độ cảm biến phần cứng...');
+    await this.loadHardwareMetrics();
+    Toast.success('Đã cập nhật chỉ số phần cứng mới nhất!');
+  },
+
+  async testThermalFailsafe() {
+    Toast.info('Đang kiểm tra giao thức Failsafe 2 tầng...');
+    try {
+      const res = await API.post('/tools/hardware/test-failsafe', {});
+      if (res.success) {
+        Toast.success(res.message);
+        if (res.result?.actionTaken) {
+          Toast.warning(`Hành động kích hoạt: ${res.result.actionTaken}`);
+        }
+      }
+    } catch (err) {
+      Toast.error(`Lỗi kiểm tra failsafe: ${err.message}`);
+    }
+  },
+
+  // ==================== TỰ ĐỘNG HÓA LỊCH SAO LƯU (AUTO-BACKUP CRON) ====================
+  async loadAutoBackupConfig() {
+    try {
+      const res = await API.get('/tools/auto-backup');
+      if (res && res.success) {
+        const toggle = document.getElementById('auto-backup-toggle');
+        const freq = document.getElementById('auto-backup-freq');
+        if (toggle) toggle.checked = !!res.enabled;
+        if (freq) freq.value = String(res.frequencyHours || 12);
+      }
+    } catch (e) {}
+  },
+
+  async saveAutoBackupConfig() {
+    const enabled = document.getElementById('auto-backup-toggle')?.checked ?? false;
+    const frequencyHours = parseInt(document.getElementById('auto-backup-freq')?.value, 10) || 12;
+
+    try {
+      const res = await API.post('/tools/auto-backup', { enabled, frequencyHours });
+      Toast.success(res.message);
+    } catch (err) {
+      Toast.error(`Lỗi: ${err.message}`);
+    }
+  },
+
+  // ==================== RADAR QUÉT PROXY TOÀN DIỆN & AUTO FAILOVER ====================
+  async checkAllProxiesNow() {
+    const btn = document.getElementById('btn-check-all-proxies');
+    if (btn) btn.disabled = true;
+    Toast.info('Đang quét toàn bộ danh sách proxy và kiểm tra kết nối...');
+
+    try {
+      const res = await API.post('/tools/proxies/check-all', {});
+      if (res.success) {
+        Toast.success(res.message);
+        const aliveEl = document.getElementById('proxy-stat-alive');
+        const deadEl = document.getElementById('proxy-stat-dead');
+        if (aliveEl) aliveEl.textContent = `${res.alive} proxy`;
+        if (deadEl) deadEl.textContent = `${res.dead} proxy`;
+        await this.loadAccounts();
+      } else {
+        Toast.error(res.message);
+      }
+    } catch (err) {
+      Toast.error(`Lỗi quét proxy: ${err.message}`);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  },
+
+  // ==================== AI TẠO KỊCH BẢN & 10 HOOK TRIỆU VIEW ====================
+  lastGeneratedContent: null,
+
+  async generateAiContent() {
+    const topic = document.getElementById('ai-gen-topic')?.value || '';
+    const platform = document.getElementById('ai-gen-platform')?.value || 'tiktok';
+    const btn = document.getElementById('btn-submit-ai-gen');
+
+    if (!topic.trim()) {
+      Toast.error('Vui lòng nhập chủ đề video!');
+      return;
+    }
+
+    if (btn) btn.disabled = true;
+    Toast.info(`AI đang sáng tạo kịch bản cho chủ đề [${topic}]...`);
+
+    try {
+      const res = await API.post('/tools/ai/generate-content', { topic, platform });
+      if (res.success) {
+        this.lastGeneratedContent = res;
+        const resBox = document.getElementById('ai-gen-result');
+        const hooksList = document.getElementById('ai-res-hooks');
+        const scriptBox = document.getElementById('ai-res-script');
+        const hashBox = document.getElementById('ai-res-hashtags');
+
+        if (resBox) resBox.classList.remove('hidden');
+        if (hooksList && res.hooks) {
+          hooksList.innerHTML = res.hooks.map(h => `<li>"${h}"</li>`).join('');
+        }
+        if (scriptBox) scriptBox.textContent = res.script;
+        if (hashBox) hashBox.textContent = res.hashtags;
+
+        Toast.success('AI đã sinh kịch bản & 3 góc Hook 3s thành công!');
+      }
+    } catch (err) {
+      Toast.error(`Lỗi AI: ${err.message}`);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  },
+
+  copyAiScript() {
+    if (!this.lastGeneratedContent) return;
+    const text = `${this.lastGeneratedContent.title}\n\n${this.lastGeneratedContent.script}\n\n${this.lastGeneratedContent.hashtags}`;
+    Security.safeCopy(text, 'Kịch bản AI');
+  },
+
+  saveAiScriptToSchedule() {
+    if (!this.lastGeneratedContent) return;
+    this.openAddScheduleModal();
+    const titleInput = document.getElementById('sched-title');
+    const captionInput = document.getElementById('sched-caption');
+    const hashInput = document.getElementById('sched-hashtags');
+    const timeInput = document.getElementById('sched-time');
+
+    if (titleInput) titleInput.value = this.lastGeneratedContent.title;
+    if (captionInput) captionInput.value = this.lastGeneratedContent.script;
+    if (hashInput) hashInput.value = this.lastGeneratedContent.hashtags;
+    if (timeInput) timeInput.value = this.lastGeneratedContent.suggestedTime || '19:30';
+
+    Toast.info('Đã điền kịch bản AI vào Lịch Đăng Video!');
+  },
+
+  // ==================== CÀO VIDEO SẠCH KHÔNG LOGO & RỬA MD5 ====================
+  async scrapeCleanVideo() {
+    const videoUrl = document.getElementById('scrape-video-url')?.value || '';
+    const customTitle = document.getElementById('scrape-video-title')?.value || '';
+    const btn = document.getElementById('btn-submit-scrape');
+    const statusBox = document.getElementById('scrape-video-status');
+
+    if (!videoUrl) {
+      Toast.error('Vui lòng dán link video TikTok/Reels!');
+      return;
+    }
+
+    if (btn) btn.disabled = true;
+    if (statusBox) {
+      statusBox.classList.remove('hidden');
+      statusBox.innerHTML = '<span class="animate-pulse">⏳ Đang phân giải link video sạch, tải file & tẩy rửa hash MD5...</span>';
+    }
+
+    Toast.info('Đang cào video không logo và tẩy rửa mã hash...');
+
+    try {
+      const res = await API.post('/tools/video/download-clean', { videoUrl, customTitle });
+      if (res.success) {
+        Toast.success(`Cào video sạch thành công: [${res.title}]!`);
+        if (statusBox) {
+          statusBox.innerHTML = `
+            <div class="font-bold text-emerald-400">✓ Đã cào video sạch thành công!</div>
+            <div class="text-[10px] text-slate-300">File: <b>${res.filename}</b> (${(res.fileSize / (1024 * 1024)).toFixed(1)} MB)</div>
+            <div class="text-[10px] font-mono text-cyan-300">MD5 Mới: ${res.newHash?.md5 || '--'}</div>
+            <div class="mt-1 flex items-center gap-2">
+              <a href="${res.downloadPath}" class="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px]" download>Tải Về</a>
+              <span class="text-[10px] text-slate-400">Đã lưu vào Kho Tư Liệu</span>
+            </div>
+          `;
+        }
+        document.getElementById('scrape-video-url').value = '';
+        document.getElementById('scrape-video-title').value = '';
+      } else {
+        Toast.error(res.message);
+        if (statusBox) statusBox.innerHTML = `<span class="text-rose-400">Lỗi: ${res.message}</span>`;
+      }
+    } catch (err) {
+      Toast.error(`Lỗi: ${err.message}`);
+      if (statusBox) statusBox.innerHTML = `<span class="text-rose-400">Lỗi: ${err.message}</span>`;
+    } finally {
       if (btn) btn.disabled = false;
     }
   }

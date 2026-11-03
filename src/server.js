@@ -9,6 +9,8 @@ const rateLimit = require('express-rate-limit');
 const { PORT } = require('./config/constants');
 const { closeAllProfiles } = require('./services/browserService');
 const { sendVideoPostingAlert, getTelegramConfig } = require('./services/telegramService');
+const { startThermalSentinelLoop } = require('./services/hardwareSentinelService');
+const { startAutoBackupScheduler } = require('./services/autoBackupScheduler');
 const db = require('./config/db');
 
 // Khởi tạo Database SQLite & Seeding
@@ -111,6 +113,11 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('================================================================');
 
   // Khởi động vòng lặp kiểm tra lịch nhắc nhở đăng video tự động (Mỗi 60s)
+  startThermalSentinelLoop();
+  startAutoBackupScheduler();
+  console.log('🌡️ [THERMAL SENTINEL] Radar giám sát nhiệt độ phần cứng & Failsafe 2 tầng đã kích hoạt (chu kỳ 30s)!');
+  console.log('⏰ [AUTO-BACKUP] Lập lịch tự động sao lưu SQLite về Telegram đã kích hoạt!');
+
   setInterval(async () => {
     try {
       const now = new Date();

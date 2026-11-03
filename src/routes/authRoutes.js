@@ -76,7 +76,8 @@ router.post('/login', (req, res) => {
     user: {
       id: user.id,
       username: user.username,
-      role: user.role
+      role: user.role,
+      allowed_tabs: user.allowed_tabs || ['tab-accounts']
     }
   });
 });

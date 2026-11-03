@@ -151,51 +151,119 @@
         </div>
       </div>
 
-      <!-- Row 2: Responsive Segmented Navigation Tab Bar -->
-      <nav class="flex items-center md:justify-between gap-1.5 p-1 rounded-2xl bg-slate-900/90 border border-slate-800/90 overflow-x-auto no-scrollbar whitespace-nowrap scroll-smooth">
-        <button class="nav-tab-btn active flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-accounts">
-          <span>🛡️</span>
-          <span>Kênh & Proxy</span>
-        </button>
-        <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-schedules">
-          <span>🎬</span>
-          <span>Lịch Up Video</span>
-          <span id="header-sched-badge" class="px-1.5 py-0.2 rounded-full bg-pink-500 text-white text-[10px] font-mono">0</span>
-        </button>
-        <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-assets">
-          <span>📁</span>
-          <span>Kho Kịch Bản</span>
-          <span id="header-assets-badge" class="px-1.5 py-0.2 rounded-full bg-cyan-600 text-white text-[10px] font-mono">0</span>
-        </button>
-        <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-piik">
-          <span>📺</span>
-          <span>Live Stream</span>
-          <span id="header-stream-badge" class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-        </button>
-        <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-tools">
-          <span>🛠️</span>
-          <span>Trạm Vũ Khí</span>
-        </button>
-        <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-social-vault">
-          <span>🔐</span>
-          <span>Sổ Tay MXH</span>
-          <span id="header-social-vault-badge" class="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-mono">0</span>
-        </button>
-        <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-phone">
-          <span>📱</span>
-          <span>Live Điện Thoại</span>
-          <span class="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono animate-pulse">LIVE</span>
-        </button>
-        <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-knowledge">
-          <span>🧠</span>
-          <span>Tri Thức AI</span>
-          <span id="header-knowledge-badge" class="px-1.5 py-0.2 rounded-full bg-violet-600 text-white text-[10px] font-mono">360+</span>
-        </button>
-        <button class="nav-tab-btn flex-1 justify-center px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 admin-only shrink-0" data-tab="tab-admin">
-          <span>👥</span>
-          <span>Quản Trị</span>
-        </button>
-      </nav>
+      <!-- Row 2: Compact Smart Navigation Bar (4 Tab Chính + Menu Gộp Tiện Ích Mở Rộng + Quản Trị) -->
+      <div class="relative">
+        <nav id="main-nav-bar" class="flex items-center justify-between gap-1.5 p-1 rounded-2xl bg-slate-900/90 border border-slate-800/90 overflow-x-auto no-scrollbar whitespace-nowrap scroll-smooth">
+          <!-- 1. Kênh & Proxy -->
+          <button class="nav-tab-btn active flex-1 justify-center px-3 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-accounts">
+            <span>🛡️</span>
+            <span>Kênh & Proxy</span>
+          </button>
+
+          <!-- 2. Lịch Up Video -->
+          <button class="nav-tab-btn flex-1 justify-center px-3 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-schedules">
+            <span>🎬</span>
+            <span>Lịch Video</span>
+            <span id="header-sched-badge" class="px-1.5 py-0.2 rounded-full bg-pink-500 text-white text-[10px] font-mono">0</span>
+          </button>
+
+          <!-- 3. Sổ Tay MXH -->
+          <button class="nav-tab-btn flex-1 justify-center px-3 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-social-vault">
+            <span>🔐</span>
+            <span>Sổ Tay MXH</span>
+            <span id="header-social-vault-badge" class="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-mono">0</span>
+          </button>
+
+          <!-- 4. Trạm Vũ Khí -->
+          <button class="nav-tab-btn flex-1 justify-center px-3 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-tools">
+            <span>🛠️</span>
+            <span>Trạm Vũ Khí</span>
+          </button>
+
+          <!-- Các tab phụ khi ở chế độ Bung Toàn Bộ (Ẩn mặc định để thanh menu gọn gàng) -->
+          <button class="nav-tab-btn nav-secondary-inline hidden flex-1 justify-center px-3 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white items-center gap-1.5 shrink-0" data-tab="tab-assets">
+            <span>📁</span>
+            <span>Kho Kịch Bản</span>
+            <span id="header-assets-badge" class="px-1.5 py-0.2 rounded-full bg-cyan-600 text-white text-[10px] font-mono">0</span>
+          </button>
+          <button class="nav-tab-btn nav-secondary-inline hidden flex-1 justify-center px-3 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white items-center gap-1.5 shrink-0" data-tab="tab-phone">
+            <span>📱</span>
+            <span>Live ĐT</span>
+            <span class="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono">LIVE</span>
+          </button>
+          <button class="nav-tab-btn nav-secondary-inline hidden flex-1 justify-center px-3 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white items-center gap-1.5 shrink-0" data-tab="tab-piik">
+            <span>📺</span>
+            <span>Live Browser</span>
+            <span id="header-stream-badge" class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          </button>
+          <button class="nav-tab-btn nav-secondary-inline hidden flex-1 justify-center px-3 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white items-center gap-1.5 shrink-0" data-tab="tab-knowledge">
+            <span>🧠</span>
+            <span>Tri Thức AI</span>
+            <span id="header-knowledge-badge" class="px-1.5 py-0.2 rounded-full bg-violet-600 text-white text-[10px] font-mono">360+</span>
+          </button>
+
+          <!-- 5. Nút Gộp Tiện Ích Mở Rộng (Thu Gọn 4 Tab Phụ Vào 1 Nút Duy Nhất) -->
+          <div id="nav-more-wrapper" class="flex items-center shrink-0">
+            <button type="button" id="btn-nav-more" onclick="App.toggleMoreNavMenu(event)" class="px-3 py-1.5 rounded-xl text-xs font-bold text-cyan-300 bg-slate-800/90 hover:bg-slate-800 border border-cyan-500/30 flex items-center gap-1.5 transition-all cursor-pointer">
+              <span id="nav-more-icon">📦</span>
+              <span id="nav-more-label">Tiện Ích Mở Rộng</span>
+              <span id="nav-more-count" class="px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-mono">4</span>
+              <span class="text-[10px] text-cyan-400">▾</span>
+            </button>
+          </div>
+
+          <!-- 6. Quản Trị & Phân Quyền User (Admin Only) -->
+          <button class="nav-tab-btn flex-1 justify-center px-3 py-1.5 rounded-xl text-xs font-bold text-amber-300 hover:text-white flex items-center gap-1.5 admin-only shrink-0" data-tab="tab-admin">
+            <span>👥</span>
+            <span>Quản Trị & User</span>
+          </button>
+
+          <!-- Nút Bung / Thu Gọn Thanh Menu 1 Chạm -->
+          <button type="button" id="btn-toggle-nav-expand" onclick="App.toggleNavExpandMode()" class="px-2.5 py-1.5 rounded-xl bg-slate-950/90 hover:bg-slate-800 text-slate-400 hover:text-cyan-300 border border-slate-800 text-[11px] font-mono shrink-0 transition-colors" title="Thu gọn / Bung đầy đủ các mục trên thanh menu">
+            ⇄
+          </button>
+        </nav>
+
+        <!-- Menu Thả Xuống Chứa Các Mục Đã Thu Gọn (Cyber-Glass Popover) -->
+        <div id="nav-more-dropdown" class="hidden absolute right-0 mt-2 w-72 rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-cyan-500/40 shadow-2xl p-2.5 z-50 flex flex-col gap-1.5 text-xs">
+          <div class="px-2.5 py-1 text-[10px] font-bold text-cyan-300 uppercase tracking-wider border-b border-slate-800 flex items-center justify-between">
+            <span>📦 Kho Lưu Trữ & Điều Khiển Mở Rộng</span>
+            <button type="button" onclick="App.toggleNavExpandMode()" class="text-[10px] text-amber-300 hover:underline font-mono">⇄ Bung ra thanh</button>
+          </div>
+
+          <button type="button" onclick="App.selectMoreTab('tab-assets')" class="nav-more-item flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-800/90 text-slate-200 transition-colors text-left" data-more-tab="tab-assets">
+            <span class="flex items-center gap-2 font-semibold">
+              <span class="text-base">📁</span>
+              <span>Kho Kịch Bản & Ảnh (.md/.png)</span>
+            </span>
+            <span class="px-1.5 py-0.5 rounded-full bg-cyan-600/30 text-cyan-300 text-[10px] font-mono">Kho</span>
+          </button>
+
+          <button type="button" onclick="App.selectMoreTab('tab-phone')" class="nav-more-item flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-800/90 text-slate-200 transition-colors text-left" data-more-tab="tab-phone">
+            <span class="flex items-center gap-2 font-semibold">
+              <span class="text-base">📱</span>
+              <span>Live Điện Thoại Redmi K50G</span>
+            </span>
+            <span class="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono">LIVE</span>
+          </button>
+
+          <button type="button" onclick="App.selectMoreTab('tab-piik')" class="nav-more-item flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-800/90 text-slate-200 transition-colors text-left" data-more-tab="tab-piik">
+            <span class="flex items-center gap-2 font-semibold">
+              <span class="text-base">📺</span>
+              <span>Live Stream Trình Duyệt</span>
+            </span>
+            <span class="px-1.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 text-[10px] font-mono">Piik</span>
+          </button>
+
+          <button type="button" onclick="App.selectMoreTab('tab-knowledge')" class="nav-more-item flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-800/90 text-slate-200 transition-colors text-left" data-more-tab="tab-knowledge">
+            <span class="flex items-center gap-2 font-semibold">
+              <span class="text-base">🧠</span>
+              <span>Kho Tri Thức AI (360+ Repos)</span>
+            </span>
+            <span class="px-1.5 py-0.5 rounded-full bg-violet-600/40 text-violet-200 text-[10px] font-mono">360+</span>
+          </button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -208,11 +276,11 @@
       <!-- BENTO QUICK COMMAND & KPI STRIP (4 Ô TIỆN ÍCH NHANH) -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <!-- KPI 1: Tổng Kênh -->
-        <div class="glass-panel p-3.5 rounded-2xl border border-cyan-500/20 flex items-center justify-between gap-2">
+        <div class="glass-panel p-3.5 rounded-2xl border border-cyan-500/20 flex items-center justify-between gap-2" data-require-tab="tab-accounts">
           <div>
             <div class="text-[11px] text-slate-400 font-medium">Tổng Kênh & Tài Khoản</div>
             <div class="text-xl font-black text-white font-mono mt-0.5" id="kpi-total-accounts">0</div>
-            <button onclick="document.getElementById('btn-add-account').click()" class="text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold mt-1 flex items-center gap-1">
+            <button onclick="document.getElementById('btn-add-account').click()" class="admin-only text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold mt-1 flex items-center gap-1">
               <span>+ Thêm kênh mới</span>
               <span>→</span>
             </button>
@@ -223,7 +291,7 @@
         </div>
 
         <!-- KPI 2: Lịch Đăng Video -->
-        <div class="glass-panel p-3.5 rounded-2xl border border-pink-500/20 flex items-center justify-between gap-2">
+        <div class="glass-panel p-3.5 rounded-2xl border border-pink-500/20 flex items-center justify-between gap-2" data-require-tab="tab-schedules">
           <div>
             <div class="text-[11px] text-slate-400 font-medium">Video Chờ Đăng Hôm Nay</div>
             <div class="text-xl font-black text-pink-400 font-mono mt-0.5" id="kpi-pending-schedules">0</div>
@@ -238,7 +306,7 @@
         </div>
 
         <!-- KPI 3: Xưởng Video & AI Nhanh -->
-        <div class="glass-panel p-3.5 rounded-2xl border border-purple-500/20 flex items-center justify-between gap-2">
+        <div class="glass-panel p-3.5 rounded-2xl border border-purple-500/20 flex items-center justify-between gap-2" data-require-tab="tab-tools">
           <div>
             <div class="text-[11px] text-slate-400 font-medium">Xưởng AI & Tải Video Sạch</div>
             <div class="text-xs font-bold text-purple-300 mt-1">Không Logo • Đổi MD5</div>
@@ -253,7 +321,7 @@
         </div>
 
         <!-- KPI 4: Kho Tri Thức AI 360+ -->
-        <div class="glass-panel p-3.5 rounded-2xl border border-violet-500/20 flex items-center justify-between gap-2">
+        <div class="glass-panel p-3.5 rounded-2xl border border-violet-500/20 flex items-center justify-between gap-2" data-require-tab="tab-knowledge">
           <div>
             <div class="text-[11px] text-slate-400 font-medium">Kho Tri Thức AI Nhóm</div>
             <div class="text-xl font-black text-violet-300 font-mono mt-0.5">360+ <span class="text-xs font-normal text-slate-400">Repos</span></div>
@@ -1015,28 +1083,57 @@
       </div>
     </div>
 
-    <!-- ==================== TAB 5: QUẢN TRỊ NHÂN SỰ & AUDIT LOGS ==================== -->
+    <!-- ==================== TAB 5: QUẢN TRỊ NHÂN SỰ, PHÂN QUYỀN HIỂN THỊ & AUDIT LOGS ==================== -->
     <div id="tab-admin" class="tab-pane hidden flex flex-col gap-5 admin-only">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <!-- Quản Lý Người Dùng -->
-        <div class="glass-panel p-5 rounded-xl flex flex-col gap-3">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-              <span>👥 Danh Sách Thành Viên (2 - 6 Người)</span>
-            </h3>
-            <button onclick="App.createUserPrompt()" class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold">
-              + Thêm User
-            </button>
+      <!-- Top Admin Banner -->
+      <div class="glass-panel p-4 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-950/35 via-slate-900/90 to-cyan-950/30 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-2xl">
+            👑
           </div>
-          <div class="overflow-y-auto max-h-96">
+          <div>
+            <h2 class="text-base font-extrabold text-white flex items-center gap-2">
+              <span>Trung Tâm Quản Trị Thành Viên & Cấp Quyền Hiển Thị (RBAC)</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40">SUPER ADMIN</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Tạo tài khoản nhân viên mới • Cấp quyền chính xác thành viên được phép nhìn thấy những thanh Menu nào và Kênh nào
+            </p>
+          </div>
+        </div>
+
+        <button type="button" onclick="App.openCreateUserModal()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-extrabold shadow-lg shadow-cyan-500/25 flex items-center gap-1.5 transition-all cursor-pointer">
+          <span>➕</span>
+          <span>Thêm User & Cấp Quyền Mới</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        <!-- Cột Trái (7/12): Danh Sách Thành Viên & Quyền Đang Có -->
+        <div class="lg:col-span-7 glass-panel p-5 rounded-2xl flex flex-col gap-3 border border-cyan-500/20">
+          <div class="flex items-center justify-between pb-2.5 border-b border-slate-800">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>👥 Danh Sách Thành Viên & Quyền Hiển Thị</span>
+            </h3>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="App.loadUsersList()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs">
+                🔄 Làm mới
+              </button>
+              <button type="button" onclick="App.openCreateUserModal()" class="px-3 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold">
+                + Thêm User
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
             <table class="w-full text-left text-xs">
               <thead>
-                <tr class="bg-slate-900/60 text-[10px] font-semibold text-slate-400 uppercase">
-                  <th class="py-2 px-2">User</th>
-                  <th class="py-2 px-2">Vai Trò</th>
-                  <th class="py-2 px-2">Trạng Thái</th>
-                  <th class="py-2 px-2">Số Acc Gán</th>
-                  <th class="py-2 px-2 text-right">Thao Tác</th>
+                <tr class="bg-slate-900/80 text-[10px] font-semibold text-slate-400 uppercase">
+                  <th class="py-2.5 px-2.5">Tài Khoản</th>
+                  <th class="py-2.5 px-2.5">Vai Trò</th>
+                  <th class="py-2.5 px-2.5">Các Mục Được Nhìn Thấy</th>
+                  <th class="py-2.5 px-2.5">Kênh Gán</th>
+                  <th class="py-2.5 px-2.5 text-right">Cấp Quyền / Thao Tác</th>
                 </tr>
               </thead>
               <tbody id="users-tbody" class="divide-y divide-slate-800/40"></tbody>
@@ -1044,13 +1141,13 @@
           </div>
         </div>
 
-        <!-- Audit Logs Gần Nhất -->
-        <div class="glass-panel p-5 rounded-xl flex flex-col gap-3">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+        <!-- Cột Phải (5/12): Audit Logs Gần Nhất -->
+        <div class="lg:col-span-5 glass-panel p-5 rounded-2xl flex flex-col gap-3">
+          <div class="flex items-center justify-between pb-2.5 border-b border-slate-800">
             <h3 class="text-sm font-bold text-white flex items-center gap-2">
               <span>📜 Nhật Ký Kiểm Toán (Audit Logs)</span>
             </h3>
-            <button onclick="App.loadAuditLogs()" class="text-xs text-cyan-400 hover:underline">Làm mới</button>
+            <button type="button" onclick="App.loadAuditLogs()" class="text-xs text-cyan-400 hover:underline">Làm mới</button>
           </div>
           <div class="overflow-y-auto max-h-96">
             <table class="w-full text-left text-[11px]">
@@ -1919,23 +2016,130 @@
     </div>
   </div>
 
-  <!-- 6. PERMISSIONS ASSIGNMENT MODAL (ADMIN ONLY) -->
+  <!-- 6A. CREATE NEW USER & ASSIGN PERMISSIONS MODAL (ADMIN ONLY) -->
+  <div id="create-user-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+    <div class="glass-modal max-w-2xl w-full p-6 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto border border-cyan-500/30 text-xs">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <span>➕ Thêm User Mới & Cấp Quyền Hiển Thị</span>
+          </h3>
+          <p class="text-[11px] text-slate-400 mt-0.5">Tạo tài khoản và chọn chính xác những mục & kênh mà User này được phép nhìn thấy</p>
+        </div>
+        <button type="button" onclick="App.closeCreateUserModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <form id="create-user-form" onsubmit="App.submitCreateUser(event)" class="flex flex-col gap-4">
+        <!-- Bước 1: Thông tin tài khoản -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 p-3.5 rounded-xl bg-slate-950/70 border border-slate-800">
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Tên đăng nhập (Username) *</label>
+            <input type="text" id="new-user-username" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 font-mono focus:outline-none focus:border-cyan-500" placeholder="VD: nhanvien01">
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="font-bold text-slate-300">Mật khẩu *</label>
+              <button type="button" onclick="App.generateNewUserPass()" class="text-[10px] text-cyan-400 hover:underline font-semibold">🎲 Tạo nhanh</button>
+            </div>
+            <input type="text" id="new-user-password" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-amber-200 font-mono focus:outline-none focus:border-cyan-500" placeholder="Nhập mật khẩu...">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Vai trò (Role)</label>
+            <select id="new-user-role" onchange="App.toggleCreateUserRoleView(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 font-semibold focus:outline-none focus:border-cyan-500">
+              <option value="user">👤 Thành Viên (Giới hạn quyền)</option>
+              <option value="admin">👑 Super Admin (Toàn quyền)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Bước 2: Cấp Quyền Nhìn Thấy Các Thanh Menu / Tính Năng -->
+        <div id="create-user-perms-section" class="flex flex-col gap-4">
+          <div class="p-3.5 rounded-xl bg-slate-950/70 border border-cyan-500/25 flex flex-col gap-2.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-cyan-300">1️⃣ Cấp Quyền Nhìn Thấy Những Thanh Menu Nào (Allowed Tabs):</span>
+              <div class="flex items-center gap-2 text-[11px]">
+                <button type="button" onclick="App.setAllTabCheckboxes('#create-user-tabs-grid', true)" class="text-cyan-400 hover:underline">Chọn hết</button>
+                <span class="text-slate-600">|</span>
+                <button type="button" onclick="App.setAllTabCheckboxes('#create-user-tabs-grid', false)" class="text-amber-400 hover:underline">Chỉ Kênh & Proxy</button>
+              </div>
+            </div>
+            <div id="create-user-tabs-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+          </div>
+
+          <!-- Bước 3: Cấp Quyền Nhìn Thấy Các Kênh Cụ Thể -->
+          <div class="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col gap-2.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-emerald-300">2️⃣ Cấp Quyền Nhìn Thấy & Thao Tác Kênh Nào:</span>
+              <div class="flex items-center gap-2 text-[11px]">
+                <button type="button" onclick="App.setAllAccountPermCheckboxes('#create-user-accounts-list', true)" class="text-emerald-400 hover:underline">Chọn tất cả kênh</button>
+                <span class="text-slate-600">|</span>
+                <button type="button" onclick="App.setAllAccountPermCheckboxes('#create-user-accounts-list', false)" class="text-rose-400 hover:underline">Bỏ chọn hết</button>
+              </div>
+            </div>
+            <div id="create-user-accounts-list" class="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+          <button type="button" onclick="App.closeCreateUserModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold">Hủy</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-extrabold shadow-lg shadow-cyan-500/20">
+            ✅ Tạo User & Lưu Quyền Ngay
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6B. PERMISSIONS & VISIBILITY ASSIGNMENT MODAL (ADMIN ONLY) -->
   <div id="permissions-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
-    <div class="glass-modal max-w-xl w-full p-6 rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+    <div class="glass-modal max-w-2xl w-full p-6 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto border border-cyan-500/30 text-xs">
       <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
         <div>
-          <h3 class="text-base font-bold text-white">Phân Quyền Cho: <span id="perm-modal-username" class="text-cyan-400"></span></h3>
-          <p class="text-[11px] text-slate-400">Chọn các tài khoản mà người dùng này được phép tương tác</p>
+          <h3 class="text-base font-bold text-white">Cấp Quyền Hiển Thị & Kênh Cho: <span id="perm-modal-username" class="text-cyan-400 font-mono"></span></h3>
+          <p class="text-[11px] text-slate-400">Tùy chỉnh những mục trên thanh Menu và những Kênh mà thành viên này được phép nhìn thấy</p>
         </div>
-        <button onclick="App.closePermissionsModal()" class="text-slate-400 hover:text-white">✕</button>
+        <button type="button" onclick="App.closePermissionsModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
       </div>
 
       <input type="hidden" id="perm-modal-user-id">
-      <div id="permissions-list" class="flex flex-col gap-2 overflow-y-auto flex-1 my-2 pr-1"></div>
 
-      <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
-        <button type="button" onclick="App.closePermissionsModal()" class="px-3 py-1.5 rounded bg-slate-800 text-slate-300 text-xs">Hủy</button>
-        <button type="button" onclick="App.savePermissions()" class="px-4 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold">Lưu Phân Quyền</button>
+      <!-- Đổi mật khẩu nhanh (Tùy chọn) -->
+      <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800 mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <span class="font-semibold text-slate-300">🔑 Đặt lại mật khẩu mới cho User (Để trống nếu giữ nguyên):</span>
+        <input type="text" id="perm-new-password" class="sm:w-64 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-amber-200 font-mono focus:outline-none focus:border-cyan-500" placeholder="Nhập mật khẩu mới nếu muốn đổi...">
+      </div>
+
+      <!-- Mục 1: Cấp Quyền Nhìn Thấy Các Thanh Menu -->
+      <div class="p-3.5 rounded-xl bg-slate-950/70 border border-cyan-500/25 mb-3 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-cyan-300">1️⃣ Cho Phép User Nhìn Thấy Những Thanh Menu Nào:</span>
+          <div class="flex items-center gap-2 text-[11px]">
+            <button type="button" onclick="App.setAllTabCheckboxes('#perm-tabs-grid', true)" class="text-cyan-400 hover:underline">Chọn hết</button>
+            <span class="text-slate-600">|</span>
+            <button type="button" onclick="App.setAllTabCheckboxes('#perm-tabs-grid', false)" class="text-amber-400 hover:underline">Chỉ Kênh & Proxy</button>
+          </div>
+        </div>
+        <div id="perm-tabs-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+      </div>
+
+      <!-- Mục 2: Cấp Quyền Nhìn Thấy & Thao Tác Kênh -->
+      <div class="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col gap-2 flex-1 min-h-[180px]">
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-emerald-300">2️⃣ Cho Phép User Nhìn Thấy & Thao Tác Kênh Nào:</span>
+          <div class="flex items-center gap-2 text-[11px]">
+            <button type="button" onclick="App.setAllAccountPermCheckboxes('#permissions-list', true)" class="text-emerald-400 hover:underline">Chọn tất cả kênh</button>
+            <span class="text-slate-600">|</span>
+            <button type="button" onclick="App.setAllAccountPermCheckboxes('#permissions-list', false)" class="text-rose-400 hover:underline">Bỏ chọn hết</button>
+          </div>
+        </div>
+        <div id="permissions-list" class="flex flex-col gap-2 overflow-y-auto max-h-56 my-1 pr-1"></div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-3 mt-3 border-t border-slate-800">
+        <button type="button" onclick="App.closePermissionsModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold">Hủy</button>
+        <button type="button" onclick="App.savePermissions()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-extrabold shadow-lg shadow-cyan-500/20">
+          💾 Lưu Phân Quyền
+        </button>
       </div>
     </div>
   </div>

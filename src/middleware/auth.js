@@ -31,7 +31,7 @@ function authenticateToken(req, res, next) {
     }
 
     // Kiểm tra trạng thái người dùng trong DB
-    const user = db.prepare('SELECT id, username, role, status FROM users WHERE id = ?').get(decoded.id);
+    const user = db.prepare('SELECT id, username, role, status, allowed_tabs FROM users WHERE id = ?').get(decoded.id);
     if (!user) {
       return res.status(401).json({ success: false, message: 'Người dùng không còn tồn tại' });
     }
@@ -43,7 +43,35 @@ function authenticateToken(req, res, next) {
       });
     }
 
-    req.user = user;
+    let allowedTabs = ['tab-accounts'];
+    if (user.role === ROLES.ADMIN) {
+      allowedTabs = [
+        'tab-accounts',
+        'tab-schedules',
+        'tab-assets',
+        'tab-piik',
+        'tab-tools',
+        'tab-social-vault',
+        'tab-phone',
+        'tab-knowledge',
+        'tab-admin'
+      ];
+    } else if (user.allowed_tabs) {
+      try {
+        const parsed = JSON.parse(user.allowed_tabs);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          allowedTabs = parsed.filter((t) => t !== 'tab-admin');
+        }
+      } catch (e) {}
+    }
+
+    req.user = {
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      status: user.status,
+      allowed_tabs: allowedTabs
+    };
     next();
   });
 }

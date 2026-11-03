@@ -8,7 +8,7 @@ const { encrypt, decrypt } = require('../src/services/cryptoService');
 const { generateToken, cleanSecret } = require('../src/services/totpService');
 const { parseProxyString } = require('../src/services/proxyService');
 const { evaluatePasswordStrength, analyzeSecuritySuggestions } = require('../src/services/suggestionService');
-const { createUser, getUserByUsername, deleteUser, grantPermission, getUserPermissions } = require('../src/services/rbacService');
+const { createUser, getUserByUsername, getUserById, deleteUser, grantPermission, getUserPermissions, syncUserPermissions } = require('../src/services/rbacService');
 
 console.log('================================================================');
 console.log('⚡ BẮT ĐẦU KIỂM ĐỊNH TOÀN DIỆN HỆ THỐNG ACCPROXY SOVEREIGN');
@@ -99,26 +99,44 @@ runTest('Password Strength Evaluator', () => {
   assert.ok(strong.score >= 80);
 });
 
-// 6. Kiểm tra RBAC User Creation & Permissions
-runTest('RBAC User Creation, Permissions & Cleanup', () => {
+// 6. Kiểm tra RBAC User Creation, Allowed Tabs & Permissions
+runTest('RBAC User Creation, Allowed Tabs, Permissions & Cleanup', () => {
   const testUser = `test_agent_${Date.now()}`;
-  const created = createUser(testUser, 'TestPass@123', 'user');
-  assert.strictEqual(created.username, testUser);
-  assert.strictEqual(created.role, 'user');
-
-  // Tạo 1 tài khoản thật để test Foreign Key
   const dummyAccId = `test_acc_${Date.now()}`;
   db.prepare(`
     INSERT INTO accounts (id, platform, username, created_at, updated_at)
     VALUES (?, 'facebook', 'test_user', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
   `).run(dummyAccId);
 
-  // Gán quyền cho user trên account thật
-  grantPermission(created.id, dummyAccId, { can_view: 1, can_launch: 1, can_reveal_password: 0 }, 'test');
+  const created = createUser(
+    testUser,
+    'TestPass@123',
+    'user',
+    ['tab-accounts', 'tab-schedules'],
+    [{ accountId: dummyAccId, can_view: 1, can_launch: 1, can_reveal_password: 0 }],
+    'test'
+  );
+  assert.strictEqual(created.username, testUser);
+  assert.strictEqual(created.role, 'user');
+  assert.deepStrictEqual(created.allowed_tabs, ['tab-accounts', 'tab-schedules']);
+
+  // Kiểm tra quyền đã được gán ngay lúc tạo user
   const perms = db.prepare('SELECT * FROM user_account_permissions WHERE user_id = ?').all(created.id);
   assert.strictEqual(perms.length, 1);
   assert.strictEqual(perms[0].can_view, 1);
   assert.strictEqual(perms[0].can_reveal_password, 0);
+
+  // Kiểm tra syncUserPermissions cập nhật cả allowed_tabs và account permissions
+  syncUserPermissions(
+    created.id,
+    [{ account_id: dummyAccId, can_view: 1, can_launch: 0, can_reveal_password: 1 }],
+    'test',
+    ['tab-accounts', 'tab-social-vault']
+  );
+  const updatedUser = getUserById(created.id);
+  assert.deepStrictEqual(updatedUser.allowed_tabs, ['tab-accounts', 'tab-social-vault']);
+  const updatedPerms = db.prepare('SELECT * FROM user_account_permissions WHERE user_id = ?').all(created.id);
+  assert.strictEqual(updatedPerms[0].can_reveal_password, 1);
 
   // Dọn dẹp
   deleteUser(created.id);

@@ -2,18 +2,59 @@ const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../config/db');
 
+const ALL_TABS = [
+  'tab-accounts',
+  'tab-schedules',
+  'tab-assets',
+  'tab-piik',
+  'tab-tools',
+  'tab-social-vault',
+  'tab-phone',
+  'tab-knowledge',
+  'tab-admin'
+];
+
+const DEFAULT_USER_TABS = ['tab-accounts'];
+
+function sanitizeAllowedTabs(rawTabs, role = 'user') {
+  if (role === 'admin') {
+    return [...ALL_TABS];
+  }
+  let parsed = rawTabs;
+  if (typeof rawTabs === 'string') {
+    try {
+      parsed = JSON.parse(rawTabs);
+    } catch (e) {
+      parsed = DEFAULT_USER_TABS;
+    }
+  }
+  if (!Array.isArray(parsed)) {
+    return [...DEFAULT_USER_TABS];
+  }
+  const clean = parsed.filter((t) => typeof t === 'string' && ALL_TABS.includes(t) && t !== 'tab-admin');
+  return clean.length > 0 ? Array.from(new Set(clean)) : [...DEFAULT_USER_TABS];
+}
+
+function formatUserRow(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    allowed_tabs: sanitizeAllowedTabs(row.allowed_tabs, row.role)
+  };
+}
+
 /**
  * Lấy danh sách toàn bộ người dùng trong hệ thống (ẩn password hash)
  * @returns {Array<object>}
  */
 function getAllUsers() {
   const stmt = db.prepare(`
-    SELECT id, username, role, status, last_login, created_at, updated_at,
+    SELECT id, username, role, status, allowed_tabs, last_login, created_at, updated_at,
     (SELECT COUNT(*) FROM user_account_permissions WHERE user_id = users.id) as assigned_accounts_count
     FROM users
-    ORDER BY created_at DESC
+    ORDER BY CASE WHEN role = 'admin' THEN 0 ELSE 1 END, created_at DESC
   `);
-  return stmt.all();
+  return stmt.all().map(formatUserRow);
 }
 
 /**
@@ -23,10 +64,10 @@ function getAllUsers() {
  */
 function getUserById(id) {
   const stmt = db.prepare(`
-    SELECT id, username, role, status, last_login, created_at, updated_at
+    SELECT id, username, role, status, allowed_tabs, last_login, created_at, updated_at
     FROM users WHERE id = ?
   `);
-  return stmt.get(id) || null;
+  return formatUserRow(stmt.get(id));
 }
 
 /**
@@ -36,43 +77,63 @@ function getUserById(id) {
  */
 function getUserByUsername(username) {
   const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
-  return stmt.get(username) || null;
+  return formatUserRow(stmt.get(username));
 }
 
 /**
- * Tạo người dùng mới
+ * Tạo người dùng mới kèm phân quyền Tab hiển thị & Tài khoản
  * @param {string} username
  * @param {string} password
  * @param {'admin'|'user'} [role='user']
+ * @param {Array<string>} [allowedTabs]
+ * @param {Array<object>} [permissions]
+ * @param {string} [grantedBy='admin']
  * @returns {object}
  */
-function createUser(username, password, role = 'user') {
-  if (!username || !password) {
+function createUser(username, password, role = 'user', allowedTabs = null, permissions = [], grantedBy = 'admin') {
+  const cleanUser = String(username || '').trim();
+  const cleanPass = String(password || '');
+  if (!cleanUser || !cleanPass) {
     throw new Error('Username và Password không được để trống');
   }
 
-  const existing = getUserByUsername(username);
+  const existing = getUserByUsername(cleanUser);
   if (existing) {
-    throw new Error(`Tên người dùng '${username}' đã tồn tại`);
+    throw new Error(`Tên người dùng '${cleanUser}' đã tồn tại`);
   }
 
+  const validRole = role === 'admin' ? 'admin' : 'user';
+  const finalTabs = sanitizeAllowedTabs(allowedTabs || DEFAULT_USER_TABS, validRole);
   const salt = bcrypt.genSaltSync(10);
-  const passwordHash = bcrypt.hashSync(password, salt);
+  const passwordHash = bcrypt.hashSync(cleanPass, salt);
   const id = uuidv4();
 
-  const stmt = db.prepare(`
-    INSERT INTO users (id, username, password_hash, role, status, created_at, updated_at)
-    VALUES (?, ?, ?, ?, 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-  `);
-  stmt.run(id, username, passwordHash, role);
+  const runTx = db.transaction(() => {
+    const stmt = db.prepare(`
+      INSERT INTO users (id, username, password_hash, role, status, allowed_tabs, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 'active', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `);
+    stmt.run(id, cleanUser, passwordHash, validRole, JSON.stringify(finalTabs));
 
-  return { id, username, role, status: 'active' };
+    if (Array.isArray(permissions) && permissions.length > 0 && validRole !== 'admin') {
+      for (const p of permissions) {
+        const accId = p && (p.accountId || p.account_id);
+        if (accId && p.can_view) {
+          grantPermission(id, accId, p, grantedBy);
+        }
+      }
+    }
+  });
+
+  runTx();
+
+  return getUserById(id);
 }
 
 /**
  * Cập nhật thông tin hoặc đổi mật khẩu người dùng
  * @param {string} id
- * @param {object} updates - { password, role, status }
+ * @param {object} updates - { password, role, status, allowed_tabs }
  */
 function updateUser(id, updates = {}) {
   const user = getUserById(id);
@@ -83,21 +144,31 @@ function updateUser(id, updates = {}) {
   const fields = [];
   const params = [];
 
-  if (updates.password && updates.password.trim() !== '') {
+  if (updates.password && String(updates.password).trim() !== '') {
     const salt = bcrypt.genSaltSync(10);
-    const hash = bcrypt.hashSync(updates.password, salt);
+    const hash = bcrypt.hashSync(String(updates.password), salt);
     fields.push('password_hash = ?');
     params.push(hash);
   }
 
+  const nextRole = updates.role && ['admin', 'user'].includes(updates.role) ? updates.role : user.role;
   if (updates.role && ['admin', 'user'].includes(updates.role)) {
     fields.push('role = ?');
     params.push(updates.role);
   }
 
   if (updates.status && ['active', 'locked'].includes(updates.status)) {
+    if ((user.username === 'TX' || user.username === 'admin') && updates.status === 'locked') {
+      throw new Error('Không thể khóa tài khoản Super Admin gốc!');
+    }
     fields.push('status = ?');
     params.push(updates.status);
+  }
+
+  if (updates.allowed_tabs !== undefined) {
+    const cleanTabs = sanitizeAllowedTabs(updates.allowed_tabs, nextRole);
+    fields.push('allowed_tabs = ?');
+    params.push(JSON.stringify(cleanTabs));
   }
 
   if (fields.length === 0) {
@@ -123,8 +194,8 @@ function deleteUser(id) {
     throw new Error('Người dùng không tồn tại');
   }
 
-  if (user.username === 'admin') {
-    throw new Error('Không thể xóa Super Admin gốc của hệ thống!');
+  if (user.username === 'admin' || user.username === 'TX') {
+    throw new Error('Không thể xóa Super Admin tối cao của hệ thống!');
   }
 
   db.prepare('DELETE FROM users WHERE id = ?').run(id);
@@ -181,24 +252,41 @@ function revokePermission(userId, accountId) {
 }
 
 /**
- * Cập nhật danh sách quyền tài khoản hàng loạt cho một User
+ * Cập nhật danh sách quyền tài khoản hàng loạt & quyền hiển thị Tab cho một User
  * @param {string} userId
  * @param {Array<{ accountId: string, can_view: boolean, can_launch: boolean, can_reveal_password: boolean }>} permissions
  * @param {string} grantedBy
+ * @param {Array<string>|null} [allowedTabs=null]
  */
-function syncUserPermissions(userId, permissions = [], grantedBy = 'admin') {
+function syncUserPermissions(userId, permissions = [], grantedBy = 'admin', allowedTabs = null) {
+  const user = getUserById(userId);
+  if (!user) {
+    throw new Error('Người dùng không tồn tại');
+  }
+
   const runTransaction = db.transaction(() => {
     db.prepare('DELETE FROM user_account_permissions WHERE user_id = ?').run(userId);
     for (const p of permissions) {
-      if (p.can_view) {
-        grantPermission(userId, p.accountId, p, grantedBy);
+      const accId = p && (p.accountId || p.account_id);
+      if (accId && p.can_view) {
+        grantPermission(userId, accId, p, grantedBy);
       }
+    }
+
+    if (allowedTabs !== null && allowedTabs !== undefined) {
+      const cleanTabs = sanitizeAllowedTabs(allowedTabs, user.role);
+      db.prepare('UPDATE users SET allowed_tabs = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+        .run(JSON.stringify(cleanTabs), userId);
     }
   });
   runTransaction();
+  return getUserById(userId);
 }
 
 module.exports = {
+  ALL_TABS,
+  DEFAULT_USER_TABS,
+  sanitizeAllowedTabs,
   getAllUsers,
   getUserById,
   getUserByUsername,

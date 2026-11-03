@@ -8,6 +8,17 @@ const { logAudit } = require('../middleware/auditLogger');
 
 const router = express.Router();
 router.use(authenticateToken);
+router.use((req, res, next) => {
+  if (req.user && req.user.role === 'admin') return next();
+  const allowed = Array.isArray(req.user?.allowed_tabs) ? req.user.allowed_tabs : [];
+  if (!allowed.includes('tab-social-vault')) {
+    return res.status(403).json({
+      success: false,
+      message: 'Bạn chưa được Admin cấp quyền xem Sổ Tay MXH!'
+    });
+  }
+  return next();
+});
 
 /**
  * GET /api/social-vault

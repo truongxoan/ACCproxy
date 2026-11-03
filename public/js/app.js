@@ -28,28 +28,133 @@ const App = {
   socialVaultFilter: 'all',
   socialVaultSearch: '',
   revealedSocialSecrets: {},
+  navExpandedMode: localStorage.getItem('accproxy_nav_expanded') === '1',
+
+  TAB_META: {
+    'tab-accounts': { icon: '🛡️', label: 'Kênh & Proxy', short: '🛡️ Kênh' },
+    'tab-schedules': { icon: '🎬', label: 'Lịch Video', short: '🎬 Lịch' },
+    'tab-social-vault': { icon: '🔐', label: 'Sổ Tay MXH', short: '🔐 Sổ Tay' },
+    'tab-tools': { icon: '🛠️', label: 'Trạm Vũ Khí', short: '🛠️ Vũ Khí' },
+    'tab-assets': { icon: '📁', label: 'Kho Kịch Bản', short: '📁 Kịch Bản' },
+    'tab-phone': { icon: '📱', label: 'Live Điện Thoại', short: '📱 Live ĐT' },
+    'tab-piik': { icon: '📺', label: 'Live Browser', short: '📺 Live Web' },
+    'tab-knowledge': { icon: '🧠', label: 'Tri Thức AI', short: '🧠 Tri Thức' }
+  },
 
   async init() {
     this.bindEvents();
     const isAuthed = await Auth.init();
     if (isAuthed) {
+      await this.loadInitialDataForCurrentUser();
+      this.startTotpClock();
+      setInterval(() => {
+        if (Auth.isTabAllowed('tab-tools')) this.loadHardwareMetrics();
+      }, 15000);
+    }
+  },
+
+  async loadInitialDataForCurrentUser() {
+    if (Auth.isTabAllowed('tab-accounts')) {
       await this.loadAccounts();
       await this.loadSuggestions();
+    }
+    if (Auth.isTabAllowed('tab-schedules')) {
       await this.loadSchedules();
+    }
+    if (Auth.isTabAllowed('tab-assets')) {
       await this.loadAssets();
+    }
+    if (Auth.isTabAllowed('tab-social-vault')) {
       await this.loadSocialVault();
+    }
+    if (Auth.isTabAllowed('tab-tools')) {
       await this.loadHardwareMetrics();
-      this.startTotpClock();
-      setInterval(() => this.loadHardwareMetrics(), 15000);
+    }
+  },
+
+  toggleMoreNavMenu(event) {
+    if (event) event.stopPropagation();
+    const menu = document.getElementById('nav-more-dropdown');
+    if (menu) menu.classList.toggle('hidden');
+  },
+
+  selectMoreTab(tabId) {
+    document.getElementById('nav-more-dropdown')?.classList.add('hidden');
+    this.activateTabById(tabId);
+  },
+
+  toggleNavExpandMode() {
+    this.navExpandedMode = !this.navExpandedMode;
+    localStorage.setItem('accproxy_nav_expanded', this.navExpandedMode ? '1' : '0');
+    document.getElementById('nav-more-dropdown')?.classList.add('hidden');
+    Auth.applyRoleAndTabPermissions();
+    Toast.info(this.navExpandedMode ? 'Đã bung toàn bộ thanh Menu!' : 'Đã thu gọn thanh Menu gọn gàng!');
+  },
+
+  activateTabById(targetTab) {
+    if (!Auth.isTabAllowed(targetTab)) {
+      Toast.error('Tài khoản của bạn chưa được Admin cấp quyền xem mục này!');
+      return;
+    }
+
+    document.querySelectorAll('.nav-tab-btn').forEach((b) => {
+      if (b.dataset.tab === targetTab) b.classList.add('active');
+      else b.classList.remove('active');
+    });
+
+    // Cập nhật trạng thái nút gộp "Tiện Ích Mở Rộng" nếu đang chọn tab phụ
+    const secondaryTabs = ['tab-assets', 'tab-phone', 'tab-piik', 'tab-knowledge'];
+    const moreBtn = document.getElementById('btn-nav-more');
+    const moreIcon = document.getElementById('nav-more-icon');
+    const moreLabel = document.getElementById('nav-more-label');
+    if (moreBtn && moreIcon && moreLabel) {
+      if (secondaryTabs.includes(targetTab) && !this.navExpandedMode) {
+        const meta = this.TAB_META[targetTab] || { icon: '📦', label: 'Tiện Ích Mở Rộng' };
+        moreBtn.classList.add('bg-cyan-600/30', 'border-cyan-400', 'text-white');
+        moreIcon.innerText = meta.icon;
+        moreLabel.innerText = meta.label;
+      } else {
+        moreBtn.classList.remove('bg-cyan-600/30', 'border-cyan-400', 'text-white');
+        moreIcon.innerText = '📦';
+        moreLabel.innerText = 'Tiện Ích Mở Rộng';
+      }
+    }
+
+    document.querySelectorAll('.tab-pane').forEach((pane) => pane.classList.add('hidden'));
+    document.getElementById(targetTab)?.classList.remove('hidden');
+
+    if (targetTab !== 'tab-phone' && this.phoneStreamActive) {
+      this.stopPhoneLiveStream();
+    }
+
+    if (targetTab === 'tab-piik') {
+      this.refreshPiikStreams();
+    } else if (targetTab === 'tab-social-vault') {
+      this.loadSocialVault();
+    } else if (targetTab === 'tab-phone') {
+      this.loadPhoneStatus();
+      this.startPhoneLiveStream();
+    } else if (targetTab === 'tab-assets') {
+      this.loadAssets();
+    } else if (targetTab === 'tab-tools') {
+      this.loadTelegramConfig();
+      this.loadHooks();
+      this.loadProviders();
+      this.loadThermalConfig();
+      this.loadAutoBackupConfig();
+      this.loadHardwareMetrics();
+    } else if (targetTab === 'tab-knowledge') {
+      this.loadKnowledgeSummary();
+      this.loadKnowledgeItems();
+    } else if (targetTab === 'tab-admin') {
+      this.loadUsersList();
+      this.loadAuditLogs();
     }
   },
 
   switchTabProgrammatically(tabId, toolCategory = null) {
-    const targetBtn = document.querySelector(`.nav-tab-btn[data-tab="${tabId}"]`);
-    if (targetBtn) {
-      targetBtn.click();
-    }
-    if (toolCategory && tabId === 'tab-tools') {
+    this.activateTabById(tabId);
+    if (toolCategory && tabId === 'tab-tools' && Auth.isTabAllowed('tab-tools')) {
       setTimeout(() => this.filterToolCategory(toolCategory), 50);
     }
   },
@@ -75,53 +180,28 @@ const App = {
   },
 
   bindEvents() {
+    // Đóng menu mở rộng khi click ra ngoài
+    document.addEventListener('click', (e) => {
+      const moreMenu = document.getElementById('nav-more-dropdown');
+      const moreWrapper = document.getElementById('nav-more-wrapper');
+      if (moreMenu && !moreMenu.classList.contains('hidden')) {
+        if (!moreMenu.contains(e.target) && (!moreWrapper || !moreWrapper.contains(e.target))) {
+          moreMenu.classList.add('hidden');
+        }
+      }
+    });
+
     // Chuyển đổi Tab điều hướng chính
     document.querySelectorAll('.nav-tab-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         const targetTab = btn.dataset.tab;
-        document.querySelectorAll('.nav-tab-btn').forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        document.querySelectorAll('.tab-pane').forEach((pane) => pane.classList.add('hidden'));
-        document.getElementById(targetTab)?.classList.remove('hidden');
-
-        if (targetTab !== 'tab-phone' && this.phoneStreamActive) {
-          this.stopPhoneLiveStream();
-        }
-
-        if (targetTab === 'tab-piik') {
-          this.refreshPiikStreams();
-        } else if (targetTab === 'tab-social-vault') {
-          this.loadSocialVault();
-        } else if (targetTab === 'tab-phone') {
-          this.loadPhoneStatus();
-          this.startPhoneLiveStream();
-        } else if (targetTab === 'tab-assets') {
-          this.loadAssets();
-        } else if (targetTab === 'tab-tools') {
-          this.loadTelegramConfig();
-          this.loadHooks();
-          this.loadProviders();
-          this.loadThermalConfig();
-          this.loadAutoBackupConfig();
-          this.loadHardwareMetrics();
-        } else if (targetTab === 'tab-knowledge') {
-          this.loadKnowledgeSummary();
-          this.loadKnowledgeItems();
-        } else if (targetTab === 'tab-admin') {
-          this.loadUsersList();
-          this.loadAuditLogs();
-        }
+        this.activateTabById(targetTab);
       });
     });
 
     // Sự kiện sau khi đăng nhập thành công
     window.addEventListener('auth:success', async () => {
-      await this.loadAccounts();
-      await this.loadSuggestions();
-      await this.loadSchedules();
-      await this.loadAssets();
-      await this.loadSocialVault();
+      await this.loadInitialDataForCurrentUser();
       this.startTotpClock();
     });
 
@@ -800,16 +880,140 @@ const App = {
     }
   },
 
-  // Quản lý Users (Admin)
+  // Quản lý Users & Phân Quyền Hiển Thị (Admin)
   async openUsersModal() {
-    const modal = document.getElementById('users-modal');
-    if (!modal) return;
-    modal.classList.remove('hidden');
+    this.activateTabById('tab-admin');
     await this.loadUsersList();
   },
   closeUsersModal() {
     document.getElementById('users-modal')?.classList.add('hidden');
   },
+
+  renderTabPermissionCheckboxes(containerSelector, selectedTabs = ['tab-accounts']) {
+    const container = document.querySelector(containerSelector);
+    if (!container) return;
+    const allConfigurableTabs = [
+      { id: 'tab-accounts', icon: '🛡️', label: 'Kênh & Proxy' },
+      { id: 'tab-schedules', icon: '🎬', label: 'Lịch Video' },
+      { id: 'tab-assets', icon: '📁', label: 'Kho Kịch Bản' },
+      { id: 'tab-piik', icon: '📺', label: 'Live Browser' },
+      { id: 'tab-tools', icon: '🛠️', label: 'Trạm Vũ Khí' },
+      { id: 'tab-knowledge', icon: '🧠', label: 'Tri Thức AI' },
+      { id: 'tab-social-vault', icon: '🔐', label: 'Sổ Tay MXH' },
+      { id: 'tab-phone', icon: '📱', label: 'Live Điện Thoại' }
+    ];
+
+    container.innerHTML = allConfigurableTabs
+      .map((t) => {
+        const checked = Array.isArray(selectedTabs) && selectedTabs.includes(t.id);
+        return `
+          <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/40 cursor-pointer select-none transition-colors">
+            <input type="checkbox" class="perm-tab-cb w-4 h-4 rounded text-cyan-500 bg-slate-950 border-slate-700" data-tab-id="${t.id}" ${checked ? 'checked' : ''}>
+            <span class="text-sm">${t.icon}</span>
+            <span class="font-semibold text-slate-200 truncate text-[11px]">${t.label}</span>
+          </label>
+        `;
+      })
+      .join('');
+  },
+
+  setAllTabCheckboxes(containerSelector, checkAll) {
+    document.querySelectorAll(`${containerSelector} .perm-tab-cb`).forEach((cb) => {
+      if (checkAll) {
+        cb.checked = true;
+      } else {
+        cb.checked = cb.dataset.tabId === 'tab-accounts';
+      }
+    });
+  },
+
+  renderAccountPermissionCheckboxes(containerSelector, permMap = new Map()) {
+    const container = document.querySelector(containerSelector);
+    if (!container) return;
+
+    if (!this.accounts || this.accounts.length === 0) {
+      container.innerHTML = `
+        <div class="p-4 text-center text-slate-500 italic">
+          Chưa có Kênh nào trong hệ thống. Bạn vẫn có thể phân quyền các thanh Menu ở mục trên!
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = this.accounts
+      .map((acc) => {
+        const perm = permMap.get(acc.id);
+        const canView = perm ? !!perm.can_view : false;
+        const canLaunch = perm ? !!perm.can_launch : false;
+        const canReveal = perm ? !!perm.can_reveal_password : false;
+
+        return `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 uppercase shrink-0">${acc.platform}</span>
+              <span class="font-semibold text-slate-200 truncate">${this.escapeHtml(acc.account_name || acc.username)}</span>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+              <label class="flex items-center gap-1 cursor-pointer">
+                <input type="checkbox" class="perm-view w-3.5 h-3.5 rounded" data-acc="${acc.id}" ${canView ? 'checked' : ''}>
+                <span class="text-slate-300">Xem/2FA</span>
+              </label>
+              <label class="flex items-center gap-1 cursor-pointer">
+                <input type="checkbox" class="perm-launch w-3.5 h-3.5 rounded" data-acc="${acc.id}" ${canLaunch ? 'checked' : ''}>
+                <span class="text-cyan-300">Mở Browser</span>
+              </label>
+              <label class="flex items-center gap-1 cursor-pointer">
+                <input type="checkbox" class="perm-reveal w-3.5 h-3.5 rounded" data-acc="${acc.id}" ${canReveal ? 'checked' : ''}>
+                <span class="text-amber-300 font-semibold">Copy Pass</span>
+              </label>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+  },
+
+  setAllAccountPermCheckboxes(containerSelector, checkAll) {
+    document.querySelectorAll(`${containerSelector} .perm-view, ${containerSelector} .perm-launch`).forEach((cb) => {
+      cb.checked = !!checkAll;
+    });
+    if (!checkAll) {
+      document.querySelectorAll(`${containerSelector} .perm-reveal`).forEach((cb) => {
+        cb.checked = false;
+      });
+    }
+  },
+
+  collectSelectedTabs(containerSelector) {
+    const selected = [];
+    document.querySelectorAll(`${containerSelector} .perm-tab-cb`).forEach((cb) => {
+      if (cb.checked && cb.dataset.tabId) {
+        selected.push(cb.dataset.tabId);
+      }
+    });
+    return selected.length > 0 ? selected : ['tab-accounts'];
+  },
+
+  collectSelectedAccountPerms(containerSelector) {
+    const permissions = [];
+    document.querySelectorAll(`${containerSelector} .perm-view`).forEach((cb) => {
+      const accId = cb.dataset.acc;
+      const canView = cb.checked;
+      const canLaunch = document.querySelector(`${containerSelector} .perm-launch[data-acc="${accId}"]`)?.checked || false;
+      const canReveal = document.querySelector(`${containerSelector} .perm-reveal[data-acc="${accId}"]`)?.checked || false;
+
+      if (canView || canLaunch || canReveal) {
+        permissions.push({
+          accountId: accId,
+          can_view: true,
+          can_launch: canLaunch,
+          can_reveal_password: canReveal
+        });
+      }
+    });
+    return permissions;
+  },
+
   async loadUsersList() {
     try {
       const res = await API.get('/users');
@@ -817,58 +1021,123 @@ const App = {
       if (!tbody || !res.success) return;
 
       tbody.innerHTML = res.users
-        .map((u) => `
-          <tr class="border-b border-slate-800 text-xs">
-            <td class="py-2.5 px-3 font-semibold text-slate-200">${u.username}</td>
-            <td class="py-2.5 px-3">
-              <span class="px-2 py-0.5 rounded font-mono ${u.role === 'admin' ? 'bg-amber-500/20 text-amber-300' : 'bg-cyan-500/20 text-cyan-300'}">
-                ${u.role}
-              </span>
-            </td>
-            <td class="py-2.5 px-3">
-              <span class="px-2 py-0.5 rounded ${u.status === 'active' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">
-                ${u.status}
-              </span>
-            </td>
-            <td class="py-2.5 px-3 text-slate-400 font-mono">${u.assigned_accounts_count || 0} acc</td>
-            <td class="py-2.5 px-3 text-right">
-              <button class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 mr-1" onclick="App.openPermissionsModal('${u.id}', '${u.username}')">
-                🛡️ Quyền
-              </button>
-              ${u.username !== 'admin'
-                ? `
-                  <button class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 ${u.status === 'active' ? 'text-amber-400' : 'text-emerald-400'} mr-1" onclick="App.toggleUserLock('${u.id}', '${u.status}')">
-                    ${u.status === 'active' ? 'Khóa' : 'Mở'}
-                  </button>
-                  <button class="px-2 py-1 rounded bg-rose-900/60 hover:bg-rose-800 text-rose-300" onclick="App.deleteUser('${u.id}')">
-                    Xóa
-                  </button>
-                `
-                : ''}
-            </td>
-          </tr>
-        `)
+        .map((u) => {
+          const isSuper = u.username === 'TX' || u.username === 'admin';
+          const tabs = Array.isArray(u.allowed_tabs) ? u.allowed_tabs : ['tab-accounts'];
+          const tabBadges = u.role === 'admin'
+            ? `<span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold">Toàn bộ hệ thống (All Tabs)</span>`
+            : tabs.map((tid) => {
+                const m = this.TAB_META[tid] || { short: tid };
+                return `<span class="inline-block px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 border border-slate-700 text-[10px] mr-1 mb-1">${m.short}</span>`;
+              }).join('');
+
+          return `
+            <tr class="border-b border-slate-800/60 hover:bg-slate-900/40 text-xs">
+              <td class="py-2.5 px-2.5">
+                <div class="font-bold text-white font-mono">${this.escapeHtml(u.username)}</div>
+                <span class="inline-block mt-0.5 px-1.5 py-0.2 rounded text-[9px] ${u.status === 'active' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">
+                  ${u.status === 'active' ? '● Hoạt động' : '🔒 Đã khóa'}
+                </span>
+              </td>
+              <td class="py-2.5 px-2.5">
+                <span class="px-2 py-0.5 rounded font-mono text-[10px] ${u.role === 'admin' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold' : 'bg-cyan-500/20 text-cyan-300'}">
+                  ${u.role === 'admin' ? '👑 Admin' : '👤 User'}
+                </span>
+              </td>
+              <td class="py-2.5 px-2.5 max-w-[230px]">${tabBadges}</td>
+              <td class="py-2.5 px-2.5 font-mono text-cyan-300 font-bold">
+                ${u.role === 'admin' ? 'Tất cả' : `${u.assigned_accounts_count || 0} kênh`}
+              </td>
+              <td class="py-2.5 px-2.5 text-right whitespace-nowrap">
+                <button type="button" class="px-2.5 py-1 rounded-lg bg-cyan-600/25 hover:bg-cyan-600/40 text-cyan-200 border border-cyan-500/40 font-bold mr-1" onclick="App.openPermissionsModal('${u.id}', '${this.escapeHtml(u.username)}')">
+                  🛡️ Cấp Quyền
+                </button>
+                ${!isSuper
+                  ? `
+                    <button type="button" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 ${u.status === 'active' ? 'text-amber-400' : 'text-emerald-400'} mr-1" onclick="App.toggleUserLock('${u.id}', '${u.status}')">
+                      ${u.status === 'active' ? 'Khóa' : 'Mở'}
+                    </button>
+                    <button type="button" class="px-2 py-1 rounded-lg bg-rose-900/60 hover:bg-rose-800 text-rose-300" onclick="App.deleteUser('${u.id}')">
+                      Xóa
+                    </button>
+                  `
+                  : ''}
+              </td>
+            </tr>
+          `;
+        })
         .join('');
     } catch (e) {
       Toast.error(`Lỗi tải danh sách người dùng: ${e.message}`);
     }
   },
 
-  async createUserPrompt() {
-    const username = prompt('Nhập tên người dùng mới (Username):');
-    if (!username) return;
-    const password = prompt('Nhập mật khẩu cho người dùng này:');
-    if (!password) return;
-    const isAdmin = confirm('Bạn có muốn cấp quyền Super Admin cho tài khoản này không? (OK = Admin, Cancel = User)');
+  openCreateUserModal() {
+    const modal = document.getElementById('create-user-modal');
+    if (!modal) return;
+    document.getElementById('create-user-form')?.reset();
+    this.toggleCreateUserRoleView('user');
+    this.renderTabPermissionCheckboxes('#create-user-tabs-grid', ['tab-accounts']);
+    this.renderAccountPermissionCheckboxes('#create-user-accounts-list', new Map());
+    modal.classList.remove('hidden');
+    setTimeout(() => document.getElementById('new-user-username')?.focus(), 50);
+  },
+
+  closeCreateUserModal() {
+    document.getElementById('create-user-modal')?.classList.add('hidden');
+  },
+
+  createUserPrompt() {
+    this.openCreateUserModal();
+  },
+
+  generateNewUserPass() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    let pass = '';
+    for (let i = 0; i < 10; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const input = document.getElementById('new-user-password');
+    if (input) input.value = pass;
+  },
+
+  toggleCreateUserRoleView(role) {
+    const sec = document.getElementById('create-user-perms-section');
+    if (!sec) return;
+    if (role === 'admin') sec.classList.add('hidden');
+    else sec.classList.remove('hidden');
+  },
+
+  async submitCreateUser(e) {
+    if (e) e.preventDefault();
+    const username = document.getElementById('new-user-username')?.value?.trim() || '';
+    const password = document.getElementById('new-user-password')?.value || '';
+    const role = document.getElementById('new-user-role')?.value || 'user';
+
+    if (!username || !password) {
+      Toast.warning('Vui lòng nhập đầy đủ Tên đăng nhập và Mật khẩu!');
+      return;
+    }
+
+    const allowed_tabs = role === 'admin'
+      ? undefined
+      : this.collectSelectedTabs('#create-user-tabs-grid');
+    const permissions = role === 'admin'
+      ? []
+      : this.collectSelectedAccountPerms('#create-user-accounts-list');
 
     try {
       await API.post('/users', {
         username,
         password,
-        role: isAdmin ? 'admin' : 'user'
+        role,
+        allowed_tabs,
+        permissions
       });
-      Toast.success(`Tạo thành công thành viên [${username}]!`);
+      Toast.success(`Đã tạo thành viên [${username}] và áp dụng quyền hiển thị thành công!`);
+      this.closeCreateUserModal();
       await this.loadUsersList();
+      await this.loadAuditLogs();
     } catch (err) {
       Toast.error(`Lỗi tạo user: ${err.message}`);
     }
@@ -896,51 +1165,28 @@ const App = {
     }
   },
 
-  // Phân quyền cho User
+  // Phân quyền Hiển thị Tab & Tài khoản cho User
   async openPermissionsModal(userId, username) {
     document.getElementById('perm-modal-username').innerText = username;
     document.getElementById('perm-modal-user-id').value = userId;
+    const passInput = document.getElementById('perm-new-password');
+    if (passInput) passInput.value = '';
+
     const modal = document.getElementById('permissions-modal');
     modal.classList.remove('hidden');
 
     try {
+      if (!this.accounts || this.accounts.length === 0) {
+        await this.loadAccounts();
+      }
       const res = await API.get(`/users/${userId}/permissions`);
       const userPerms = res.permissions || [];
+      const allowedTabs = res.allowed_tabs || ['tab-accounts'];
       const permMap = new Map();
       userPerms.forEach((p) => permMap.set(p.account_id, p));
 
-      const container = document.getElementById('permissions-list');
-      container.innerHTML = this.accounts
-        .map((acc) => {
-          const perm = permMap.get(acc.id);
-          const canView = perm ? !!perm.can_view : false;
-          const canLaunch = perm ? !!perm.can_launch : false;
-          const canReveal = perm ? !!perm.can_reveal_password : false;
-
-          return `
-            <div class="flex items-center justify-between p-2.5 rounded bg-slate-900 border border-slate-800 text-xs">
-              <div class="flex items-center gap-2">
-                <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 uppercase">${acc.platform}</span>
-                <span class="font-medium text-slate-200">${acc.account_name || acc.username}</span>
-              </div>
-              <div class="flex items-center gap-4">
-                <label class="flex items-center gap-1 cursor-pointer">
-                  <input type="checkbox" class="perm-view" data-acc="${acc.id}" ${canView ? 'checked' : ''}>
-                  <span class="text-slate-400">Xem/2FA</span>
-                </label>
-                <label class="flex items-center gap-1 cursor-pointer">
-                  <input type="checkbox" class="perm-launch" data-acc="${acc.id}" ${canLaunch ? 'checked' : ''}>
-                  <span class="text-slate-400">Mở Browser</span>
-                </label>
-                <label class="flex items-center gap-1 cursor-pointer">
-                  <input type="checkbox" class="perm-reveal" data-acc="${acc.id}" ${canReveal ? 'checked' : ''}>
-                  <span class="text-amber-400 font-semibold">Copy Pass</span>
-                </label>
-              </div>
-            </div>
-          `;
-        })
-        .join('');
+      this.renderTabPermissionCheckboxes('#perm-tabs-grid', allowedTabs);
+      this.renderAccountPermissionCheckboxes('#permissions-list', permMap);
     } catch (e) {
       Toast.error(e.message);
     }
@@ -950,29 +1196,20 @@ const App = {
   },
   async savePermissions() {
     const userId = document.getElementById('perm-modal-user-id').value;
-    const permissions = [];
-
-    document.querySelectorAll('#permissions-list .perm-view').forEach((cb) => {
-      const accId = cb.dataset.acc;
-      const canView = cb.checked;
-      const canLaunch = document.querySelector(`.perm-launch[data-acc="${accId}"]`)?.checked || false;
-      const canReveal = document.querySelector(`.perm-reveal[data-acc="${accId}"]`)?.checked || false;
-
-      if (canView) {
-        permissions.push({
-          accountId: accId,
-          can_view: true,
-          can_launch: canLaunch,
-          can_reveal_password: canReveal
-        });
-      }
-    });
+    const password = document.getElementById('perm-new-password')?.value?.trim() || '';
+    const allowed_tabs = this.collectSelectedTabs('#perm-tabs-grid');
+    const permissions = this.collectSelectedAccountPerms('#permissions-list');
 
     try {
-      await API.post(`/users/${userId}/permissions`, { permissions });
-      Toast.success('Đã cập nhật phân quyền tài khoản thành công!');
+      await API.post(`/users/${userId}/permissions`, {
+        permissions,
+        allowed_tabs,
+        password: password || undefined
+      });
+      Toast.success('Đã lưu phân quyền hiển thị Menu & Kênh thành công!');
       this.closePermissionsModal();
       await this.loadUsersList();
+      await this.loadAuditLogs();
     } catch (err) {
       Toast.error(err.message);
     }

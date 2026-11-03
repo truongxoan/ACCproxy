@@ -180,6 +180,12 @@ try {
   // Cột đã tồn tại
 }
 
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN allowed_tabs TEXT DEFAULT '["tab-accounts"]'`);
+} catch (e) {
+  // Cột đã tồn tại
+}
+
 // Tự động đồng bộ Super Admin chỉ huy tối cao: TX (và xóa bỏ tài khoản admin mặc định cũ)
 const txUser = db.prepare("SELECT * FROM users WHERE username = 'TX'").get();
 const legacyAdmin = db.prepare("SELECT * FROM users WHERE username = 'admin'").get();

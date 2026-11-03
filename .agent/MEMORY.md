@@ -106,3 +106,10 @@
     - **Tương Tác Bàn Tay Lướt Qua Khói Cát (`Pointer Smoke Wake - uBrush`):** Rê chuột/cảm ứng đến đâu sẽ đẩy xoáy các hạt cát 3D dạt ra như bàn tay lướt qua làn khói.
     - **Đèn Năng Lượng Trong Cát (`Volumetric Snare Lamps - LIGHT`):** Click chuột vào nền hoặc tự động thắp sáng các lõi đèn năng lượng 3D (`Amber`, `Jade`, `Bone`, `Ice`, `Ember`, `Violet`) soi rực các hạt cát xung quanh.
     - **Hệ Thống HUD Khóa Mục Tiêu & Đường Nối Chòm Sao (`TRACK` + `LINKS` + `SCAN` + `MARKS`):** 8 hộp ngoặc vuông khóa mục tiêu tự động nhảy tìm kiếm (`SEEK`) trên các hạt cát kèm thông số tọa độ 3D thời gian thực, đường nối chòm sao mảnh, mặt phẳng quét chiều sâu (`SCAN`) và khung thước đo không gian 3D (`MARKS`).
+- **Thu Gọn Thanh Điều Hướng & Phân Quyền Nhìn Thấy Đa Tầng Cho User (`allowed_tabs` + `user_account_permissions` - 2026-11-03):**
+  - **1. Thu Gọn Thanh Điều Hướng (`<nav id="main-nav-bar">` trong `public/index.html`):**
+    - Rút gọn 9 tab dàn trải thành 4 Tab Tác Chiến Chủ Lực (`🛡️ Kênh & Proxy`, `🎬 Lịch Video`, `🔐 Sổ Tay MXH`, `🛠️ Trạm Vũ Khí`), 1 Menu Gộp Thông Minh (`📦 Tiện Ích Mở Rộng ▾` chứa `📁 Kho Kịch Bản`, `📱 Live Điện Thoại`, `📺 Live Stream`, `🧠 Tri Thức AI`), 1 Tab `👥 Quản Trị & User` (dành riêng cho Admin) và nút `⇄` (`toggleNavExpandMode()`) cho phép bung ngang / thu gọn tùy ý.
+  - **2. Sửa Triệt Để Tính Năng "+ Thêm User" & Cấp Quyền Nhìn Thấy (`create-user-modal` & `permissions-modal`):**
+    - Loại bỏ hoàn toàn `window.prompt()` / `window.confirm()` vốn bị trình duyệt nhúng/WebView chặn.
+    - Thay bằng Modal Cyber-Glass chuyên nghiệp (`App.openCreateUserModal()`, `App.submitCreateUser()`), cho phép Admin vừa tạo User mới (kèm nút Tạo Mật Khẩu Ngẫu Nhiên 1 chạm), vừa tích chọn trực tiếp **Danh Sách Các Mục Được Phép Nhìn Thấy (`allowed_tabs`)** và **Danh Sách Kênh Cụ Thể Được Phép Truy Cập (`user_account_permissions`)** ngay trong 1 bước.
+    - Khi User thường đăng nhập, `AuthClient.applyRoleAndTabPermissions()` tự động ẩn sạch mọi Tab, mục Menu, thẻ KPI và chặn API đối với các khu vực không được Admin cấp quyền nhìn thấy.

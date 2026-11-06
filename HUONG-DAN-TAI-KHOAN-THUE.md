@@ -165,3 +165,12 @@ rồi đăng nhập admin, mở tab 🛒 Cửa Hàng, bấm "Đồng bộ từ B
 - [ ] Chỉ mở web qua HTTPS (Cloudflare Tunnel hoặc Certbot), không để link `http://IP:3000` public.
 - [ ] Sao lưu file `data/accounts.db` định kỳ (đã có tính năng backup Telegram trong web).
 - [ ] Kiểm tra số dư ví RoboticVN đủ để giao đơn trước khi xác nhận giao hàng cho khách.
+
+
+---
+
+## 11. Sửa lỗi đồng bộ 404 + bỏ chữ +20.000đ khỏi giao diện (06/11/2026)
+
+**Lỗi 404 khi bấm "Đồng bộ từ Bot":** nguyên nhân là server đang chạy bản code cũ — `git pull` chỉ đổi file trên đĩa, còn tiến trình server đang chạy vẫn là code cũ nên không có route `/api/shop/sync` (trang web thì đổi giao diện vì file tĩnh đọc từ đĩa, còn API thì vẫn cũ). **Sau mỗi lần `git pull` bắt buộc phải khởi động lại server** (`Ctrl+C` rồi `npm start`, hoặc `pm2 restart accproxy`), rồi mới bấm đồng bộ. Kiểm tra server đang chạy bản mới hay cũ bằng cách mở `https://ten-mien-cua-ban.com/api/health` trên trình duyệt: bản mới có `"version": "2026-11-06-shop-v2", "shop_api": true`. Nếu web báo "Không kết nối được API Cửa Hàng (HTTP 404)" hoặc bấm đồng bộ báo 404 thì chắc chắn server chưa restart.
+
+**Bỏ chữ +20.000đ khỏi giao diện khách:** đã xóa hết các chữ "GIÁ ĐÃ +20.000đ / GÓI", "giá bán = giá gốc + 20.000đ", "(đã +20.000đ)" ở tiêu đề, mô tả và giá "Từ..." trong Cửa Hàng. Mức tăng giá vẫn áp dụng ngầm trong code (biến `SHOP_MARKUP_VND`, mặc định 20000) và chỉ ghi trong tài liệu này, khách chỉ thấy giá bán cuối cùng. Hộp thoại xác nhận khi bấm "Đồng bộ từ Bot" cũng đã bỏ — bấm là đồng bộ luôn.

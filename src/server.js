@@ -103,6 +103,8 @@ app.use('/api/shop', shopRoutes);
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ONLINE',
+    version: '2026-11-06-shop-v2',
+    shop_api: true,
     uptime: process.uptime(),
     timestamp: new Date().toISOString()
   });

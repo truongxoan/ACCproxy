@@ -4254,7 +4254,21 @@ const App = {
         this.renderShop();
         if (Auth.currentUser) await this.loadShopOrders();
       }
-    } catch (e) {}
+    } catch (e) {
+      // API Cửa Hàng 404 = server đang chạy bản code cũ (pull code mới về mà
+      // chưa khởi động lại server). Hiện cảnh báo rõ thay vì im lặng 0 sản phẩm.
+      if (String(e.message || '').includes('404')) {
+        const grid = document.getElementById('shop-grid');
+        if (grid) {
+          grid.innerHTML = `
+            <div class="col-span-full glass-panel p-6 rounded-2xl border border-amber-500/40 text-center text-sm flex flex-col items-center gap-2">
+              <div class="text-3xl">⚠️</div>
+              <div class="font-bold text-amber-300">Server đang chạy bản code cũ</div>
+              <div class="text-xs text-slate-400">Không kết nối được API Cửa Hàng (HTTP 404). Bạn đã kéo code mới về nhưng chưa khởi động lại server — hãy restart server rồi tải lại trang.</div>
+            </div>`;
+        }
+      }
+    }
   },
 
   handleShopSearch(query) {
@@ -4275,7 +4289,7 @@ const App = {
         <div class="col-span-full glass-panel p-10 rounded-2xl text-center text-slate-400 flex flex-col items-center gap-2">
           <div class="text-4xl">🛒</div>
           <div class="text-sm font-bold text-slate-200">Chưa có sản phẩm nào</div>
-          <div class="text-xs text-slate-500">Admin bấm "Đồng bộ từ Bot" để tải danh sách sản phẩm từ RoboticVN về (giá tự +20.000đ/gói).</div>
+          <div class="text-xs text-slate-500">Admin bấm "Đồng bộ từ Bot" để tải danh sách sản phẩm từ RoboticVN về.</div>
         </div>`;
       return;
     }
@@ -4293,7 +4307,7 @@ const App = {
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${inStock ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'}">${inStock ? '✅ Còn hàng' : '⛔ Hết hàng'}</span>
                 <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${item.variants.length} gói</span>
               </div>
-              ${from !== null ? `<div class="text-[11px] text-slate-400 mt-1">Từ <b class="text-emerald-300 font-mono">${this.formatVND(from)}</b> <span class="text-slate-500">(đã +20.000đ)</span></div>` : ''}
+              ${from !== null ? `<div class="text-[11px] text-slate-400 mt-1">Từ <b class="text-emerald-300 font-mono">${this.formatVND(from)}</b></div>` : ''}
             </div>
           </div>
           ${item.description ? `<p class="text-[11px] text-slate-400 leading-relaxed" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${this.escapeHtml(item.description)}</p>` : ''}
@@ -4506,13 +4520,18 @@ const App = {
   },
 
   async syncShop() {
-    if (!confirm('Đồng bộ danh sách sản phẩm từ bot RoboticVN về web? (Chỉ đọc sản phẩm, giá tự +20.000đ/gói, không đặt hàng, không trừ tiền.)')) return;
     try {
       Toast.info('Đang đồng bộ sản phẩm từ bot...');
       const res = await API.post('/shop/sync', {});
       Toast.success(res.message || 'Đã đồng bộ xong!');
       await this.loadShop();
-    } catch (err) { Toast.error(`Lỗi đồng bộ: ${err.message}`); }
+    } catch (err) {
+      if (String(err.message || '').includes('404')) {
+        Toast.error('Lỗi đồng bộ: server đang chạy bản code cũ (HTTP 404). Hãy khởi động lại server rồi bấm đồng bộ lại!');
+      } else {
+        Toast.error(`Lỗi đồng bộ: ${err.message}`);
+      }
+    }
   },
 
   // ==================== TÀI KHOẢN ĐÃ THUÊ / ĐANG THUÊ ====================

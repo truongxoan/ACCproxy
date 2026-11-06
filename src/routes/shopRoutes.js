@@ -71,7 +71,7 @@ function listProductsFromDb({ search = '', inStockOnly = false } = {}) {
 /* ==================== PUBLIC — khách chưa đăng nhập vẫn xem được ==================== */
 
 /**
- * GET /api/shop — danh sách sản phẩm (giá đã +20.000đ/gói). Chỉ đọc snapshot
+ * GET /api/shop — danh sách sản phẩm. Chỉ đọc snapshot
  * trong DB, không gọi RoboticVN, không lộ giá gốc / API key.
  */
 router.get('/', (req, res) => {
@@ -188,7 +188,7 @@ router.post('/sync', requireRole('admin'), async (req, res) => {
       success: true,
       ...result,
       markup_vnd: MARKUP_VND,
-      message: `Đã đồng bộ ${result.products} sản phẩm, ${result.variants} gói — giá hiển thị đã +${MARKUP_VND.toLocaleString('vi-VN')}đ/gói.`
+      message: `Đã đồng bộ ${result.products} sản phẩm, ${result.variants} gói.`
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

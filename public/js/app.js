@@ -28,12 +28,24 @@ const App = {
   socialVaultFilter: 'all',
   socialVaultSearch: '',
   revealedSocialSecrets: {},
+  rentals: [],
+  rentalFilter: 'all',
+  rentalSearch: '',
+  revealedRentalSecrets: {},
+  shopItems: [],
+  shopSearch: '',
+  shopInStockOnly: false,
+  shopMarkupVnd: 20000,
+  shopLastSync: null,
+  shopPaymentInfo: null,
   navExpandedMode: localStorage.getItem('accproxy_nav_expanded') === '1',
 
   TAB_META: {
     'tab-accounts': { icon: '🛡️', label: 'Kênh & Proxy', short: '🛡️ Kênh' },
     'tab-schedules': { icon: '🎬', label: 'Lịch Video', short: '🎬 Lịch' },
     'tab-social-vault': { icon: '🔐', label: 'Sổ Tay MXH', short: '🔐 Sổ Tay' },
+    'tab-rentals': { icon: '⏳', label: 'Tài Khoản Thuê', short: '⏳ Thuê TK' },
+    'tab-shop': { icon: '🛒', label: 'Cửa Hàng', short: '🛒 Cửa Hàng' },
     'tab-tools': { icon: '🛠️', label: 'Trạm Vũ Khí', short: '🛠️ Vũ Khí' },
     'tab-assets': { icon: '📁', label: 'Kho Kịch Bản', short: '📁 Kịch Bản' },
     'tab-phone': { icon: '📱', label: 'Live Điện Thoại', short: '📱 Live ĐT' },
@@ -68,12 +80,16 @@ const App = {
   async init() {
     this.bindEvents();
     const isAuthed = await Auth.init();
+    // Cửa Hàng công khai: ai vào tên miền cũng xem được ngay, không cần đăng nhập.
+    await this.loadShop();
     if (isAuthed) {
       await this.loadInitialDataForCurrentUser();
       this.startTotpClock();
       setInterval(() => {
         if (Auth.isTabAllowed('tab-tools')) this.loadHardwareMetrics();
       }, 15000);
+    } else {
+      this.activateTabById('tab-shop');
     }
   },
 
@@ -90,6 +106,12 @@ const App = {
     }
     if (Auth.isTabAllowed('tab-social-vault')) {
       await this.loadSocialVault();
+    }
+    if (Auth.isTabAllowed('tab-rentals')) {
+      await this.loadRentals();
+    }
+    if (Auth.isTabAllowed('tab-shop')) {
+      await this.loadShop();
     }
     if (Auth.isTabAllowed('tab-tools')) {
       await this.loadHardwareMetrics();
@@ -159,6 +181,10 @@ const App = {
       this.refreshPiikStreams();
     } else if (targetTab === 'tab-social-vault') {
       this.loadSocialVault();
+    } else if (targetTab === 'tab-rentals') {
+      this.loadRentals();
+    } else if (targetTab === 'tab-shop') {
+      this.loadShop();
     } else if (targetTab === 'tab-phone') {
       this.loadPhoneStatus();
       this.startPhoneLiveStream();
@@ -264,6 +290,15 @@ const App = {
         }
       });
     }
+
+    // Form đăng ký tài khoản mới
+    document.getElementById('register-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const u = document.getElementById('register-username').value;
+      const em = document.getElementById('register-email').value;
+      const pw = document.getElementById('register-password').value;
+      await Auth.register(u, em, pw);
+    });
 
     // Form đăng nhập
     this.initPhoneViewportEvents();
@@ -670,6 +705,12 @@ const App = {
         if (barEl) barEl.style.width = `${(remaining / 30) * 100}%`;
       }
 
+      // Đếm ngược hạn thuê theo từng giây (không cần gọi API)
+      for (const r of this.rentals || []) {
+        const cdEl = document.getElementById(`rt-countdown-${r.id}`);
+        if (cdEl) cdEl.innerText = this.rentalCountdownText(r);
+      }
+
       // Mỗi khi hết chu kỳ 30s (remaining === 30 hoặc 29), gọi batch update
       if (remaining === 30 || remaining === 29) {
         try {
@@ -677,6 +718,15 @@ const App = {
           if (res.success && res.tokens) {
             for (const [accId, info] of Object.entries(res.tokens)) {
               const codeEl = document.getElementById(`totp-code-${accId}`);
+              if (codeEl) codeEl.innerText = info.code;
+            }
+          }
+        } catch (e) {}
+        try {
+          const res = await API.get('/rentals/totp/batch');
+          if (res.success && res.tokens) {
+            for (const [rId, info] of Object.entries(res.tokens)) {
+              const codeEl = document.getElementById(`totp-code-rt-${rId}`);
               if (codeEl) codeEl.innerText = info.code;
             }
           }
@@ -929,6 +979,8 @@ const App = {
       { id: 'tab-tools', icon: '🛠️', label: 'Trạm Vũ Khí' },
       { id: 'tab-knowledge', icon: '🧠', label: 'Tri Thức AI' },
       { id: 'tab-social-vault', icon: '🔐', label: 'Sổ Tay MXH' },
+      { id: 'tab-rentals', icon: '⏳', label: 'Tài Khoản Thuê' },
+      { id: 'tab-shop', icon: '🛒', label: 'Cửa Hàng' },
       { id: 'tab-phone', icon: '📱', label: 'Live Điện Thoại' }
     ];
 
@@ -4178,6 +4230,655 @@ const App = {
     if (input) {
       input.type = input.type === 'password' ? 'text' : 'password';
     }
+  },
+
+
+  // ==================== CỬA HÀNG (ROBOTICVN — CHỈ HIỂN THỊ, GIÁ +20K) ====================
+  async loadShop() {
+    try {
+      const params = new URLSearchParams();
+      if (this.shopSearch) params.set('search', this.shopSearch);
+      if (this.shopInStockOnly) params.set('in_stock', '1');
+      const qs = params.toString();
+      const res = await API.get(`/shop${qs ? `?${qs}` : ''}`);
+      if (res && res.success) {
+        this.shopItems = res.items || [];
+        this.shopMarkupVnd = res.markup_vnd || 20000;
+        this.shopLastSync = res.last_sync || null;
+        const badge = document.getElementById('header-shop-badge');
+        if (badge) badge.innerText = this.shopItems.length;
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+        set('shop-count', this.shopItems.length);
+        set('shop-variant-count', res.total_variants || 0);
+        set('shop-last-sync', this.shopLastSync ? new Date(this.shopLastSync).toLocaleString('vi-VN') : 'chưa đồng bộ');
+        this.renderShop();
+        if (Auth.currentUser) await this.loadShopOrders();
+      }
+    } catch (e) {}
+  },
+
+  handleShopSearch(query) {
+    this.shopSearch = String(query || '').trim();
+    this.loadShop();
+  },
+
+  toggleShopInStock(checked) {
+    this.shopInStockOnly = !!checked;
+    this.loadShop();
+  },
+
+  renderShop() {
+    const grid = document.getElementById('shop-grid');
+    if (!grid) return;
+    if (this.shopItems.length === 0) {
+      grid.innerHTML = `
+        <div class="col-span-full glass-panel p-10 rounded-2xl text-center text-slate-400 flex flex-col items-center gap-2">
+          <div class="text-4xl">🛒</div>
+          <div class="text-sm font-bold text-slate-200">Chưa có sản phẩm nào</div>
+          <div class="text-xs text-slate-500">Admin bấm "Đồng bộ từ Bot" để tải danh sách sản phẩm từ RoboticVN về (giá tự +20.000đ/gói).</div>
+        </div>`;
+      return;
+    }
+    grid.innerHTML = this.shopItems.map((item) => {
+      const inStock = item.variants.some((v) => v.in_stock);
+      const minPrice = item.variants.filter((v) => v.price_vnd !== null && v.price_vnd !== undefined).map((v) => v.price_vnd);
+      const from = minPrice.length ? Math.min(...minPrice) : null;
+      return `
+        <div class="glass-panel p-4 rounded-2xl border ${inStock ? 'border-slate-800' : 'border-rose-500/30 opacity-75'} flex flex-col gap-3 text-xs">
+          <div class="flex items-start gap-3">
+            ${item.thumbnail ? `<img src="${this.escapeHtml(item.thumbnail)}" alt="" class="w-12 h-12 rounded-xl object-cover border border-slate-700 shrink-0" loading="lazy">` : `<span class="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-2xl shrink-0">🛒</span>`}
+            <div class="min-w-0">
+              <div class="font-extrabold text-white text-sm leading-tight">${this.escapeHtml(item.title)}</div>
+              <div class="mt-1 flex flex-wrap gap-1">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${inStock ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'}">${inStock ? '✅ Còn hàng' : '⛔ Hết hàng'}</span>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${item.variants.length} gói</span>
+              </div>
+              ${from !== null ? `<div class="text-[11px] text-slate-400 mt-1">Từ <b class="text-emerald-300 font-mono">${this.formatVND(from)}</b> <span class="text-slate-500">(đã +20.000đ)</span></div>` : ''}
+            </div>
+          </div>
+          ${item.description ? `<p class="text-[11px] text-slate-400 leading-relaxed" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${this.escapeHtml(item.description)}</p>` : ''}
+          <div class="flex flex-col gap-1.5">
+            ${item.variants.map((v) => `
+              <div class="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-950/70 border border-slate-800/90">
+                <div class="min-w-0">
+                  <div class="font-semibold text-slate-200 truncate">${this.escapeHtml(v.title)}</div>
+                  <div class="text-[10px] text-slate-500">${v.in_stock ? `Còn ${v.available_quantity ?? '?'} • ` : 'Hết hàng • '}${v.manual_upgrade ? 'Nâng cấp thủ công • ' : ''}${v.price_usd ? `$${v.price_usd}` : ''}</div>
+                </div>
+                <div class="flex flex-col items-end gap-1 shrink-0">
+                  <span class="font-mono font-black ${v.in_stock ? 'text-emerald-300' : 'text-slate-500'} whitespace-nowrap">${v.price_vnd !== null && v.price_vnd !== undefined ? this.formatVND(v.price_vnd) : '—'}</span>
+                  ${v.in_stock && v.price_vnd !== null && v.price_vnd !== undefined ? `<button type="button" onclick="App.openBuyModal('${v.id}')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px]">🛒 Đặt mua</button>` : ''}
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>`;
+    }).join('');
+  },
+
+  // ==================== ĐẶT MUA & ĐƠN HÀNG ====================
+  shopOrders: [],
+  currentBuyVariant: null,
+
+  findShopVariant(variantId) {
+    for (const p of this.shopItems || []) {
+      const v = (p.variants || []).find((x) => x.id === variantId);
+      if (v) return { product: p, variant: v };
+    }
+    return null;
+  },
+
+  openBuyModal(variantId) {
+    if (!Auth.currentUser) {
+      Toast.info('Vui lòng đăng nhập hoặc tạo tài khoản để đặt mua!');
+      Auth.showLoginModal('register');
+      return;
+    }
+    const found = this.findShopVariant(variantId);
+    if (!found) { Toast.error('Không tìm thấy gói sản phẩm này'); return; }
+    this.currentBuyVariant = found.variant;
+    document.getElementById('buy-variant-title').innerText = found.variant.title;
+    document.getElementById('buy-product-title').innerText = found.product.title;
+    document.getElementById('buy-variant-price').innerText = this.formatVND(found.variant.price_vnd);
+    document.getElementById('buy-quantity').value = 1;
+    const upWrap = document.getElementById('buy-upgrade-wrap');
+    if (upWrap) upWrap.classList.toggle('hidden', !found.variant.manual_upgrade);
+    const payBox = document.getElementById('buy-payment-info');
+    if (payBox) {
+      const info = this.shopPaymentInfo;
+      payBox.innerHTML = info && info.account_number
+        ? `<b>Thanh toán chuyển khoản:</b><br>Ngân hàng: ${this.escapeHtml(info.bank_name || '')}<br>STK: <b class="font-mono text-emerald-300">${this.escapeHtml(info.account_number)}</b> — ${this.escapeHtml(info.account_name || '')}<br>Nội dung: <b>mã đơn + câu quà tặng ngẫu nhiên</b> (hiện chính xác sau khi tạo đơn, VD: DHCxxxxxx tặng bạn tẩm bổ mau khoẻ nhé — không ghi từ mua/bán/thanh toán)${info.note ? `<br>${this.escapeHtml(info.note)}` : ''}`
+        : 'Thông tin chuyển khoản sẽ hiện trong đơn hàng sau khi tạo đơn (admin đang cập nhật STK).';
+    }
+    document.getElementById('buy-modal')?.classList.remove('hidden');
+  },
+
+  closeBuyModal() {
+    document.getElementById('buy-modal')?.classList.add('hidden');
+    this.currentBuyVariant = null;
+  },
+
+  async submitBuy() {
+    if (!this.currentBuyVariant) return;
+    const qty = parseInt(document.getElementById('buy-quantity')?.value, 10) || 1;
+    const upgradeAccount = document.getElementById('buy-upgrade-account')?.value || '';
+    try {
+      const res = await API.post('/shop/orders', {
+        variant_id: this.currentBuyVariant.id,
+        quantity: qty,
+        upgrade_account: upgradeAccount
+      });
+      if (res && res.success) {
+        this.shopPaymentInfo = res.payment_info || this.shopPaymentInfo;
+        this.closeBuyModal();
+        Toast.success(res.message || 'Đã tạo đơn đặt mua!');
+        await this.loadShopOrders();
+        if (res.order) {
+          const pay = res.payment_info;
+          alert(`Đơn ${res.order.payment_ref} — tổng ${this.formatVND(res.order.total_vnd)}.\n${pay && pay.account_number ? `Chuyển khoản: ${pay.bank_name} ${pay.account_number} (${pay.account_name})\nNội dung: ${res.order.transfer_content || res.order.payment_ref}` : 'Admin sẽ gửi thông tin chuyển khoản cho bạn.'}\nSau khi chuyển khoản, vào mục "Đơn hàng của tôi" bấm "Tôi đã chuyển khoản".`);
+        }
+      }
+    } catch (err) { Toast.error(`Lỗi đặt mua: ${err.message}`); }
+  },
+
+  orderStatusMeta(status) {
+    const map = {
+      pending_payment: { label: '⏳ Chờ thanh toán', cls: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
+      paid: { label: '💰 Đã chuyển khoản — chờ admin giao', cls: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' },
+      delivered: { label: '✅ Đã giao hàng', cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+      cancelled: { label: '✕ Đã hủy', cls: 'bg-slate-500/20 text-slate-300 border-slate-500/40' },
+      failed: { label: '⛔ Giao hàng lỗi', cls: 'bg-rose-500/20 text-rose-300 border-rose-500/40' }
+    };
+    return map[status] || map.pending_payment;
+  },
+
+  async loadShopOrders() {
+    try {
+      const res = await API.get('/shop/orders');
+      if (res && res.success) {
+        this.shopOrders = res.orders || [];
+        this.shopPaymentInfo = res.payment_info || this.shopPaymentInfo;
+        this.renderShopOrders();
+      }
+    } catch (e) {}
+  },
+
+  renderShopOrders() {
+    const isAdmin = Auth.currentUser?.role === 'admin';
+    const myWrap = document.getElementById('shop-my-orders-wrap');
+    const adminWrap = document.getElementById('shop-admin-orders-wrap');
+    const myBox = document.getElementById('shop-my-orders');
+    const adminBox = document.getElementById('shop-admin-orders');
+    if (!Auth.currentUser) {
+      myWrap?.classList.add('hidden');
+      adminWrap?.classList.add('hidden');
+      return;
+    }
+    const mine = this.shopOrders.filter((o) => o.user_id === Auth.currentUser.id);
+    const pending = this.shopOrders.filter((o) => ['pending_payment', 'paid', 'failed'].includes(o.status));
+    const card = (o, adminView) => {
+      const st = this.orderStatusMeta(o.status);
+      return `
+        <div class="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col gap-2 text-xs">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="font-extrabold text-white text-sm">${this.escapeHtml(o.product_title)} — ${this.escapeHtml(o.variant_title)} <span class="text-slate-400 font-mono">x${o.quantity}</span></div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${st.cls} border">${st.label}</span>
+          </div>
+          <div class="text-slate-400">Mã đơn: <b class="font-mono text-cyan-300">${this.escapeHtml(o.payment_ref)}</b> • Tổng: <b class="font-mono text-emerald-300">${this.formatVND(o.total_vnd)}</b> • Đặt lúc: ${new Date(o.created_at).toLocaleString('vi-VN')}${adminView && o.owner_username ? ` • Khách: <b class="text-purple-300">${this.escapeHtml(o.owner_username)}</b>` : ''}${adminView && o.cost_vnd_original ? ` • Giá gốc bot: <span class="font-mono">${this.formatVND(o.cost_vnd_original)}</span>` : ''}</div>
+          ${o.upgrade_account ? `<div class="text-slate-400">Nâng cấp cho email: <span class="font-mono text-slate-200">${this.escapeHtml(o.upgrade_account)}</span></div>` : ''}
+          ${o.transfer_content && ['pending_payment', 'paid'].includes(o.status) ? `<div class="text-slate-300">Nội dung chuyển khoản: <b class="font-mono text-cyan-200 select-all">${this.escapeHtml(o.transfer_content)}</b> <button type="button" onclick="App.copyText('${this.escapeHtml(o.transfer_content)}', 'Đã copy nội dung chuyển khoản!')" class="px-2 py-0.5 rounded bg-slate-800 text-slate-200 font-semibold">📋 Copy</button></div>` : ''}
+          ${o.failure_reason ? `<div class="text-rose-300">Lỗi giao hàng: ${this.escapeHtml(o.failure_reason)}</div>` : ''}
+          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            ${o.status === 'pending_payment' && !adminView ? `<button type="button" onclick="App.markOrderPaid('${o.id}')" class="px-2.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px]">💰 Tôi đã chuyển khoản</button>` : ''}
+            ${o.status === 'delivered' ? `<button type="button" onclick="App.viewOrderDelivery('${o.id}')" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px]">🔑 Xem tài khoản đã giao</button>` : ''}
+            ${['pending_payment', 'paid'].includes(o.status) ? `<button type="button" onclick="App.cancelShopOrder('${o.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px]">Hủy đơn</button>` : ''}
+            ${isAdmin && adminView && ['pending_payment', 'paid', 'failed'].includes(o.status) ? `<button type="button" onclick="App.fulfillShopOrder('${o.id}')" class="px-2.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-slate-950 font-extrabold text-[11px]">✅ Xác nhận đã nhận tiền &amp; Giao hàng</button>` : ''}
+          </div>
+          <div id="shop-delivery-${o.id}"></div>
+        </div>`;
+    };
+    if (myBox && myWrap) {
+      myWrap.classList.remove('hidden');
+      myBox.innerHTML = mine.length ? mine.map((o) => card(o, false)).join('') : '<div class="text-xs text-slate-500">Bạn chưa có đơn hàng nào. Chọn gói bên trên rồi bấm Đặt mua nhé!</div>';
+    }
+    if (adminBox && adminWrap) {
+      if (isAdmin) {
+        adminWrap.classList.remove('hidden');
+        adminBox.innerHTML = pending.length ? pending.map((o) => card(o, true)).join('') : '<div class="text-xs text-slate-500">Không có đơn nào đang chờ xử lý.</div>';
+      } else {
+        adminWrap.classList.add('hidden');
+        if (adminBox) adminBox.innerHTML = '';
+      }
+    }
+  },
+
+  async markOrderPaid(id) {
+    try {
+      const res = await API.post(`/shop/orders/${id}/mark-paid`, {});
+      Toast.success(res.message || 'Đã ghi nhận!');
+      await this.loadShopOrders();
+    } catch (err) { Toast.error(err.message); }
+  },
+
+  async cancelShopOrder(id) {
+    if (!confirm('Hủy đơn hàng này?')) return;
+    try {
+      const res = await API.post(`/shop/orders/${id}/cancel`, {});
+      Toast.success(res.message || 'Đã hủy đơn!');
+      await this.loadShopOrders();
+    } catch (err) { Toast.error(err.message); }
+  },
+
+  async fulfillShopOrder(id) {
+    // Nút này chỉ admin mới thấy; chặn thêm 1 lớp ở frontend để khách (kể cả gọi
+    // trực tiếp từ console) cũng không gửi request giao hàng lên server.
+    if (Auth.currentUser?.role !== 'admin') {
+      Toast.error('Chỉ admin mới được giao hàng!');
+      return;
+    }
+    const o = this.shopOrders.find((x) => x.id === id);
+    if (!confirm(`Xác nhận ĐÃ NHẬN TIỀN ${o ? this.formatVND(o.total_vnd) : ''} cho đơn ${o ? o.payment_ref : id} rồi giao hàng?\n\nBước này sẽ gọi bot đặt hàng và TRỪ TIỀN VÍ của shop theo giá gốc. Kiểm tra kỹ tiền đã về tài khoản ngân hàng trước khi bấm OK.`)) return;
+    try {
+      Toast.info('Đang đặt hàng bên bot và lấy tài khoản giao cho khách...');
+      const res = await API.post(`/shop/orders/${id}/fulfill`, {});
+      Toast.success(res.message || 'Đã giao hàng!');
+      await this.loadShopOrders();
+    } catch (err) { Toast.error(err.message); }
+  },
+
+  async viewOrderDelivery(id) {
+    try {
+      const res = await API.get(`/shop/orders/${id}`);
+      const box = document.getElementById(`shop-delivery-${id}`);
+      if (!box || !res || !res.success) return;
+      const d = res.order?.delivery;
+      const list = d?.delivered || [];
+      if (!list.length) {
+        box.innerHTML = `<div class="text-[11px] text-slate-400 mt-1">${d?.upgrade_status ? `Đơn nâng cấp thủ công — trạng thái: ${this.escapeHtml(d.upgrade_status)}` : 'Chưa có thông tin giao hàng.'}</div>`;
+        return;
+      }
+      box.innerHTML = list.map((it) => `
+        <div class="p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 mt-2 text-[11px] flex flex-col gap-1">
+          <div class="font-bold text-emerald-300">${this.escapeHtml(it.display_title || it.title || '')}</div>
+          <div>Tài khoản: <b class="font-mono text-white select-all">${this.escapeHtml(it.account || '')}</b> <button type="button" onclick="App.copyText('${this.escapeHtml(it.account || '')}', 'Đã copy tài khoản!')" class="px-2 py-0.5 rounded bg-slate-800 text-slate-200">📋 Copy</button></div>
+          ${it.password ? `<div>Mật khẩu: <b class="font-mono text-amber-300 select-all">${this.escapeHtml(it.password)}</b> <button type="button" onclick="App.copyText('${this.escapeHtml(it.password)}', 'Đã copy mật khẩu!')" class="px-2 py-0.5 rounded bg-slate-800 text-slate-200">📋 Copy</button></div>` : ''}
+          ${it.additional_info ? `<div class="text-slate-400">${this.escapeHtml(it.additional_info)}</div>` : ''}
+        </div>`).join('');
+    } catch (err) { Toast.error(err.message); }
+  },
+
+  async syncShop() {
+    if (!confirm('Đồng bộ danh sách sản phẩm từ bot RoboticVN về web? (Chỉ đọc sản phẩm, giá tự +20.000đ/gói, không đặt hàng, không trừ tiền.)')) return;
+    try {
+      Toast.info('Đang đồng bộ sản phẩm từ bot...');
+      const res = await API.post('/shop/sync', {});
+      Toast.success(res.message || 'Đã đồng bộ xong!');
+      await this.loadShop();
+    } catch (err) { Toast.error(`Lỗi đồng bộ: ${err.message}`); }
+  },
+
+  // ==================== TÀI KHOẢN ĐÃ THUÊ / ĐANG THUÊ ====================
+  getRentalServiceMeta(service) {
+    const map = {
+      grok: { icon: '🤖', name: 'Grok / X Premium', badge: 'bg-slate-600/20 text-slate-200 border-slate-500/30' },
+      chatgpt: { icon: '🧠', name: 'ChatGPT Plus', badge: 'bg-emerald-600/20 text-emerald-300 border-emerald-500/30' },
+      claude: { icon: '🟠', name: 'Claude Pro', badge: 'bg-orange-600/20 text-orange-300 border-orange-500/30' },
+      netflix: { icon: '🎬', name: 'Netflix', badge: 'bg-rose-600/20 text-rose-300 border-rose-500/30' },
+      youtube: { icon: '▶️', name: 'YouTube Premium', badge: 'bg-red-600/20 text-red-300 border-red-500/30' },
+      canva: { icon: '🎨', name: 'Canva Pro', badge: 'bg-cyan-600/20 text-cyan-300 border-cyan-500/30' },
+      capcut: { icon: '✂️', name: 'CapCut Pro', badge: 'bg-violet-600/20 text-violet-300 border-violet-500/30' },
+      other: { icon: '🔑', name: 'Khác', badge: 'bg-teal-600/20 text-teal-300 border-teal-500/30' }
+    };
+    return map[service] || map.other;
+  },
+
+  rentalStatusMeta(status) {
+    const map = {
+      active: { label: '✅ Đang thuê', cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+      expiring_soon: { label: '⚠️ Sắp hết hạn', cls: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
+      expired: { label: '⛔ Đã hết hạn', cls: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
+      returned: { label: '↩️ Đã trả', cls: 'bg-slate-500/20 text-slate-300 border-slate-500/40' }
+    };
+    return map[status] || map.active;
+  },
+
+  rentalCountdownText(r) {
+    if (r.status === 'returned') return 'Đã trả tài khoản';
+    const msLeft = new Date(r.expires_at).getTime() - Date.now();
+    if (msLeft <= 0) return 'Đã hết hạn';
+    const days = Math.floor(msLeft / (24 * 60 * 60 * 1000));
+    const hours = Math.floor((msLeft % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+    const mins = Math.floor((msLeft % (60 * 60 * 1000)) / (60 * 1000));
+    if (days > 0) return `Còn ${days} ngày ${hours} giờ`;
+    if (hours > 0) return `Còn ${hours} giờ ${mins} phút`;
+    return `Còn ${mins} phút`;
+  },
+
+  formatVND(n) {
+    if (n === null || n === undefined || n === '') return '—';
+    return `${Number(n).toLocaleString('vi-VN')} ₫`;
+  },
+
+  updateRentalExpiryPreview() {
+    const days = parseInt(document.getElementById('rt-days')?.value, 10) || 7;
+    const startVal = document.getElementById('rt-rented-at')?.value;
+    const start = startVal ? new Date(`${startVal}T00:00:00`) : new Date();
+    const end = new Date(start.getTime() + days * 24 * 60 * 60 * 1000);
+    const el = document.getElementById('rt-expiry-preview');
+    if (el) el.innerText = end.toLocaleString('vi-VN');
+  },
+
+  async loadRentals() {
+    try {
+      const res = await API.get('/rentals');
+      if (res && res.success) {
+        this.rentals = res.items || [];
+        const sum = res.summary || {};
+        const badge = document.getElementById('header-rentals-badge');
+        if (badge) badge.innerText = (sum.active || 0) + (sum.expiring_soon || 0);
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+        set('rt-stat-active', sum.active || 0);
+        set('rt-stat-expiring', sum.expiring_soon || 0);
+        set('rt-stat-expired', sum.expired || 0);
+        set('rt-stat-spent', this.formatVND(sum.total_spent || 0));
+        set('rt-count-all', this.rentals.length);
+        this.updateRentalExpiryPreview();
+        this.renderRentals();
+      }
+    } catch (e) {}
+  },
+
+  setRentalFilter(filter) {
+    this.rentalFilter = filter;
+    document.querySelectorAll('.rt-filter-btn').forEach((btn) => {
+      if (btn.dataset.rtf === filter) {
+        btn.classList.add('active', 'bg-teal-500', 'text-slate-950', 'font-bold');
+        btn.classList.remove('bg-slate-800/90', 'text-slate-300', 'text-emerald-300', 'text-amber-300', 'text-rose-300');
+      } else {
+        btn.classList.remove('active', 'bg-teal-500', 'text-slate-950', 'font-bold');
+        btn.classList.add('bg-slate-800/90');
+      }
+    });
+    this.renderRentals();
+  },
+
+  handleRentalSearch(query) {
+    this.rentalSearch = String(query || '').trim().toLowerCase();
+    this.renderRentals();
+  },
+
+  renderRentals() {
+    const grid = document.getElementById('rental-grid');
+    if (!grid) return;
+    const filtered = this.rentals.filter((item) => {
+      if (this.rentalFilter !== 'all' && item.status !== this.rentalFilter && item.service !== this.rentalFilter) return false;
+      if (this.rentalSearch) {
+        const q = this.rentalSearch;
+        const hay = [item.label, item.username, item.seller, item.notes, item.service].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    if (filtered.length === 0) {
+      grid.innerHTML = `
+        <div class="col-span-full glass-panel p-10 rounded-2xl text-center text-slate-400 flex flex-col items-center gap-2">
+          <div class="text-4xl">⏳</div>
+          <div class="text-sm font-bold text-slate-200">Chưa có tài khoản thuê nào trong mục này</div>
+          <div class="text-xs text-slate-500">Điền tài khoản ở biểu mẫu bên trái — ví dụ Grok thuê 7 ngày — để hệ thống tự đếm ngược hạn nhé!</div>
+        </div>`;
+      return;
+    }
+    grid.innerHTML = filtered.map((item) => {
+      const meta = this.getRentalServiceMeta(item.service);
+      const st = this.rentalStatusMeta(item.status);
+      const revealed = this.revealedRentalSecrets[item.id];
+      const passText = revealed ? (revealed.password || '(Chưa đặt mật khẩu)') : '••••••••••••';
+      const barColor = item.status === 'expired' ? 'bg-rose-500' : item.status === 'expiring_soon' ? 'bg-amber-500' : item.status === 'returned' ? 'bg-slate-500' : 'bg-teal-500';
+      return `
+        <div class="glass-panel p-4 rounded-2xl border ${item.is_pinned ? 'border-teal-500/45 bg-teal-950/15' : 'border-slate-800'} flex flex-col justify-between gap-3 text-xs">
+          <div class="flex flex-col gap-2.5">
+            <div class="flex items-start justify-between gap-2 pb-2 border-b border-slate-800/80">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="w-9 h-9 rounded-xl ${meta.badge} border flex items-center justify-center text-lg shrink-0">${meta.icon}</span>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="font-extrabold text-white truncate text-sm">${this.escapeHtml(item.label)}</span>
+                    ${item.is_pinned ? '<span class="text-teal-400">⭐</span>' : ''}
+                    ${Auth.currentUser?.role === 'admin' && item.owner_username ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono">👤 ${this.escapeHtml(item.owner_username)}</span>` : ''}
+                  </div>
+                  <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.badge} border inline-block mt-0.5">${meta.name}</span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${st.cls} border inline-block mt-0.5 ml-1">${st.label}</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <button type="button" onclick="App.togglePinRental('${item.id}')" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 ${item.is_pinned ? 'text-teal-400' : 'text-slate-500'}" title="Ghim lên đầu">⭐</button>
+                <button type="button" onclick="App.editRentalItem('${item.id}')" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-cyan-400" title="Sửa thông tin">✏️</button>
+                <button type="button" onclick="App.deleteRentalItem('${item.id}')" class="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 text-rose-400" title="Xóa">🗑️</button>
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-xl bg-slate-950/70 border ${item.status === 'expiring_soon' ? 'border-amber-500/40' : item.status === 'expired' ? 'border-rose-500/40' : 'border-teal-500/30'}">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[11px] text-slate-400">⏳ Hạn thuê:</span>
+                <span id="rt-countdown-${item.id}" class="font-mono font-black ${item.status === 'expired' ? 'text-rose-300' : item.status === 'expiring_soon' ? 'text-amber-300' : 'text-teal-300'}">${this.escapeHtml(this.rentalCountdownText(item))}</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-1">Thuê: ${new Date(item.rented_at).toLocaleDateString('vi-VN')} (${item.rental_days} ngày) → Hết hạn: <b class="text-slate-200">${new Date(item.expires_at).toLocaleString('vi-VN')}</b></div>
+              <div class="w-full h-1.5 rounded-full bg-slate-800 mt-2 overflow-hidden"><div class="h-full ${barColor} rounded-full" style="width:${Math.round(item.used_percent || 0)}%"></div></div>
+              <div class="flex justify-between text-[10px] text-slate-500 mt-1"><span>Đã dùng ${Math.round(item.used_percent || 0)}%</span>${item.seller ? `<span>🛒 ${this.escapeHtml(item.seller)}</span>` : ''}<span>${this.formatVND(item.price)}</span></div>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-950/70 border border-slate-800/90">
+              <div class="min-w-0"><div class="text-[10px] text-slate-400">Tài khoản / Email:</div><div class="font-mono font-bold text-cyan-300 truncate">${this.escapeHtml(item.username)}</div></div>
+              <button type="button" onclick="App.copyText('${this.escapeHtml(item.username)}', 'Đã copy Tài khoản!')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px] shrink-0">📋 Copy</button>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-950/70 border border-slate-800/90">
+              <div class="min-w-0"><div class="text-[10px] text-slate-400">Mật khẩu:</div><div class="font-mono font-bold ${revealed ? 'text-teal-300 select-all' : 'text-slate-500'} truncate">${this.escapeHtml(passText)}</div></div>
+              <div class="flex items-center gap-1 shrink-0">
+                <button type="button" onclick="App.revealRentalSecret('${item.id}')" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-teal-300 font-semibold text-[11px]">${revealed ? '🙈 Ẩn' : '👁️ Xem'}</button>
+                <button type="button" onclick="App.copyRentalPassword('${item.id}')" class="px-2.5 py-1 rounded-lg bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/30 font-bold text-[11px]">🔑 Copy Pass</button>
+              </div>
+            </div>
+
+            ${item.totp_code ? `
+              <div class="flex items-center justify-between gap-2 p-2 rounded-xl bg-emerald-950/30 border border-emerald-500/30">
+                <div><div class="text-[10px] text-emerald-300/80">Mã 2FA TOTP Hiện Tại (<span id="totp-sec-rt-${item.id}">${item.totp_remaining || 30}</span>s):</div>
+                <div id="totp-code-rt-${item.id}" class="font-mono text-sm font-black text-emerald-300 tracking-widest">${item.totp_code}</div></div>
+                <button type="button" onclick="App.copyText('${item.totp_code}', 'Đã copy mã 2FA 6 số!')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px]">📋 Copy 2FA</button>
+              </div>` : ''}
+
+            ${item.notes ? `<div class="p-2 rounded-xl bg-slate-900/50 border border-slate-800/60 text-[11px] text-slate-400">📝 ${this.escapeHtml(item.notes)}</div>` : ''}
+          </div>
+
+          <div class="pt-2 border-t border-slate-800/60 flex flex-wrap items-center gap-1.5">
+            ${item.status !== 'returned' ? `
+              <button type="button" onclick="App.renewRentalItem('${item.id}')" class="px-2.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-bold text-[11px]">🔁 Gia hạn +7 ngày</button>
+              <button type="button" onclick="App.returnRentalItem('${item.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px]">↩️ Trả tài khoản</button>
+            ` : `<span class="text-[11px] text-slate-500">Đã trả — giữ lại lịch sử thuê để đối soát với shop.</span>`}
+          </div>
+        </div>`;
+    }).join('');
+  },
+
+  async revealRentalSecret(id) {
+    if (this.revealedRentalSecrets[id]) { delete this.revealedRentalSecrets[id]; this.renderRentals(); return; }
+    try {
+      const res = await API.get(`/rentals/${id}/reveal`);
+      if (res && res.success) { this.revealedRentalSecrets[id] = res; this.renderRentals(); }
+    } catch (err) { Toast.error(`Lỗi giải mã mật khẩu: ${err.message}`); }
+  },
+
+  async copyRentalPassword(id) {
+    try {
+      let secret = this.revealedRentalSecrets[id];
+      if (!secret) {
+        const res = await API.get(`/rentals/${id}/reveal`);
+        if (res && res.success) { secret = res; this.revealedRentalSecrets[id] = res; }
+      }
+      if (secret && secret.password) this.copyText(secret.password, `Đã copy mật khẩu của [${secret.label}]!`);
+      else Toast.error('Tài khoản này chưa lưu mật khẩu!');
+    } catch (err) { Toast.error(`Lỗi lấy mật khẩu: ${err.message}`); }
+  },
+
+  async submitRentalForm(e) {
+    e.preventDefault();
+    const editId = document.getElementById('rt-edit-id')?.value || '';
+    const rentedDate = document.getElementById('rt-rented-at')?.value;
+    const payload = {
+      service: document.getElementById('rt-service')?.value || 'grok',
+      label: document.getElementById('rt-label')?.value || '',
+      username: document.getElementById('rt-username')?.value || '',
+      password: document.getElementById('rt-password')?.value || '',
+      totp_secret: document.getElementById('rt-totp')?.value || '',
+      rental_days: parseInt(document.getElementById('rt-days')?.value, 10) || 7,
+      price: document.getElementById('rt-price')?.value || '',
+      rented_at: rentedDate ? new Date(`${rentedDate}T00:00:00`).toISOString() : undefined,
+      seller: document.getElementById('rt-seller')?.value || '',
+      notes: document.getElementById('rt-notes')?.value || '',
+      is_pinned: !!document.getElementById('rt-pinned')?.checked
+    };
+    try {
+      if (editId) {
+        const res = await API.put(`/rentals/${editId}`, payload);
+        Toast.success(res.message || 'Đã cập nhật tài khoản thuê!');
+        delete this.revealedRentalSecrets[editId];
+      } else {
+        const res = await API.post('/rentals', payload);
+        Toast.success(res.message || 'Đã lưu tài khoản thuê!');
+      }
+      this.resetRentalForm();
+      await this.loadRentals();
+    } catch (err) { Toast.error(`Lỗi lưu tài khoản thuê: ${err.message}`); }
+  },
+
+  async editRentalItem(id) {
+    try {
+      const res = await API.get(`/rentals/${id}/reveal`);
+      if (!res || !res.success) return;
+      document.getElementById('rt-edit-id').value = res.id;
+      document.getElementById('rt-service').value = res.service || 'grok';
+      document.getElementById('rt-label').value = res.label || '';
+      document.getElementById('rt-username').value = res.username || '';
+      document.getElementById('rt-password').value = res.password || '';
+      document.getElementById('rt-totp').value = res.totp_secret || '';
+      document.getElementById('rt-days').value = res.rental_days || 7;
+      document.getElementById('rt-price').value = res.price ?? '';
+      document.getElementById('rt-rented-at').value = res.rented_at ? String(res.rented_at).slice(0, 10) : '';
+      document.getElementById('rt-seller').value = res.seller || '';
+      document.getElementById('rt-notes').value = res.notes || '';
+      document.getElementById('rt-pinned').checked = !!res.is_pinned;
+      const title = document.getElementById('rt-form-title');
+      const cancelBtn = document.getElementById('btn-rt-cancel-edit');
+      const submitLabel = document.getElementById('btn-rt-submit-label');
+      if (title) title.innerHTML = '<span>✏️</span><span>Chỉnh Sửa Tài Khoản Thuê</span>';
+      if (cancelBtn) cancelBtn.classList.remove('hidden');
+      if (submitLabel) submitLabel.innerText = 'Cập Nhật Tài Khoản Thuê';
+      this.updateRentalExpiryPreview();
+      Toast.info(`Đang chỉnh sửa [${res.label}]`);
+    } catch (err) { Toast.error(`Lỗi tải thông tin tài khoản thuê: ${err.message}`); }
+  },
+
+  resetRentalForm() {
+    document.getElementById('rental-form')?.reset();
+    const editId = document.getElementById('rt-edit-id');
+    if (editId) editId.value = '';
+    const days = document.getElementById('rt-days');
+    if (days) days.value = 7;
+    const title = document.getElementById('rt-form-title');
+    const cancelBtn = document.getElementById('btn-rt-cancel-edit');
+    const submitLabel = document.getElementById('btn-rt-submit-label');
+    if (title) title.innerHTML = '<span>➕</span><span>Thêm Tài Khoản Thuê Mới</span>';
+    if (cancelBtn) cancelBtn.classList.add('hidden');
+    if (submitLabel) submitLabel.innerText = 'Lưu Tài Khoản Thuê';
+    this.updateRentalExpiryPreview();
+  },
+
+  async togglePinRental(id) {
+    try {
+      const res = await API.patch(`/rentals/${id}/pin`);
+      if (res && res.success) { Toast.info(res.message); await this.loadRentals(); }
+    } catch (err) { Toast.error(err.message); }
+  },
+
+  async deleteRentalItem(id) {
+    const item = this.rentals.find((i) => i.id === id);
+    if (!confirm(`Có chắc muốn xóa tài khoản thuê [${item ? item.label : id}] không?`)) return;
+    try {
+      const res = await API.delete(`/rentals/${id}`);
+      Toast.success(res.message || 'Đã xóa tài khoản thuê!');
+      await this.loadRentals();
+    } catch (err) { Toast.error(err.message); }
+  },
+
+  async returnRentalItem(id) {
+    const item = this.rentals.find((i) => i.id === id);
+    if (!confirm(`Đánh dấu đã trả tài khoản [${item ? item.label : id}] cho shop? (Lịch sử thuê vẫn được giữ lại)`)) return;
+    try {
+      const res = await API.patch(`/rentals/${id}/return`);
+      Toast.success(res.message || 'Đã trả tài khoản!');
+      await this.loadRentals();
+    } catch (err) { Toast.error(err.message); }
+  },
+
+  async renewRentalItem(id, extraDays = 7) {
+    const item = this.rentals.find((i) => i.id === id);
+    const days = parseInt(prompt(`Gia hạn [${item ? item.label : id}] thêm bao nhiêu ngày?`, String(extraDays)), 10);
+    if (!days || days < 1) return;
+    try {
+      const res = await API.patch(`/rentals/${id}/renew`, { extra_days: days });
+      Toast.success(res.message || 'Đã gia hạn!');
+      await this.loadRentals();
+    } catch (err) { Toast.error(err.message); }
+  },
+
+  toggleRentalBulkModal() {
+    const box = document.getElementById('rt-bulk-box');
+    if (box) box.classList.toggle('hidden');
+  },
+
+  async submitRentalBulkImport() {
+    const rawText = document.getElementById('rt-bulk-textarea')?.value || '';
+    const defaultService = document.getElementById('rt-bulk-service')?.value || 'grok';
+    if (!rawText.trim()) { Toast.error('Vui lòng dán danh sách tài khoản thuê cần nhập!'); return; }
+    try {
+      const res = await API.post('/rentals/bulk-import', { rawText, defaultService });
+      if (res && res.success) {
+        Toast.success(res.message);
+        document.getElementById('rt-bulk-textarea').value = '';
+        this.toggleRentalBulkModal();
+        await this.loadRentals();
+      }
+    } catch (err) { Toast.error(`Lỗi nhập hàng loạt: ${err.message}`); }
+  },
+
+  async exportRentalsTxt() {
+    if (this.rentals.length === 0) { Toast.error('Chưa có tài khoản thuê nào để xuất file!'); return; }
+    Toast.info('Đang giải mã và tạo file sao lưu văn bản...');
+    try {
+      const lines = [
+        '====================================================================',
+        `TÀI KHOẢN ĐÃ THUÊ / ĐANG THUÊ - ACCPROXY (${new Date().toLocaleString('vi-VN')})`,
+        '====================================================================', ''
+      ];
+      for (const item of this.rentals) {
+        const rev = await API.get(`/rentals/${item.id}/reveal`);
+        lines.push(`[${(item.service || '').toUpperCase()}] ${item.label} — ${rev.status}`);
+        lines.push(`  • Tài khoản : ${item.username}`);
+        lines.push(`  • Mật khẩu  : ${rev.password || ''}`);
+        if (rev.totp_secret) lines.push(`  • 2FA Secret: ${rev.totp_secret}`);
+        lines.push(`  • Thuê ${item.rental_days} ngày: ${new Date(item.rented_at).toLocaleDateString('vi-VN')} → ${new Date(item.expires_at).toLocaleString('vi-VN')}`);
+        if (item.seller) lines.push(`  • Shop      : ${item.seller}`);
+        if (item.price) lines.push(`  • Giá thuê  : ${this.formatVND(item.price)}`);
+        if (rev.notes) lines.push(`  • Ghi chú   : ${rev.notes}`);
+        lines.push('--------------------------------------------------------------------');
+      }
+      const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `TaiKhoan_Thue_${new Date().toISOString().slice(0, 10)}.txt`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      Toast.success('Đã tải xuống file Tài Khoản Thuê (.TXT)!');
+    } catch (err) { Toast.error(`Lỗi xuất file: ${err.message}`); }
   },
 
   /**

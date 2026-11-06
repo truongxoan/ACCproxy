@@ -61,7 +61,7 @@
     + Tên Miền Công Khai Toàn Cầu (Cloudflare Tunnel SSL): `https://acc.txlab.io.vn` & `https://txlab.io.vn`
     + Mạng Wi-Fi: `http://192.168.0.102:3000`
     + Máy tính nối USB: `http://localhost:3000` (ADB Port Forward tcp:3000)
-    + Tài khoản Super Admin duy nhất của Đại Ca: `TX` / `123qweqwerr` (đã xóa bỏ hoàn toàn dòng gợi ý trên UI và xóa tài khoản `admin` mặc định cũ)
+    + Tài khoản Super Admin duy nhất: `TX` (mật khẩu admin do bạn đặt, không ghi trong file; tài khoản `admin` mặc định cũ đã bị xóa)
     + Tunnel ID: `f6a0c9a1-9be0-4835-b6a3-d2fe92979b23` (txlab-server chạy ngầm PM2 id 1)
 
 ## 3. Mệnh Lệnh Khóa Cứng: Tự Động Git Commit & Đẩy Mã Nguồn Lên Hệ Thống

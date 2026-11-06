@@ -52,6 +52,8 @@ function authenticateToken(req, res, next) {
         'tab-piik',
         'tab-tools',
         'tab-social-vault',
+        'tab-rentals',
+        'tab-shop',
         'tab-phone',
         'tab-knowledge',
         'tab-admin'

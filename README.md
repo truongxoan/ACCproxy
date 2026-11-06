@@ -10,7 +10,7 @@ Hệ thống Web App tự hành cao cấp quản lý tài khoản mạng xã h�
    - Không cần cài app phức tạp trên từng máy nhân viên.
    - Chỉ cần 1 máy chủ (hoặc máy cá nhân) chạy server, toàn bộ 2, 4, 6 người ở bất kỳ đâu chỉ cần mở trình duyệt là tác chiến đồng bộ ngay.
 2. **Phân Quyền Admin & User (Role-Based Access Control):**
-   - **Super Admin (`admin` / `Admin@123456`):** Xem toàn bộ tài khoản, tạo/khóa User, phân bổ tài khoản cho từng nhân viên, xem Audit Logs.
+   - **Super Admin (`TX`):** Xem toàn bộ tài khoản, tạo/khóa User, phân bổ tài khoản cho từng nhân viên, xem Audit Logs. Mật khẩu admin do bạn đặt (xem biến môi trường `ADMIN_PASSWORD` trong `.env.example`), không ghi trong tài liệu này.
    - **User (Nhân viên):** Chỉ nhìn thấy các tài khoản được Admin phân công, lấy mã 2FA, mở trình duyệt độc lập. Quyền xem/sao chép mật khẩu được Admin kiểm soát.
 3. **Mã Hóa Cấp Quân Sự AES-256-GCM:**
    - Mật khẩu tài khoản, Khóa 2FA Base32 và Password Proxy đều được mã hóa bằng khóa chủ 256-bit trước khi lưu vào SQLite WAL-mode.
@@ -71,7 +71,7 @@ Hệ thống mặc định lắng nghe trên cổng `0.0.0.0:3000`:
 
 ## 🔑 TÀI KHOẢN MẶC ĐỊNH
 - **Username:** `admin`
-- **Password:** `Admin@123456`
+- **Password:** mật khẩu admin do bạn đặt (lần đầu chạy sẽ dùng mật khẩu bạn đã đặt sẵn cho TX)
 *(Nên đổi mật khẩu trong mục Quản Trị & Logs sau lần đăng nhập đầu tiên)*
 
 ---

@@ -26,6 +26,8 @@ const providerRoutes = require('./routes/providerRoutes');
 const assetRoutes = require('./routes/assetRoutes');
 const knowledgeRoutes = require('./routes/knowledgeRoutes');
 const socialVaultRoutes = require('./routes/socialVaultRoutes');
+const rentalRoutes = require('./routes/rentalRoutes');
+const shopRoutes = require('./routes/shopRoutes');
 
 const app = express();
 
@@ -65,6 +67,20 @@ const loginLimiter = rateLimit({
 });
 app.use('/api/auth/login', loginLimiter);
 
+// Đăng ký tài khoản mới: tối đa 5 tài khoản / giờ / IP (chống tạo acc rác)
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
+  message: {
+    success: false,
+    message: 'Bạn đã tạo quá nhiều tài khoản, vui lòng thử lại sau 1 giờ!'
+  }
+});
+app.use('/api/auth/register', registerLimiter);
+
 // 3. Phục vụ tài nguyên tĩnh Frontend
 app.use(express.static(path.join(process.cwd(), 'public')));
 
@@ -80,6 +96,8 @@ app.use('/api/providers', providerRoutes);
 app.use('/api/assets', assetRoutes);
 app.use('/api/knowledge', knowledgeRoutes);
 app.use('/api/social-vault', socialVaultRoutes);
+app.use('/api/rentals', rentalRoutes);
+app.use('/api/shop', shopRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -116,6 +134,11 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌐 Local Access:   http://localhost:${PORT}`);
   console.log(`🌐 Network Access: http://0.0.0.0:${PORT} (Dùng chung cho 2, 4, 6 người trong LAN / VPN / Cloudflare Tunnel)`);
   console.log(`🔒 Trạng thái: Sẵn sàng phục vụ đa người dùng đồng bộ thời gian thực!`);
+  // Cảnh báo bảo mật khi chạy public: bí mật mặc định trong code rất nguy hiểm.
+  if (!process.env.JWT_SECRET) console.warn('⚠️ [BẢO MẬT] Chưa đặt JWT_SECRET — đang dùng khóa mặc định trong code, ai có code cũng giả mạo được phiên đăng nhập!');
+  if (!process.env.MASTER_ENCRYPTION_KEY) console.warn('⚠️ [BẢO MẬT] Chưa đặt MASTER_ENCRYPTION_KEY — đang dùng khóa mã hóa mặc định, mật khẩu/2FA có thể bị giải mã!');
+  if (!process.env.ROBOTICVN_API_KEY) console.warn('⚠️ [SHOP] Chưa đặt ROBOTICVN_API_KEY — Cửa Hàng chưa đồng bộ được sản phẩm từ bot.');
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) console.warn('ℹ️ [GOOGLE] Chưa cấu hình GOOGLE_CLIENT_ID/SECRET — nút Đăng nhập bằng Google sẽ báo chưa cấu hình.');
   console.log('================================================================');
 
   // Khởi động vòng lặp kiểm tra lịch nhắc nhở đăng video tự động (Mỗi 60s)

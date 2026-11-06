@@ -184,6 +184,20 @@
             <span id="header-social-vault-badge" class="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-mono">0</span>
           </button>
 
+          <!-- 3b. Tài Khoản Thuê -->
+          <button class="nav-tab-btn flex-1 justify-center px-3 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-rentals">
+            <span>⏳</span>
+            <span>Tài Khoản Thuê</span>
+            <span id="header-rentals-badge" class="px-1.5 py-0.2 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/40 text-[10px] font-mono">0</span>
+          </button>
+
+          <!-- 3c. Cửa Hàng (RoboticVN) -->
+          <button class="nav-tab-btn flex-1 justify-center px-3 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-shop">
+            <span>🛒</span>
+            <span>Cửa Hàng</span>
+            <span id="header-shop-badge" class="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono">0</span>
+          </button>
+
           <!-- 4. Trạm Vũ Khí -->
           <button class="nav-tab-btn flex-1 justify-center px-3 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 shrink-0" data-tab="tab-tools">
             <span>🛠️</span>
@@ -1782,25 +1796,247 @@
 
       </div>
     </div>
+
+    <!-- ==================== TAB: TÀI KHOẢN ĐÃ THUÊ / ĐANG THUÊ ==================== -->
+    <div id="tab-rentals" class="tab-pane hidden flex flex-col gap-4">
+      <div class="glass-panel p-4 rounded-2xl border border-teal-500/30 bg-gradient-to-r from-teal-950/35 via-slate-900/90 to-cyan-950/30 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-teal-500/15 border border-teal-500/40 flex items-center justify-center text-2xl">⏳</div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base font-extrabold text-white">Tài Khoản Đã Thuê &amp; Đang Thuê</h2>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-teal-500/20 text-teal-300 border border-teal-500/40">AES-256-GCM ENCRYPTED</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">Thuê Grok, ChatGPT, Netflix... theo ngày — lưu tài khoản, mật khẩu, mã 2FA, tự đếm ngược ngày hết hạn, nhắc trước 48 giờ.</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="App.toggleRentalBulkModal()" class="px-3.5 py-2 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 text-xs font-bold flex items-center gap-1.5">📋 <span>Nhập Nhanh Nhiều TK</span></button>
+          <button type="button" onclick="App.exportRentalsTxt()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-xs font-bold flex items-center gap-1.5">📥 <span>Xuất File (.TXT)</span></button>
+        </div>
+      </div>
+
+      <!-- 4 ô thống kê -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="glass-panel p-3.5 rounded-2xl border border-emerald-500/20 flex items-center justify-between gap-2">
+          <div><div class="text-[11px] text-slate-400 font-medium">Đang thuê</div><div class="text-xl font-black text-white font-mono mt-0.5" id="rt-stat-active">0</div></div>
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-xl">✅</div>
+        </div>
+        <div class="glass-panel p-3.5 rounded-2xl border border-amber-500/20 flex items-center justify-between gap-2">
+          <div><div class="text-[11px] text-slate-400 font-medium">Sắp hết hạn (&le;48h)</div><div class="text-xl font-black text-white font-mono mt-0.5" id="rt-stat-expiring">0</div></div>
+          <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-xl">⚠️</div>
+        </div>
+        <div class="glass-panel p-3.5 rounded-2xl border border-rose-500/20 flex items-center justify-between gap-2">
+          <div><div class="text-[11px] text-slate-400 font-medium">Đã hết hạn</div><div class="text-xl font-black text-white font-mono mt-0.5" id="rt-stat-expired">0</div></div>
+          <div class="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-xl">⛔</div>
+        </div>
+        <div class="glass-panel p-3.5 rounded-2xl border border-cyan-500/20 flex items-center justify-between gap-2">
+          <div><div class="text-[11px] text-slate-400 font-medium">Tổng tiền đã thuê</div><div class="text-xl font-black text-white font-mono mt-0.5" id="rt-stat-spent">0 ₫</div></div>
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-xl">💰</div>
+        </div>
+      </div>
+
+      <!-- Nhập nhanh hàng loạt (ẩn mặc định) -->
+      <div id="rt-bulk-box" class="hidden glass-panel p-4 rounded-2xl border border-purple-500/30 flex flex-col gap-3 text-xs">
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-purple-300">📋 Nhập Nhanh Hàng Loạt Tài Khoản Thuê (mỗi dòng 1 tài khoản):</span>
+          <button type="button" onclick="App.toggleRentalBulkModal()" class="text-slate-400 hover:text-white">✕ Đóng</button>
+        </div>
+        <div class="text-[11px] text-slate-400">Định dạng: <code class="text-cyan-300">grok | Grok 7 ngày | user@gmail.com | MatKhau123 | JBSWY3DPEHPK3PXP | 7 | 150000 | Shop ABC</code> hoặc dạng ngắn <code class="text-amber-300">user@gmail.com | MatKhau123 | JBSWY3DPEHPK3PXP | 7</code></div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <select id="rt-bulk-service" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 sm:w-52">
+            <option value="grok">🤖 Grok / X Premium</option>
+            <option value="chatgpt">🧠 ChatGPT Plus</option>
+            <option value="claude">🟠 Claude Pro</option>
+            <option value="netflix">🎬 Netflix</option>
+            <option value="youtube">▶️ YouTube Premium</option>
+            <option value="canva">🎨 Canva Pro</option>
+            <option value="capcut">✂️ CapCut Pro</option>
+            <option value="other">🔑 Khác</option>
+          </select>
+          <button type="button" onclick="App.submitRentalBulkImport()" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold">⚡ Nhập Tất Cả</button>
+        </div>
+        <textarea id="rt-bulk-textarea" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-200 font-mono text-xs" placeholder="grok | Grok 7 ngày | user@gmail.com | MatKhau123 | JBSWY3DPEHPK3PXP | 7 | 150000 | Shop ABC"></textarea>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+        <!-- CỘT TRÁI: FORM -->
+        <div class="lg:col-span-4 glass-panel p-4 rounded-2xl border border-teal-500/25 flex flex-col gap-3">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <h3 class="text-sm font-bold text-teal-300 flex items-center gap-2" id="rt-form-title"><span>➕</span><span>Thêm Tài Khoản Thuê Mới</span></h3>
+            <button type="button" id="btn-rt-cancel-edit" onclick="App.resetRentalForm()" class="hidden text-[11px] text-rose-400 hover:underline">✕ Hủy sửa</button>
+          </div>
+          <form id="rental-form" onsubmit="App.submitRentalForm(event)" class="flex flex-col gap-2.5 text-xs">
+            <input type="hidden" id="rt-edit-id" value="">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Dịch vụ thuê</label>
+                <select id="rt-service" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-slate-200 font-semibold focus:border-teal-500 focus:outline-none">
+                  <option value="grok">🤖 Grok / X Premium</option>
+                  <option value="chatgpt">🧠 ChatGPT Plus</option>
+                  <option value="claude">🟠 Claude Pro</option>
+                  <option value="netflix">🎬 Netflix</option>
+                  <option value="youtube">▶️ YouTube Premium</option>
+                  <option value="canva">🎨 Canva Pro</option>
+                  <option value="capcut">✂️ CapCut Pro</option>
+                  <option value="other">🔑 Khác</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Tên gợi nhớ</label>
+                <input type="text" id="rt-label" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-teal-500 focus:outline-none" placeholder="VD: Grok 7 ngày">
+              </div>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Tài khoản / Email đăng nhập <span class="text-rose-400">*</span></label>
+              <input type="text" id="rt-username" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 font-mono focus:border-teal-500 focus:outline-none" placeholder="user@gmail.com">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Mật khẩu</label>
+              <input type="text" id="rt-password" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-teal-200 font-mono focus:border-teal-500 focus:outline-none" placeholder="Mật khẩu người bán đưa">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Mã khóa 2FA (TOTP Secret — tự sinh 6 số)</label>
+              <input type="text" id="rt-totp" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-emerald-300 font-mono focus:border-teal-500 focus:outline-none" placeholder="VD: JBSWY3DPEHPK3PXP (nếu có)">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Số ngày thuê</label>
+                <input type="number" id="rt-days" min="1" max="365" value="7" oninput="App.updateRentalExpiryPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 font-mono focus:border-teal-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Giá thuê (VNĐ)</label>
+                <input type="number" id="rt-price" min="0" step="1000" placeholder="150000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 font-mono focus:border-teal-500 focus:outline-none">
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Ngày bắt đầu thuê</label>
+                <input type="date" id="rt-rented-at" oninput="App.updateRentalExpiryPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 font-mono focus:border-teal-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-300 mb-1">Người bán / Shop</label>
+                <input type="text" id="rt-seller" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:border-teal-500 focus:outline-none" placeholder="VD: Shop ABC">
+              </div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-teal-950/40 border border-teal-500/30 text-[11px] text-teal-200">
+              📅 Hết hạn dự kiến: <b id="rt-expiry-preview" class="font-mono">—</b>
+              <span class="text-slate-400">(tự tính = ngày bắt đầu + số ngày thuê)</span>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">Ghi chú (link đăng nhập, điều khoản shop...)</label>
+              <textarea id="rt-notes" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-200" placeholder="VD: Không đổi mật khẩu, không đăng nhập quá 2 thiết bị..."></textarea>
+            </div>
+            <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-950/60 border border-slate-800 cursor-pointer">
+              <input type="checkbox" id="rt-pinned" class="w-4 h-4 rounded text-teal-500 bg-slate-900 border-slate-700">
+              <span class="text-teal-300 font-bold text-[11px]">⭐ Ghim tài khoản thuê quan trọng lên đầu danh sách</span>
+            </label>
+            <button type="submit" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-teal-500 via-cyan-500 to-teal-600 hover:from-teal-400 hover:to-cyan-500 text-slate-950 font-extrabold text-xs shadow-lg shadow-teal-500/20 flex items-center justify-center gap-1.5">
+              <span>💾</span><span id="btn-rt-submit-label">Lưu Tài Khoản Thuê</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- CỘT PHẢI: DANH SÁCH -->
+        <div class="lg:col-span-8 flex flex-col gap-3">
+          <div class="glass-panel p-3.5 rounded-2xl flex flex-col gap-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex flex-wrap items-center gap-1.5 text-xs" id="rt-filter-bar">
+                <button type="button" onclick="App.setRentalFilter('all')" class="rt-filter-btn active px-3 py-1.5 rounded-xl font-bold bg-teal-500 text-slate-950" data-rtf="all">Tất Cả (<span id="rt-count-all">0</span>)</button>
+                <button type="button" onclick="App.setRentalFilter('active')" class="rt-filter-btn px-2.5 py-1.5 rounded-xl font-semibold bg-slate-800/90 hover:bg-slate-700 text-emerald-300" data-rtf="active">✅ Đang thuê</button>
+                <button type="button" onclick="App.setRentalFilter('expiring_soon')" class="rt-filter-btn px-2.5 py-1.5 rounded-xl font-semibold bg-slate-800/90 hover:bg-slate-700 text-amber-300" data-rtf="expiring_soon">⚠️ Sắp hết hạn</button>
+                <button type="button" onclick="App.setRentalFilter('expired')" class="rt-filter-btn px-2.5 py-1.5 rounded-xl font-semibold bg-slate-800/90 hover:bg-slate-700 text-rose-300" data-rtf="expired">⛔ Hết hạn</button>
+                <button type="button" onclick="App.setRentalFilter('returned')" class="rt-filter-btn px-2.5 py-1.5 rounded-xl font-semibold bg-slate-800/90 hover:bg-slate-700 text-slate-300" data-rtf="returned">↩️ Đã trả</button>
+                <button type="button" onclick="App.setRentalFilter('grok')" class="rt-filter-btn px-2.5 py-1.5 rounded-xl font-semibold bg-slate-800/90 hover:bg-slate-700 text-slate-300" data-rtf="grok">🤖 Grok</button>
+                <button type="button" onclick="App.setRentalFilter('chatgpt')" class="rt-filter-btn px-2.5 py-1.5 rounded-xl font-semibold bg-slate-800/90 hover:bg-slate-700 text-slate-300" data-rtf="chatgpt">🧠 ChatGPT</button>
+              </div>
+              <div class="relative w-full sm:w-64 shrink-0">
+                <input type="text" id="rt-search-input" oninput="App.handleRentalSearch(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-teal-500" placeholder="Tìm tên, tài khoản, shop, ghi chú...">
+                <span class="absolute left-2.5 top-2 text-xs text-slate-500">🔍</span>
+              </div>
+            </div>
+          </div>
+          <div id="rental-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ==================== TAB: CỬA HÀNG (SẢN PHẨM BOT ROBOTICVN — CHỈ HIỂN THỊ) ==================== -->
+    <div id="tab-shop" class="tab-pane hidden flex flex-col gap-4">
+      <div class="glass-panel p-4 rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/35 via-slate-900/90 to-teal-950/30 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-2xl">🛒</div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h2 class="text-base font-extrabold text-white">Cửa Hàng — Sản Phẩm Bot Bán Hàng</h2>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">GIÁ ĐÃ +20.000đ / GÓI</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">ĐẶT MUA — CHUYỂN KHOẢN, ADMIN GIAO HÀNG</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">Đồng bộ từ bot RoboticVN, giá bán trên web = giá gốc + 20.000đ mỗi gói. Bấm Đặt mua rồi chuyển khoản theo mã đơn — admin xác nhận đã nhận tiền mới giao tài khoản, web không tự trừ tiền khi bạn bấm mua.</p>
+            <p class="text-[11px] text-slate-500 mt-0.5">Đồng bộ lần cuối: <span id="shop-last-sync" class="font-mono text-slate-300">chưa đồng bộ</span></p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="App.syncShop()" class="admin-only px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-lg shadow-emerald-500/20 flex items-center gap-1.5">🔄 <span>Đồng bộ từ Bot</span></button>
+        </div>
+      </div>
+
+      <div class="glass-panel p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div class="flex items-center gap-2 text-xs">
+          <span class="font-bold text-slate-200"><span id="shop-count">0</span> sản phẩm • <span id="shop-variant-count">0</span> gói</span>
+          <label class="flex items-center gap-1.5 p-1.5 rounded-lg bg-slate-950/60 border border-slate-800 cursor-pointer text-slate-300">
+            <input type="checkbox" id="shop-instock-only" onchange="App.toggleShopInStock(this.checked)" class="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-700">
+            <span class="font-semibold">Chỉ hiện còn hàng</span>
+          </label>
+        </div>
+        <div class="relative w-full sm:w-72 shrink-0">
+          <input type="text" id="shop-search-input" oninput="App.handleShopSearch(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500" placeholder="Tìm ChatGPT, Grok, Netflix...">
+          <span class="absolute left-2.5 top-2 text-xs text-slate-500">🔍</span>
+        </div>
+      </div>
+
+      <div id="shop-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+
+      <!-- Đơn hàng của tôi (cần đăng nhập) -->
+      <div id="shop-my-orders-wrap" class="hidden flex flex-col gap-3">
+        <h3 class="text-sm font-bold text-emerald-300 flex items-center gap-2">📦 <span>Đơn hàng của tôi</span></h3>
+        <div id="shop-my-orders" class="flex flex-col gap-3"></div>
+      </div>
+
+      <!-- Đơn hàng chờ xử lý (Admin) -->
+      <div id="shop-admin-orders-wrap" class="hidden flex flex-col gap-3 admin-only">
+        <h3 class="text-sm font-bold text-amber-300 flex items-center gap-2">👑 <span>Đơn hàng chờ xử lý (Admin)</span></h3>
+        <p class="text-[11px] text-slate-400">Chỉ bấm "Xác nhận đã nhận tiền &amp; Giao hàng" sau khi đã thấy tiền về tài khoản ngân hàng — bước này mới gọi bot đặt hàng và trừ tiền ví của shop theo giá gốc.</p>
+        <div id="shop-admin-orders" class="flex flex-col gap-3"></div>
+      </div>
+    </div>
+
   </main>
 
   <!-- ==================== MODALS ==================== -->
 
   <!-- 1. LOGIN MODAL -->
   <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
-    <div class="glass-modal max-w-sm w-full p-6 rounded-2xl shadow-2xl border border-cyan-500/30">
+    <div class="glass-modal max-w-sm w-full p-6 rounded-2xl shadow-2xl border border-cyan-500/30 relative">
+      <button type="button" onclick="Auth.hideLoginModal()" class="absolute top-3 right-3 text-slate-400 hover:text-white text-lg" title="Đóng (vẫn xem được Cửa Hàng)">✕</button>
       <div class="text-center mb-5">
         <div class="w-12 h-12 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-2xl mx-auto mb-2 border border-cyan-500/40">
           🔐
         </div>
-        <h2 class="text-lg font-bold text-white">Xác Thực Danh Tính</h2>
-        <p class="text-xs text-slate-400 mt-1">Đăng nhập vào hệ thống AccProxy Sovereign</p>
+        <h2 class="text-lg font-bold text-white" id="auth-modal-title">Đăng nhập</h2>
+        <p class="text-xs text-slate-400 mt-1">Khách chưa có tài khoản vẫn xem được Cửa Hàng — đăng nhập để đặt mua.</p>
       </div>
+
+      <button type="button" id="btn-google-login" onclick="Auth.loginWithGoogle()" class="w-full py-2.5 rounded-lg bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm shadow-lg flex items-center justify-center gap-2 mb-4">
+        <span class="text-base">G</span><span>Đăng nhập bằng Google</span>
+      </button>
+      <div class="flex items-center gap-2 text-[11px] text-slate-500 mb-4"><span class="flex-1 h-px bg-slate-800"></span><span>hoặc</span><span class="flex-1 h-px bg-slate-800"></span></div>
 
       <form id="login-form" class="flex flex-col gap-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Tên đăng nhập</label>
-          <input type="text" id="login-username" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyan-500" placeholder="Nhập tài khoản chỉ huy">
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Tên đăng nhập hoặc Email</label>
+          <input type="text" id="login-username" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyan-500" placeholder="Tên đăng nhập hoặc email">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1">Mật khẩu</label>
@@ -1809,7 +2045,55 @@
         <button type="submit" class="w-full py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-sm shadow-lg shadow-cyan-500/20 transition-all">
           Đăng Nhập Ngay
         </button>
+        <button type="button" onclick="Auth.showAuthMode('register')" class="text-xs text-cyan-400 hover:underline">Chưa có tài khoản? Tạo tài khoản mới →</button>
       </form>
+
+      <form id="register-form" class="hidden flex-col gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Tên đăng nhập <span class="text-rose-400">*</span></label>
+          <input type="text" id="register-username" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500" placeholder="VD: khachhang01 (3-30 ký tự)">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Email</label>
+          <input type="email" id="register-email" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500" placeholder="ban@gmail.com">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Mật khẩu <span class="text-rose-400">*</span></label>
+          <input type="password" id="register-password" required minlength="8" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500" placeholder="Từ 8 ký tự trở lên">
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-sm shadow-lg shadow-emerald-500/20 transition-all">
+          Tạo Tài Khoản Mới
+        </button>
+        <button type="button" onclick="Auth.showAuthMode('login')" class="text-xs text-cyan-400 hover:underline">Đã có tài khoản? Đăng nhập →</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 1b. MODAL ĐẶT MUA -->
+  <div id="buy-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+    <div class="glass-modal max-w-md w-full p-6 rounded-2xl shadow-2xl border border-emerald-500/30">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+        <h3 class="text-base font-bold text-white">🛒 Đặt mua</h3>
+        <button type="button" onclick="App.closeBuyModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div class="flex flex-col gap-3 text-xs">
+        <div>
+          <div class="font-extrabold text-white text-sm" id="buy-variant-title">—</div>
+          <div class="text-slate-400 mt-0.5"><span id="buy-product-title"></span> • Giá bán: <b class="text-emerald-300 font-mono" id="buy-variant-price"></b></div>
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Số lượng</label>
+          <input type="number" id="buy-quantity" min="1" max="10" value="1" class="w-24 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 font-mono">
+        </div>
+        <div id="buy-upgrade-wrap" class="hidden">
+          <label class="block font-semibold text-slate-300 mb-1">Email tài khoản cần nâng cấp <span class="text-rose-400">*</span></label>
+          <input type="email" id="buy-upgrade-account" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 font-mono" placeholder="email@gmail.com">
+          <p class="text-[11px] text-slate-500 mt-1">Gói này nâng cấp thủ công trên tài khoản của bạn — bot sẽ nâng cấp đúng email này.</p>
+        </div>
+        <div id="buy-payment-info" class="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] text-slate-300"></div>
+        <p class="text-[11px] text-slate-500">Sau khi tạo đơn, bạn chuyển khoản theo mã đơn rồi bấm "Tôi đã chuyển khoản". Admin xác nhận đã nhận tiền mới giao tài khoản — web không tự trừ tiền khi bạn bấm mua.</p>
+        <button type="button" onclick="App.submitBuy()" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm shadow-lg shadow-emerald-500/20">Tạo đơn đặt mua</button>
+      </div>
     </div>
   </div>
 

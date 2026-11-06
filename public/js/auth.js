@@ -5,7 +5,14 @@ const Auth = {
   lockTimeoutMs: 5 * 60 * 1000, // 5 phút không thao tác sẽ khóa màn hình
   isLocked: false,
 
+  googleEnabled: null,
+
   async init() {
+    // Khách chưa đăng nhập vẫn xem được Cửa Hàng: không bật modal chặn nữa.
+    try {
+      const cfg = await API.get('/auth/config');
+      this.googleEnabled = !!(cfg && cfg.google_enabled);
+    } catch (e) {}
     try {
       const res = await API.get('/auth/me');
       if (res.success && res.user) {
@@ -16,9 +23,54 @@ const Auth = {
       }
     } catch (err) {
       this.currentUser = null;
-      this.showLoginModal();
     }
+    this.renderUserBadge();
     return false;
+  },
+
+  showAuthMode(mode) {
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const title = document.getElementById('auth-modal-title');
+    const googleBtn = document.getElementById('btn-google-login');
+    if (googleBtn && this.googleEnabled === false) googleBtn.classList.add('hidden');
+    if (mode === 'register') {
+      loginForm?.classList.add('hidden');
+      registerForm?.classList.remove('hidden');
+      registerForm?.classList.add('flex');
+      if (title) title.innerText = 'Tạo tài khoản mới';
+    } else {
+      registerForm?.classList.add('hidden');
+      registerForm?.classList.remove('flex');
+      loginForm?.classList.remove('hidden');
+      if (title) title.innerText = 'Đăng nhập';
+    }
+  },
+
+  async register(username, email, password) {
+    try {
+      const res = await API.post('/auth/register', { username, email, password });
+      if (res.success) {
+        this.currentUser = res.user;
+        this.hideLoginModal();
+        this.renderUserBadge();
+        this.setupInactivityTracker();
+        Toast.success('Tạo tài khoản thành công! Chào mừng bạn đến Cửa Hàng.');
+        window.dispatchEvent(new CustomEvent('auth:success'));
+        return true;
+      }
+    } catch (err) {
+      Toast.error(err.message || 'Tạo tài khoản thất bại');
+      return false;
+    }
+  },
+
+  loginWithGoogle() {
+    if (this.googleEnabled === false) {
+      Toast.error('Đăng nhập Google chưa được cấu hình trên server này. Admin cần thêm GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET.');
+      return;
+    }
+    window.location.href = '/api/auth/google';
   },
 
   async login(username, password) {
@@ -29,7 +81,7 @@ const Auth = {
         this.hideLoginModal();
         this.renderUserBadge();
         this.setupInactivityTracker();
-        Toast.success(`Chào mừng Đại Ca [${res.user.username}] gia nhập tác chiến!`);
+        Toast.success(`Chào mừng [${res.user.username}]!`);
         window.dispatchEvent(new CustomEvent('auth:success'));
         return true;
       }
@@ -46,24 +98,25 @@ const Auth = {
     this.currentUser = null;
     this.clearInactivityTracker();
     Toast.info('Đã đăng xuất an toàn');
-    this.showLoginModal();
+    this.renderUserBadge();
+    if (window.App && typeof window.App.activateTabById === 'function') {
+      window.App.activateTabById('tab-shop');
+    }
   },
 
-  showLoginModal() {
+  showLoginModal(mode = 'login') {
+    this.showAuthMode(mode);
     const modal = document.getElementById('login-modal');
     if (modal) modal.classList.remove('hidden');
-    const mainApp = document.getElementById('main-app');
-    if (mainApp) mainApp.classList.add('filter', 'blur-sm');
   },
 
   hideLoginModal() {
     const modal = document.getElementById('login-modal');
     if (modal) modal.classList.add('hidden');
-    const mainApp = document.getElementById('main-app');
-    if (mainApp) mainApp.classList.remove('filter', 'blur-sm');
   },
 
   isTabAllowed(tabId) {
+    if (tabId === 'tab-shop') return true; // Cửa Hàng công khai
     if (!this.currentUser) return false;
     if (this.currentUser.role === 'admin') return true;
     if (tabId === 'tab-admin') return false;
@@ -75,7 +128,15 @@ const Auth = {
 
   renderUserBadge() {
     const container = document.getElementById('user-profile-badge');
-    if (!container || !this.currentUser) return;
+    if (!container) return;
+    if (!this.currentUser) {
+      container.innerHTML = `
+        <button onclick="Auth.showLoginModal('login')" class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold">Đăng nhập</button>
+        <button onclick="Auth.showLoginModal('register')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">Đăng ký</button>
+      `;
+      this.applyRoleAndTabPermissions();
+      return;
+    }
 
     const isAdmin = this.currentUser.role === 'admin';
     container.innerHTML = `
@@ -98,8 +159,19 @@ const Auth = {
   },
 
   applyRoleAndTabPermissions() {
-    if (!this.currentUser) return;
-    const isAdmin = this.currentUser.role === 'admin';
+    const isAdmin = !!this.currentUser && this.currentUser.role === 'admin';
+    if (!this.currentUser) {
+      document.querySelectorAll('.admin-only').forEach((el) => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-tab-btn[data-tab]').forEach((btn) => {
+        if (btn.dataset.tab === 'tab-shop') { btn.classList.remove('hidden'); btn.classList.add('flex'); }
+        else { btn.classList.add('hidden'); btn.classList.remove('flex'); }
+      });
+      document.querySelectorAll('[data-require-tab]').forEach((el) => {
+        if (el.getAttribute('data-require-tab') === 'tab-shop') el.classList.remove('hidden');
+        else el.classList.add('hidden');
+      });
+      return;
+    }
 
     // 1. Ẩn/hiện các phần tử chỉ dành cho Admin
     document.querySelectorAll('.admin-only').forEach((el) => {
@@ -184,7 +256,7 @@ const Auth = {
     if (activePane && !this.isTabAllowed(activePane.id)) {
       const allowedList = isAdmin
         ? ['tab-accounts']
-        : (this.currentUser.allowed_tabs || ['tab-accounts']);
+        : (this.currentUser?.allowed_tabs || ['tab-shop']);
       const firstTab = allowedList[0] || 'tab-accounts';
       if (window.App && typeof window.App.activateTabById === 'function') {
         window.App.activateTabById(firstTab);

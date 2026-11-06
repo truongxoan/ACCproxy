@@ -153,6 +153,83 @@ db.exec(`
     FOREIGN KEY(owner_user_id) REFERENCES users(id) ON DELETE SET NULL
   );
 
+  CREATE TABLE IF NOT EXISTS rented_accounts (
+    id TEXT PRIMARY KEY,
+    owner_user_id TEXT,
+    service TEXT NOT NULL DEFAULT 'grok',
+    label TEXT,
+    username TEXT NOT NULL,
+    password_encrypted TEXT,
+    totp_secret_encrypted TEXT,
+    seller TEXT,
+    price REAL,
+    currency TEXT DEFAULT 'VND',
+    rental_days INTEGER DEFAULT 7,
+    rented_at DATETIME NOT NULL,
+    expires_at DATETIME NOT NULL,
+    status TEXT CHECK(status IN ('active', 'expired', 'returned')) DEFAULT 'active',
+    notes TEXT,
+    is_pinned INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(owner_user_id) REFERENCES users(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_rented_owner ON rented_accounts(owner_user_id);
+  CREATE INDEX IF NOT EXISTS idx_rented_expires ON rented_accounts(expires_at);
+
+  CREATE TABLE IF NOT EXISTS shop_products (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    thumbnail TEXT,
+    in_stock INTEGER DEFAULT 0,
+    synced_at DATETIME
+  );
+
+  CREATE TABLE IF NOT EXISTS shop_variants (
+    id TEXT PRIMARY KEY,
+    product_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    price_vnd_original REAL,
+    price_vnd REAL,
+    price_usd REAL,
+    available_quantity INTEGER,
+    in_stock INTEGER DEFAULT 0,
+    manual_upgrade INTEGER DEFAULT 0,
+    FOREIGN KEY(product_id) REFERENCES shop_products(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_shop_variant_product ON shop_variants(product_id);
+
+  CREATE TABLE IF NOT EXISTS shop_orders (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    variant_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    product_title TEXT,
+    variant_title TEXT,
+    quantity INTEGER DEFAULT 1,
+    unit_price_vnd REAL,
+    total_vnd REAL,
+    cost_vnd_original REAL,
+    currency TEXT DEFAULT 'VND',
+    status TEXT CHECK(status IN ('pending_payment', 'paid', 'delivered', 'cancelled', 'failed')) DEFAULT 'pending_payment',
+    payment_ref TEXT,
+    upgrade_account TEXT,
+    roboticvn_order_id TEXT,
+    roboticvn_display_id INTEGER,
+    delivery_encrypted TEXT,
+    failure_reason TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_shop_orders_user ON shop_orders(user_id);
+  CREATE INDEX IF NOT EXISTS idx_shop_orders_status ON shop_orders(status);
+
   CREATE TABLE IF NOT EXISTS social_vault (
     id TEXT PRIMARY KEY,
     owner_user_id TEXT,
@@ -192,10 +269,29 @@ try {
   // Cột đã tồn tại
 }
 
-// Tự động đồng bộ Super Admin chỉ huy tối cao: TX (và xóa bỏ tài khoản admin mặc định cũ)
+for (const col of [
+  "ALTER TABLE users ADD COLUMN email TEXT",
+  "ALTER TABLE users ADD COLUMN google_id TEXT",
+  "ALTER TABLE users ADD COLUMN auth_provider TEXT DEFAULT 'local'",
+  "ALTER TABLE users ADD COLUMN avatar_url TEXT"
+]) {
+  try { db.exec(col); } catch (e) { /* Cột đã tồn tại */ }
+}
+try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL'); } catch (e) {}
+try { db.exec('ALTER TABLE shop_orders ADD COLUMN transfer_content TEXT'); } catch (e) { /* Cột đã tồn tại */ }
+try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google ON users(google_id) WHERE google_id IS NOT NULL'); } catch (e) {}
+
+// Super Admin TX: seed 1 lần duy nhất khi chưa có.
+// - Mật khẩu mặc định của admin được lưu DƯỚI DẠNG BCRYPT HASH (không có plaintext trong code).
+// - Đổi mật khẩu bằng biến môi trường ADMIN_PASSWORD (ưu tiên cao nhất, chỉ dùng lúc seed/chuyển đổi tài khoản cũ).
+// - Đã BỎ cơ chế tự reset mật khẩu mỗi lần khởi động: admin đổi mật khẩu trong mục Quản Trị thì sẽ giữ nguyên.
+const ADMIN_PASSWORD_HASH = '$2a$10$AZMBXcgR8PdDE2ybkCAUcOaABAckd3M0xI5mO.NrvO.TxuafrEl7O';
 const txUser = db.prepare("SELECT * FROM users WHERE username = 'TX'").get();
 const legacyAdmin = db.prepare("SELECT * FROM users WHERE username = 'admin'").get();
-const txPasswordHash = bcrypt.hashSync('123qweqwerr', bcrypt.genSaltSync(10));
+const envAdminHash = process.env.ADMIN_PASSWORD
+  ? bcrypt.hashSync(process.env.ADMIN_PASSWORD, bcrypt.genSaltSync(10))
+  : null;
+const seedAdminHash = envAdminHash || ADMIN_PASSWORD_HASH;
 
 if (!txUser) {
   if (legacyAdmin) {
@@ -207,24 +303,19 @@ if (!txUser) {
           status = 'active',
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(txPasswordHash, legacyAdmin.id);
+    `).run(envAdminHash || legacyAdmin.password_hash, legacyAdmin.id);
   } else {
     db.prepare(`
-      INSERT INTO users (id, username, password_hash, role, status, created_at, updated_at)
-      VALUES (?, 'TX', ?, 'admin', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-    `).run(uuidv4(), txPasswordHash);
+      INSERT INTO users (id, username, password_hash, role, status, allowed_tabs, created_at, updated_at)
+      VALUES (?, 'TX', ?, 'admin', 'active', '["tab-accounts","tab-schedules","tab-assets","tab-piik","tab-tools","tab-social-vault","tab-rentals","tab-shop","tab-phone","tab-knowledge","tab-admin"]', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `).run(uuidv4(), seedAdminHash);
   }
 } else {
-  // Đảm bảo tài khoản TX luôn giữ quyền admin active và mật khẩu chuẩn của Đại Ca
-  if (!bcrypt.compareSync('123qweqwerr', txUser.password_hash) || txUser.role !== 'admin' || txUser.status !== 'active') {
+  // Chỉ sửa role/status nếu bị sai; KHÔNG đụng tới password_hash đã đặt.
+  if (txUser.role !== 'admin' || txUser.status !== 'active') {
     db.prepare(`
-      UPDATE users
-      SET password_hash = ?,
-          role = 'admin',
-          status = 'active',
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(txPasswordHash, txUser.id);
+      UPDATE users SET role = 'admin', status = 'active', updated_at = CURRENT_TIMESTAMP WHERE id = ?
+    `).run(txUser.id);
   }
   if (legacyAdmin) {
     db.prepare("DELETE FROM users WHERE username = 'admin'").run();
